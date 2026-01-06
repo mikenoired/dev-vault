@@ -7,15 +7,26 @@ interface ItemsState {
   tags: Tag[];
   selectedItem: ItemWithTags | null;
   searchQuery: string;
+  selectedType: ItemType | null;
   isLoading: boolean;
+  isEditing: boolean;
   error: string | null;
 
   loadItems: () => Promise<void>;
   loadTags: () => Promise<void>;
   searchItems: (query: string) => Promise<void>;
+  filterByType: (type: ItemType | null) => Promise<void>;
   selectItem: (item: ItemWithTags | null) => void;
+  setEditing: (isEditing: boolean) => void;
   deleteItem: (id: number) => Promise<void>;
+  updateItem: (id: number, data: {
+    title?: string;
+    description?: string;
+    content?: string;
+    tagNames?: string[];
+  }) => Promise<void>;
   refreshItems: () => Promise<void>;
+  getItemCountByType: (type: ItemType) => number;
   createItem: (data: {
     type: ItemType;
     title: string;
@@ -30,7 +41,9 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   tags: [],
   selectedItem: null,
   searchQuery: "",
+  selectedType: null,
   isLoading: false,
+  isEditing: false,
   error: null,
 
   loadItems: async () => {
@@ -53,7 +66,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   },
 
   searchItems: async (query: string) => {
-    set({ isLoading: true, error: null, searchQuery: query });
+    set({ isLoading: true, error: null, searchQuery: query, selectedType: null });
     try {
       if (!query.trim()) {
         await get().loadItems();
@@ -67,8 +80,27 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     }
   },
 
+  filterByType: async (type: ItemType | null) => {
+    set({ isLoading: true, error: null, selectedType: type, searchQuery: "" });
+    try {
+      const allItems = await tauriService.listItems(500, 0);
+      const filtered = type ? allItems.filter((item) => item.type === type) : allItems;
+      set({ items: filtered, isLoading: false });
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+    }
+  },
+
+  getItemCountByType: (type: ItemType) => {
+    return get().items.filter((item) => item.type === type).length;
+  },
+
   selectItem: (item) => {
-    set({ selectedItem: item });
+    set({ selectedItem: item, isEditing: false });
+  },
+
+  setEditing: (isEditing) => {
+    set({ isEditing });
   },
 
   deleteItem: async (id: number) => {
@@ -77,9 +109,44 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       set((state) => ({
         items: state.items.filter((item) => item.id !== id),
         selectedItem: state.selectedItem?.id === id ? null : state.selectedItem,
+        isEditing: false,
       }));
     } catch (error) {
       set({ error: String(error) });
+    }
+  },
+
+  updateItem: async (id, data) => {
+    try {
+      let tagIds: number[] | undefined;
+      
+      if (data.tagNames) {
+        tagIds = [];
+        for (const tagName of data.tagNames) {
+          const tagId = await tauriService.getOrCreateTag(tagName);
+          tagIds.push(tagId);
+        }
+      }
+
+      await tauriService.updateItem({
+        id,
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        tagIds,
+      });
+
+      await get().refreshItems();
+      
+      // Update selected item after refresh
+      const { items } = get();
+      const updated = items.find(i => i.id === id);
+      if (updated) {
+        set({ selectedItem: updated, isEditing: false });
+      }
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
     }
   },
 

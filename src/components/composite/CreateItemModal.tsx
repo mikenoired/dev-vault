@@ -5,7 +5,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
 import { Select } from "../ui/Select";
-import { Textarea } from "../ui/Textarea";
+import { CodeEditor } from "./CodeEditor";
 
 interface CreateItemModalProps {
   isOpen: boolean;
@@ -98,56 +98,68 @@ export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
     onClose();
   };
 
+  const getLanguage = (type: string): "javascript" | "python" | "rust" | "markdown" => {
+    switch (type) {
+      case "snippet": return "javascript";
+      case "doc": return "markdown";
+      case "note": return "markdown";
+      default: return "markdown";
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Создать новый элемент">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Select
-          id="type"
-          label="Тип"
-          options={itemTypes}
-          value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value as ItemType })}
-        />
+      <form onSubmit={handleSubmit} className="space-y-4 flex flex-col max-h-[85vh]">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+          <Select
+            id="type"
+            label="Тип"
+            options={itemTypes}
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value as ItemType })}
+          />
 
-        <Input
-          id="title"
-          label="Название *"
-          placeholder="Введите название..."
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          error={errors.title}
-        />
+          <Input
+            id="title"
+            label="Название *"
+            placeholder="Введите название..."
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            error={errors.title}
+          />
 
-        <Input
-          id="description"
-          label="Описание"
-          placeholder="Краткое описание (опционально)"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        />
+          <Input
+            id="description"
+            label="Описание"
+            placeholder="Краткое описание (опционально)"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
 
-        <Textarea
-          id="content"
-          label="Содержимое *"
-          placeholder="Введите код, текст или другое содержимое..."
-          value={formData.content}
-          onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-          rows={12}
-          error={errors.content}
-          className="font-mono text-sm"
-        />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Содержимое *</label>
+            <div className="border border-border rounded-md overflow-hidden min-h-[300px]">
+              <CodeEditor
+                value={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+                language={getLanguage(formData.type)}
+              />
+            </div>
+            {errors.content && <p className="text-xs text-red-500">{errors.content}</p>}
+          </div>
 
-        <Input
-          id="tags"
-          label="Теги"
-          placeholder="javascript, react, hooks (через запятую)"
-          value={formData.tags}
-          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-        />
+          <Input
+            id="tags"
+            label="Теги"
+            placeholder="javascript, react, hooks (через запятую)"
+            value={formData.tags}
+            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+          />
 
-        {errors.submit && <div className="text-sm text-red-500">{errors.submit}</div>}
+          {errors.submit && <div className="text-sm text-red-500">{errors.submit}</div>}
+        </div>
 
-        <div className="flex gap-3 justify-end pt-4">
+        <div className="flex gap-3 justify-end pt-4 border-t border-border bg-background">
           <Button type="button" variant="ghost" onClick={handleClose} disabled={isSubmitting}>
             Отмена
           </Button>

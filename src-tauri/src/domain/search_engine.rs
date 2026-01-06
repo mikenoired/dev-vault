@@ -14,28 +14,22 @@ impl SearchEngine {
     pub async fn search(&self, query: SearchQuery) -> Result<SearchResult> {
         let limit = query.limit.unwrap_or(50);
         let search_query = Self::prepare_fts_query(&query.query);
-
+        
         let mut sql = String::from(
-            "SELECT DISTINCT i.id, i.type, i.title, i.description, i.content, 
-                    i.created_at, i.updated_at, i.metadata, si.rank
+            "SELECT i.id, i.type, i.title, i.description, i.content, 
+                    i.created_at, i.updated_at, i.metadata
              FROM items i
-             INNER JOIN search_index si ON i.id = si.rowid
-             WHERE search_index MATCH ?1"
+             JOIN search_index ON i.id = search_index.rowid
+             WHERE search_index MATCH ? "
         );
 
-        let mut bind_count = 2;
-        
         if query.item_type.is_some() {
-            sql.push_str(&format!(" AND i.type = ?{}", bind_count));
-            bind_count += 1;
+            sql.push_str(" AND i.type = ?");
         }
 
         if let Some(ref tag_ids) = query.tag_ids {
             if !tag_ids.is_empty() {
-                let placeholders = (0..tag_ids.len())
-                    .map(|i| format!("?{}", bind_count + i))
-                    .collect::<Vec<_>>()
-                    .join(",");
+                let placeholders = tag_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
                 sql.push_str(&format!(
                     " AND EXISTS (SELECT 1 FROM item_tags it WHERE it.item_id = i.id AND it.tag_id IN ({}))",
                     placeholders
@@ -43,9 +37,10 @@ impl SearchEngine {
             }
         }
 
-        sql.push_str(" ORDER BY si.rank, i.updated_at DESC LIMIT ?");
+        sql.push_str(" ORDER BY i.updated_at DESC LIMIT ?");
 
-        let mut query_builder = sqlx::query(&sql).bind(&search_query);
+        let mut query_builder = sqlx::query(&sql);
+        query_builder = query_builder.bind(&search_query);
 
         if let Some(item_type) = &query.item_type {
             let item_type_str = match item_type {
@@ -66,13 +61,14 @@ impl SearchEngine {
 
         query_builder = query_builder.bind(limit);
 
-        let rows = query_builder
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to execute search")?;
+        let rows = query_builder.fetch_all(&self.pool).await
+            .context("Failed to execute search query")?;
 
         let mut result_items = Vec::new();
         for row in rows {
+            let metadata_str: Option<String> = row.get("metadata");
+            let metadata = metadata_str.and_then(|s| serde_json::from_str(&s).ok());
+
             let item = Item {
                 id: row.get("id"),
                 item_type: Self::parse_item_type(row.get("type"))?,
@@ -81,11 +77,12 @@ impl SearchEngine {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<String, _>("metadata").parse().ok(),
+                metadata,
             };
 
+            let highlights = Self::extract_highlights(&item.content, &query.query);
             let tags = self.get_item_tags(item.id).await?;
-            result_items.push(ItemWithTags { item, tags });
+            result_items.push(ItemWithTags { item, tags, highlights: Some(highlights) });
         }
 
         let total = result_items.len() as i64;
@@ -104,12 +101,12 @@ impl SearchEngine {
         }
 
         if terms.len() == 1 {
-            return format!("{}*", terms[0]);
+            return format!("\"{}\"*", terms[0]);
         }
 
         terms
             .iter()
-            .map(|term| format!("{}*", term))
+            .map(|term| format!("\"{}\"*", term))
             .collect::<Vec<_>>()
             .join(" AND ")
     }
@@ -119,7 +116,7 @@ impl SearchEngine {
             "SELECT t.id, t.name
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
-             WHERE it.item_id = ?1
+             WHERE it.item_id = ?
              ORDER BY t.name"
         )
         .bind(item_id)
@@ -142,5 +139,50 @@ impl SearchEngine {
             "link" => Ok(ItemType::Link),
             _ => anyhow::bail!("Unknown item type: {}", s),
         }
+    }
+
+    fn extract_highlights(content: &str, query: &str) -> Vec<String> {
+        let mut highlights = Vec::new();
+        if query.is_empty() {
+            return highlights;
+        }
+
+        let content_lower = content.to_lowercase();
+        let query_lower = query.to_lowercase();
+        
+        let terms: Vec<&str> = query_lower.split_whitespace().collect();
+        
+        for term in terms {
+            let mut start = 0;
+            while let Some(pos) = content_lower[start..].find(term) {
+                let actual_pos = start + pos;
+                let before_start = actual_pos.saturating_sub(10);
+                let after_end = (actual_pos + term.len() + 10).min(content.len());
+                
+                let before = &content[before_start..actual_pos];
+                let matched = &content[actual_pos..actual_pos + term.len()];
+                let after = &content[actual_pos + term.len()..after_end];
+                
+                let highlight = format!(
+                    "{}**{}**{}",
+                    before,
+                    matched,
+                    after
+                );
+                
+                highlights.push(highlight);
+                start = actual_pos + term.len();
+                
+                if highlights.len() >= 3 {
+                    break;
+                }
+            }
+            
+            if highlights.len() >= 3 {
+                break;
+            }
+        }
+        
+        highlights
     }
 }

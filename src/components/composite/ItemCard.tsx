@@ -5,9 +5,10 @@ interface ItemCardProps {
   item: ItemWithTags;
   isSelected: boolean;
   onClick: () => void;
+  isSearchMode?: boolean;
 }
 
-export const ItemCard = ({ item, isSelected, onClick }: ItemCardProps) => {
+export const ItemCard = ({ item, isSelected, onClick, isSearchMode = false }: ItemCardProps) => {
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -43,13 +44,36 @@ export const ItemCard = ({ item, isSelected, onClick }: ItemCardProps) => {
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 className="font-semibold text-base line-clamp-1">{item.title}</h3>
-        <Badge variant="secondary" className="shrink-0 text-xs">
-          {getTypeLabel(item.type)}
-        </Badge>
+        {isSearchMode && (
+          <Badge variant="secondary" className="shrink-0 text-xs">
+            {getTypeLabel(item.type)}
+          </Badge>
+        )}
       </div>
 
-      {item.description && (
+      {!isSearchMode && item.description && (
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
+      )}
+
+      {isSearchMode && item.highlights && item.highlights.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {item.highlights.map((highlight, idx) => {
+            const parts = highlight.split(/\*\*(.*?)\*\*/g);
+            return (
+              <div key={idx} className="text-xs text-muted-foreground font-mono">
+                {parts.map((part, i) =>
+                  i % 2 === 1 ? (
+                    <span key={i} className="bg-warning/30 text-warning-foreground px-0.5">
+                      {part}
+                    </span>
+                  ) : (
+                    <span key={i}>{part}</span>
+                  ),
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       <div className="flex items-center gap-2 flex-wrap">

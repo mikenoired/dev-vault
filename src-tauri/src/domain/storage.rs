@@ -106,7 +106,7 @@ impl Storage {
             };
 
             let tags = self.get_item_tags(id).await?;
-            Ok(Some(ItemWithTags { item, tags }))
+            Ok(Some(ItemWithTags { item, tags, highlights: None }))
         } else {
             Ok(None)
         }
@@ -341,7 +341,7 @@ impl Storage {
             };
 
             let tags = self.get_item_tags(item.id).await?;
-            result.push(ItemWithTags { item, tags });
+            result.push(ItemWithTags { item, tags, highlights: None });
         }
 
         Ok(result)

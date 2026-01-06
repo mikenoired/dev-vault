@@ -85,11 +85,26 @@ pub async fn search(
     state: State<'_, AppState>,
     query: SearchQuery,
 ) -> Result<SearchResult, String> {
+    println!("[Command] search called with query: {:?}", query);
+    
     let storage = state.storage.lock().await;
     let pool = storage.pool.clone();
     drop(storage);
 
     let search_engine = SearchEngine::new(pool);
-    search_engine.search(query).await.map_err(|e| e.to_string())
+    let result = search_engine.search(query).await.map_err(|e| {
+        println!("[Command] Search error: {}", e);
+        e.to_string()
+    })?;
+    
+    println!("[Command] Search result: {} items found", result.total);
+    if !result.items.is_empty() {
+        println!("[Command] First item: {}, highlights: {:?}", 
+            result.items[0].item.title, 
+            result.items[0].highlights.as_ref().map(|h| h.len())
+        );
+    }
+    
+    Ok(result)
 }
 

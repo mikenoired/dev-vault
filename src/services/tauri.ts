@@ -42,6 +42,6 @@ export const tauriService = {
   },
 
   async search(query: SearchQuery): Promise<SearchResult> {
-    return invoke<SearchResult>("search", { query });
+    return await invoke<SearchResult>("search", { query });
   },
 };

@@ -18,6 +18,7 @@ export interface Tag {
 
 export interface ItemWithTags extends Item {
   tags: Tag[];
+  highlights?: string[];
 }
 
 export interface CreateItemDto {

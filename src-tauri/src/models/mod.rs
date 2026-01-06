@@ -36,6 +36,8 @@ pub struct ItemWithTags {
     #[serde(flatten)]
     pub item: Item,
     pub tags: Vec<Tag>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub highlights: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -62,6 +64,7 @@ pub struct UpdateItemDto {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct SearchQuery {
     pub query: String,
     #[serde(rename = "type")]

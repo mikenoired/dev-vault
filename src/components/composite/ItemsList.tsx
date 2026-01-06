@@ -3,11 +3,13 @@ import { useItemsStore } from "../../stores/itemsStore";
 import { ItemCard } from "./ItemCard";
 
 export const ItemsList = () => {
-  const { items, selectedItem, isLoading, loadItems, selectItem } = useItemsStore();
+  const { items, selectedItem, isLoading, searchQuery, loadItems, selectItem } = useItemsStore();
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  const isSearchMode = searchQuery.trim().length > 0;
 
   if (isLoading) {
     return (
@@ -33,6 +35,7 @@ export const ItemsList = () => {
           item={item}
           isSelected={selectedItem?.id === item.id}
           onClick={() => selectItem(item)}
+          isSearchMode={isSearchMode}
         />
       ))}
     </div>

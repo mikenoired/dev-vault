@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { tauriService } from "../services/tauri";
-import type { ItemWithTags, Tag } from "../types";
+import type { ItemType, ItemWithTags, Tag } from "../types";
 
 interface ItemsState {
   items: ItemWithTags[];
@@ -16,6 +16,13 @@ interface ItemsState {
   selectItem: (item: ItemWithTags | null) => void;
   deleteItem: (id: number) => Promise<void>;
   refreshItems: () => Promise<void>;
+  createItem: (data: {
+    type: ItemType;
+    title: string;
+    description?: string;
+    content: string;
+    tagNames: string[];
+  }) => Promise<void>;
 }
 
 export const useItemsStore = create<ItemsState>((set, get) => ({
@@ -82,6 +89,30 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       await get().searchItems(searchQuery);
     } else {
       await get().loadItems();
+    }
+  },
+
+  createItem: async (data) => {
+    try {
+      const tagIds: number[] = [];
+
+      for (const tagName of data.tagNames) {
+        const tagId = await tauriService.getOrCreateTag(tagName);
+        tagIds.push(tagId);
+      }
+
+      await tauriService.createItem({
+        type: data.type,
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        tagIds: tagIds.length > 0 ? tagIds : undefined,
+      });
+
+      await get().refreshItems();
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
     }
   },
 }));

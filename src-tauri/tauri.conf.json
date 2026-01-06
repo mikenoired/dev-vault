@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "dev-vault",
+        "title": "",
         "width": 1200,
-        "height": 800
+        "height": 800,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": { "x": 15, "y": 22 }
       }
     ],
     "security": {

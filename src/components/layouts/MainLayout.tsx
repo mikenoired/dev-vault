@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useItemsStore } from "../../stores/itemsStore";
 import { CreateItemModal } from "../composite/CreateItemModal";
@@ -14,9 +15,18 @@ export const MainLayout = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground">
-      <header className="border-b border-border bg-card">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <Button onClick={() => setIsCreateModalOpen(true)}>Создать</Button>
+      <header
+        data-tauri-drag-region
+        className="border-b border-border bg-card h-10 flex items-center shrink-0 select-none"
+      >
+        <div
+          data-tauri-drag-region
+          className="w-full h-full px-2 flex items-center justify-between pl-[90px]"
+        >
+          <Button onClick={() => setIsCreateModalOpen(true)} size="iconSmall" variant="secondary">
+            <PlusIcon className="size-4" />
+          </Button>
+          <div data-tauri-drag-region className="flex-1 h-full" />
         </div>
       </header>
 

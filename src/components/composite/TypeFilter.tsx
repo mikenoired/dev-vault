@@ -29,7 +29,7 @@ export const TypeFilter = () => {
             <button
               type="button"
               onClick={() => filterByType(null)}
-              className={`p-2 rounded-md transition-colors ${
+              className={`p-2 rounded-md transition-colors cursor-pointer ${
                 selectedType === null
                   ? "bg-primary text-primary-foreground"
                   : "hover:bg-accent text-muted-foreground"
@@ -61,7 +61,7 @@ export const TypeFilter = () => {
                   type="button"
                   onClick={() => !isDisabled && filterByType(type)}
                   disabled={isDisabled}
-                  className={`p-2 rounded-md transition-colors ${
+                  className={`p-2 rounded-md transition-colors cursor-pointer ${
                     selectedType === type
                       ? "bg-primary text-primary-foreground"
                       : isDisabled

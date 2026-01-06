@@ -16,7 +16,6 @@ export const MainLayout = () => {
     <div className="h-screen w-screen flex flex-col bg-background text-foreground">
       <header className="border-b border-border bg-card">
         <div className="px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dev Vault</h1>
           <Button onClick={() => setIsCreateModalOpen(true)}>Создать</Button>
         </div>
       </header>

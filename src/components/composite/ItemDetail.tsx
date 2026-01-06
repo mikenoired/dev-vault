@@ -1,3 +1,4 @@
+import { CalendarIcon, ClockIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useItemsStore } from "../../stores/itemsStore";
 import { Badge } from "../ui/Badge";
@@ -143,11 +144,13 @@ export const ItemDetail = () => {
       <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 line-clamp-1">
               <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
                 {selectedItem.type}
               </Badge>
-              <h1 className="text-2xl font-bold leading-tight">{selectedItem.title}</h1>
+              <h1 className="text-2xl font-bold leading-tight line-clamp-1">
+                {selectedItem.title}
+              </h1>
             </div>
             {selectedItem.description && (
               <p className="text-muted-foreground">{selectedItem.description}</p>
@@ -172,8 +175,14 @@ export const ItemDetail = () => {
             ))}
           </div>
           <div className="ml-auto flex gap-3">
-            <span>Создано: {formatDate(selectedItem.createdAt)}</span>
-            <span>Обновлено: {formatDate(selectedItem.updatedAt)}</span>
+            <div className="flex items-center gap-1">
+              <CalendarIcon className="size-4" />
+              <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ClockIcon className="size-4" />
+              <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
+            </div>
           </div>
         </div>
       </div>

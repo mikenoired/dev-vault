@@ -1,10 +1,13 @@
-import { type KeyboardEvent, useEffect, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useHotkey } from "../../hooks/useHotkey";
 import { useItemsStore } from "../../stores/itemsStore";
 import { useTabsStore } from "../../stores/tabsStore";
 import { Input } from "../ui/Input";
 
 export const SearchBar = () => {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const items = useItemsStore((state) => state.items);
   const searchItems = useItemsStore((state) => state.searchItems);
 
@@ -12,6 +15,13 @@ export const SearchBar = () => {
   const pinTab = useTabsStore((state) => state.pinTab);
   const tabs = useTabsStore((state) => state.tabs);
   const activeTabId = useTabsStore((state) => state.activeTabId);
+
+  const focusSearch = useCallback(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useHotkey({ key: "f", mod: true }, focusSearch);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -48,16 +58,12 @@ export const SearchBar = () => {
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
       const prevItem = items[prevIndex];
       openItemTab(prevItem.id, prevItem.type, prevItem.title, false);
-    } else if (e.key === "Enter") {
-      if (currentIndex !== -1) {
-        const currentItem = items[currentIndex];
-        openItemTab(currentItem.id, currentItem.type, currentItem.title, true);
-      }
     }
   };
 
   return (
     <Input
+      ref={inputRef}
       type="text"
       placeholder="Поиск сниппетов, документов, конфигов..."
       value={query}

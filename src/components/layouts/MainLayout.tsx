@@ -1,5 +1,6 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHotkey } from "../../hooks/useHotkey";
 import { useItemsStore } from "../../stores/itemsStore";
 import { useTabsStore } from "../../stores/tabsStore";
 import { useUIStore } from "../../stores/uiStore";
@@ -21,10 +22,20 @@ export const MainLayout = () => {
   const searchQuery = useItemsStore((state) => state.searchQuery);
   const tabs = useTabsStore((state) => state.tabs);
   const activeTabId = useTabsStore((state) => state.activeTabId);
+  const closeTab = useTabsStore((state) => state.closeTab);
+
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const isSidebarVisible = useUIStore((state) => state.isSidebarVisible);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+
+  const closeCurrentTab = useCallback(() => {
+    if (activeTabId) {
+      closeTab(activeTabId);
+    }
+  }, [activeTabId, closeTab]);
+
+  useHotkey({ key: "w", mod: true }, closeCurrentTab);
 
   const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);

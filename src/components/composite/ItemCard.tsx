@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ItemWithTags } from "../../types";
 import { Badge } from "../ui/Badge";
 
@@ -10,6 +11,17 @@ interface ItemCardProps {
 }
 
 export const ItemCard = ({ item, isSelected, onClick, onDoubleClick, isSearchMode = false }: ItemCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isSelected && cardRef.current) {
+      cardRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [isSelected]);
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -31,6 +43,7 @@ export const ItemCard = ({ item, isSelected, onClick, onDoubleClick, isSearchMod
 
   return (
     <div
+      ref={cardRef}
       role="button"
       tabIndex={0}
       className={`p-4 border-b border-border cursor-pointer transition-colors hover:bg-accent/50 ${

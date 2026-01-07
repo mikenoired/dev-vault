@@ -14,8 +14,13 @@ interface ItemDetailProps {
 }
 
 export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
-  const { items, deleteItem, updateItem, isEditing, setEditing } = useItemsStore();
-  const { updateTabTitle } = useTabsStore();
+  const items = useItemsStore((state) => state.items);
+  const updateItem = useItemsStore((state) => state.updateItem);
+  const deleteItem = useItemsStore((state) => state.deleteItem);
+  const isEditing = useItemsStore((state) => state.isEditing);
+  const setEditing = useItemsStore((state) => state.setEditing);
+
+  const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
 
   const selectedItem = useMemo(() => {
     return items.find((i) => i.id === itemId) || null;

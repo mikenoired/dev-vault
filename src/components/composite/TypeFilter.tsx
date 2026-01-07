@@ -15,7 +15,9 @@ const typeConfig: Record<
 };
 
 export const TypeFilter = () => {
-  const { selectedType, filterByType, items } = useItemsStore();
+  const selectedType = useItemsStore((state) => state.selectedType);
+  const filterByType = useItemsStore((state) => state.filterByType);
+  const items = useItemsStore((state) => state.items);
 
   const getCountByType = (type: ItemType) => {
     return items.filter((item) => item.type === type).length;

@@ -19,8 +19,12 @@ export const MainLayout = () => {
   const isResizing = useRef(false);
 
   const searchQuery = useItemsStore((state) => state.searchQuery);
-  const { tabs, activeTabId } = useTabsStore();
-  const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore();
+  const tabs = useTabsStore((state) => state.tabs);
+  const activeTabId = useTabsStore((state) => state.activeTabId);
+  const sidebarWidth = useUIStore((state) => state.sidebarWidth);
+  const isSidebarVisible = useUIStore((state) => state.isSidebarVisible);
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
+  const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
 
   const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);

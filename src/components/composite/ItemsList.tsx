@@ -4,8 +4,14 @@ import { useTabsStore } from "../../stores/tabsStore";
 import { ItemCard } from "./ItemCard";
 
 export const ItemsList = () => {
-  const { items, isLoading, searchQuery, loadItems } = useItemsStore();
-  const { openItemTab, tabs, activeTabId } = useTabsStore();
+  const items = useItemsStore((state) => state.items);
+  const isLoading = useItemsStore((state) => state.isLoading);
+  const searchQuery = useItemsStore((state) => state.searchQuery);
+  const loadItems = useItemsStore((state) => state.loadItems);
+
+  const openItemTab = useTabsStore((state) => state.openItemTab);
+  const tabs = useTabsStore((state) => state.tabs);
+  const activeTabId = useTabsStore((state) => state.activeTabId);
 
   useEffect(() => {
     loadItems();

@@ -23,7 +23,7 @@ export const TypeFilter = () => {
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <div className="flex gap-2 p-4 border-b border-border">
+      <div className="flex p-1 gap-1 border-b border-border">
         <Tooltip.Root>
           <Tooltip.Trigger asChild>
             <button
@@ -35,7 +35,7 @@ export const TypeFilter = () => {
                   : "hover:bg-accent text-muted-foreground"
               }`}
             >
-              <FileText className="w-5 h-5" />
+              <FileText className="size-4" />
             </button>
           </Tooltip.Trigger>
           <Tooltip.Portal>
@@ -69,7 +69,7 @@ export const TypeFilter = () => {
                         : "hover:bg-accent text-muted-foreground"
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="size-4" />
                 </button>
               </Tooltip.Trigger>
               <Tooltip.Portal>

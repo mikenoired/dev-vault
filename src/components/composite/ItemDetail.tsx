@@ -1,14 +1,25 @@
 import { CalendarIcon, ClockIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useItemsStore } from "../../stores/itemsStore";
+import { useTabsStore } from "../../stores/tabsStore";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import { CodeEditor } from "./CodeEditor";
 
-export const ItemDetail = () => {
-  const { selectedItem, deleteItem, updateItem, isEditing, setEditing } = useItemsStore();
+interface ItemDetailProps {
+  itemId?: number;
+  onInteraction?: () => void;
+}
+
+export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
+  const { items, deleteItem, updateItem, isEditing, setEditing } = useItemsStore();
+  const { updateTabTitle } = useTabsStore();
+
+  const selectedItem = useMemo(() => {
+    return items.find((i) => i.id === itemId) || null;
+  }, [items, itemId]);
 
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -27,7 +38,7 @@ export const ItemDetail = () => {
   if (!selectedItem) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground text-lg">Выберите элемент для просмотра</p>
+        <p className="text-muted-foreground text-lg">Элемент не найден</p>
       </div>
     );
   }
@@ -56,6 +67,9 @@ export const ItemDetail = () => {
     }).catch((error) => {
       console.error("Failed to update item:", error);
     });
+
+    // Обновляем заголовок в табе
+    updateTabTitle(selectedItem.id, editTitle);
     setEditing(false);
   };
 
@@ -72,9 +86,15 @@ export const ItemDetail = () => {
     }
   };
 
+  const handleInteraction = () => {
+    if (onInteraction) {
+      onInteraction();
+    }
+  };
+
   if (isEditing) {
     return (
-      <div className="h-full flex flex-col p-6 overflow-hidden">
+      <div className="h-full flex flex-col p-6 overflow-hidden" onPointerDown={handleInteraction}>
         <div className="flex items-center justify-between gap-4 mb-6">
           <h2 className="text-2xl font-bold">Редактирование</h2>
           <div className="flex gap-2">
@@ -140,7 +160,7 @@ export const ItemDetail = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
       <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="space-y-1">

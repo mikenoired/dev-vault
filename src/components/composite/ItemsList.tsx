@@ -1,15 +1,19 @@
 import { useEffect } from "react";
 import { useItemsStore } from "../../stores/itemsStore";
+import { useTabsStore } from "../../stores/tabsStore";
 import { ItemCard } from "./ItemCard";
 
 export const ItemsList = () => {
-  const { items, selectedItem, isLoading, searchQuery, loadItems, selectItem } = useItemsStore();
+  const { items, isLoading, searchQuery, loadItems } = useItemsStore();
+  const { openItemTab, tabs, activeTabId } = useTabsStore();
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
 
   const isSearchMode = searchQuery.trim().length > 0;
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const selectedItemId = activeTab?.itemId;
 
   if (isLoading) {
     return (
@@ -33,8 +37,9 @@ export const ItemsList = () => {
         <ItemCard
           key={item.id}
           item={item}
-          isSelected={selectedItem?.id === item.id}
-          onClick={() => selectItem(item)}
+          isSelected={selectedItemId === item.id}
+          onClick={() => openItemTab(item.id, item.type, item.title, false)}
+          onDoubleClick={() => openItemTab(item.id, item.type, item.title, true)}
           isSearchMode={isSearchMode}
         />
       ))}

@@ -15,14 +15,12 @@ export const SearchBar = () => {
   }, [query, searchItems]);
 
   return (
-    <div className="w-full p-4 border-b border-border">
-      <Input
-        type="text"
-        placeholder="Поиск сниппетов, документов, конфигов..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="text-base"
-      />
-    </div>
+    <Input
+      type="text"
+      placeholder="Поиск сниппетов, документов, конфигов..."
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      className="text-base w-full rounded-none border-x-0 border-t-0 border-b border-b-border"
+    />
   );
 };

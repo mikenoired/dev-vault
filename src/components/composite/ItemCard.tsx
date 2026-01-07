@@ -5,10 +5,11 @@ interface ItemCardProps {
   item: ItemWithTags;
   isSelected: boolean;
   onClick: () => void;
+  onDoubleClick?: () => void;
   isSearchMode?: boolean;
 }
 
-export const ItemCard = ({ item, isSelected, onClick, isSearchMode = false }: ItemCardProps) => {
+export const ItemCard = ({ item, isSelected, onClick, onDoubleClick, isSearchMode = false }: ItemCardProps) => {
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -36,6 +37,7 @@ export const ItemCard = ({ item, isSelected, onClick, isSearchMode = false }: It
         isSelected ? "bg-accent" : ""
       }`}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           onClick();

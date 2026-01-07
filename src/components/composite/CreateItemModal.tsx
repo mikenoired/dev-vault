@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useItemsStore } from "../../stores/itemsStore";
 import type { ItemType } from "../../types";
 import { Button } from "../ui/Button";
@@ -10,13 +10,18 @@ import { CodeEditor } from "./CodeEditor";
 interface CreateItemModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialType?: ItemType;
 }
 
-export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
+export const CreateItemModal = ({
+  isOpen,
+  onClose,
+  initialType = "snippet",
+}: CreateItemModalProps) => {
   const createItem = useItemsStore((state) => state.createItem);
 
   const [formData, setFormData] = useState({
-    type: "snippet" as ItemType,
+    type: initialType,
     title: "",
     description: "",
     content: "",
@@ -25,6 +30,12 @@ export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData((prev) => ({ ...prev, type: initialType }));
+    }
+  }, [isOpen, initialType]);
 
   const itemTypes = [
     { value: "snippet", label: "Сниппет" },
@@ -100,10 +111,14 @@ export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
 
   const getLanguage = (type: string): "javascript" | "python" | "rust" | "markdown" => {
     switch (type) {
-      case "snippet": return "javascript";
-      case "doc": return "markdown";
-      case "note": return "markdown";
-      default: return "markdown";
+      case "snippet":
+        return "javascript";
+      case "doc":
+        return "markdown";
+      case "note":
+        return "markdown";
+      default:
+        return "markdown";
     }
   };
 
@@ -137,7 +152,7 @@ export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Содержимое *</label>
+            <span className="text-sm font-medium text-foreground">Содержимое *</span>
             <div className="border border-border rounded-md overflow-hidden min-h-[300px]">
               <CodeEditor
                 value={formData.content}

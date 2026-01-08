@@ -50,3 +50,20 @@ export interface SearchResult {
   items: ItemWithTags[];
   total: number;
 }
+
+export interface SearchConfig {
+  fts_weight: number;
+  semantic_weight: number;
+  results_limit: number;
+}
+
+export interface UiConfig {
+  theme: "dark" | "light" | "system";
+  editor_font_size: number;
+  compact_mode: boolean;
+}
+
+export interface AppConfig {
+  search: SearchConfig;
+  ui: UiConfig;
+}

@@ -1,3 +1,6 @@
+pub mod config;
+
+pub use config::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -32,8 +32,11 @@ pub fn run() {
                     .expect("Failed to initialize storage")
             });
 
+            let config_manager = domain::ConfigManager::new(app_dir.clone());
+
             let state = AppState {
                 storage: Arc::new(Mutex::new(storage)),
+                config_manager: Arc::new(config_manager),
             };
 
             app.manage(state);
@@ -145,6 +148,8 @@ pub fn run() {
             commands::get_or_create_tag,
             commands::list_tags,
             commands::search,
+            commands::get_config,
+            commands::save_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

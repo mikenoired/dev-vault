@@ -1,11 +1,23 @@
-use crate::domain::{SearchEngine, Storage};
+use crate::domain::{ConfigManager, SearchEngine, Storage};
 use crate::models::*;
+use crate::models::config::AppConfig;
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::Mutex;
 
 pub struct AppState {
     pub storage: Arc<Mutex<Storage>>,
+    pub config_manager: Arc<ConfigManager>,
+}
+
+#[tauri::command]
+pub async fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
+    state.config_manager.load_config().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
+    state.config_manager.save_config(&config).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

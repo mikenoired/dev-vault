@@ -1,8 +1,9 @@
 import { listen } from "@tauri-apps/api/event";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkey } from "../../hooks/useHotkey";
 import { useItemsStore } from "../../stores/itemsStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { useTabsStore } from "../../stores/tabsStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { ItemType } from "../../types";
@@ -10,6 +11,7 @@ import { CreateItemModal } from "../composite/CreateItemModal";
 import { ItemDetail } from "../composite/ItemDetail";
 import { ItemsList } from "../composite/ItemsList";
 import { SearchBar } from "../composite/SearchBar";
+import { SettingsModal } from "../composite/Settings/SettingsModal";
 import { EmptyTabContent } from "../composite/Tabs/EmptyTabContent";
 import { TabManager } from "../composite/Tabs/TabManager";
 import { TypeFilter } from "../composite/TypeFilter";
@@ -30,6 +32,25 @@ export const MainLayout = () => {
   const isSidebarVisible = useUIStore((state) => state.isSidebarVisible);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+
+  const openSettings = useSettingsStore((state) => state.openSettings);
+  const theme = useSettingsStore((state) => state.config?.ui.theme);
+
+  useEffect(() => {
+    if (!theme) return;
+
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+  }, [theme]);
 
   const closeCurrentTab = useCallback(() => {
     if (activeTabId) {
@@ -101,7 +122,7 @@ export const MainLayout = () => {
   }, [handleMouseMove, stopResizing]);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-background text-foreground">
+    <div className="h-screen w-screen flex flex-col">
       <header
         data-tauri-drag-region
         className="border-b border-border bg-card h-10 flex items-center shrink-0 select-none"
@@ -112,8 +133,16 @@ export const MainLayout = () => {
         >
           <button
             type="button"
-            onClick={toggleSidebar}
+            onClick={openSettings}
             className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors ml-auto shrink-0"
+            title="Настройки"
+          >
+            <Settings size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
             title={isSidebarVisible ? "Скрыть сайдбар" : "Показать сайдбар"}
           >
             {isSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
@@ -177,6 +206,7 @@ export const MainLayout = () => {
         onClose={() => setIsCreateModalOpen(false)}
         initialType={modalType}
       />
+      <SettingsModal />
     </div>
   );
 };

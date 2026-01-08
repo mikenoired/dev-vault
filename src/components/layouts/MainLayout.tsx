@@ -81,12 +81,17 @@ export const MainLayout = () => {
       handleCreateClick(event.payload);
     });
 
+    const unlistenSettings = listen("menu-settings", () => {
+      openSettings();
+    });
+
     return () => {
       unlistenSearch.then((f) => f());
       unlistenNewTab.then((f) => f());
       unlistenCreateItem.then((f) => f());
+      unlistenSettings.then((f) => f());
     };
-  }, [openNewTab, handleCreateClick]);
+  }, [openNewTab, handleCreateClick, openSettings]);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

@@ -42,6 +42,7 @@ pub fn run() {
             app.manage(state);
 
             // Create Menu
+            let settings_i = MenuItem::with_id(app, "settings", "Настройки", true, Some("CmdOrCtrl+,"))?;
             let search_i = MenuItem::with_id(app, "search", "Поиск", true, Some("CmdOrCtrl+F"))?;
             let new_tab_i =
                 MenuItem::with_id(app, "new-tab", "Новая вкладка", true, Some("CmdOrCtrl+T"))?;
@@ -83,6 +84,7 @@ pub fn run() {
                         true,
                         &[
                             &PredefinedMenuItem::about(app, None, None)?,
+                            &settings_i,
                             &PredefinedMenuItem::separator(app)?,
                             &PredefinedMenuItem::hide(app, None)?,
                             &PredefinedMenuItem::hide_others(app, None)?,
@@ -115,6 +117,9 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
+            "settings" => {
+                let _ = app.emit("menu-settings", ());
+            }
             "search" => {
                 let _ = app.emit("menu-search", ());
             }

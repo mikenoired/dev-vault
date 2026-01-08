@@ -1,3 +1,4 @@
+import { listen } from "@tauri-apps/api/event";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkey } from "../../hooks/useHotkey";
@@ -23,6 +24,7 @@ export const MainLayout = () => {
   const tabs = useTabsStore((state) => state.tabs);
   const activeTabId = useTabsStore((state) => state.activeTabId);
   const closeTab = useTabsStore((state) => state.closeTab);
+  const openNewTab = useTabsStore((state) => state.openNewTab);
 
   const sidebarWidth = useUIStore((state) => state.sidebarWidth);
   const isSidebarVisible = useUIStore((state) => state.isSidebarVisible);
@@ -40,10 +42,30 @@ export const MainLayout = () => {
   const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  const handleCreateClick = (type: ItemType) => {
+  const handleCreateClick = useCallback((type: ItemType) => {
     setModalType(type);
     setIsCreateModalOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    const unlistenSearch = listen("menu-search", () => {
+      window.dispatchEvent(new CustomEvent("focus-search"));
+    });
+
+    const unlistenNewTab = listen("menu-new-tab", () => {
+      openNewTab();
+    });
+
+    const unlistenCreateItem = listen<ItemType>("menu-create-item", (event) => {
+      handleCreateClick(event.payload);
+    });
+
+    return () => {
+      unlistenSearch.then((f) => f());
+      unlistenNewTab.then((f) => f());
+      unlistenCreateItem.then((f) => f());
+    };
+  }, [openNewTab, handleCreateClick]);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

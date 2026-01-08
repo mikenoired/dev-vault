@@ -24,6 +24,12 @@ export const SearchBar = () => {
   useHotkey({ key: "f", mod: true }, focusSearch);
 
   useEffect(() => {
+    const handleFocusSearch = () => focusSearch();
+    window.addEventListener("focus-search", handleFocusSearch);
+    return () => window.removeEventListener("focus-search", handleFocusSearch);
+  }, [focusSearch]);
+
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
       searchItems(query);
     }, 150);

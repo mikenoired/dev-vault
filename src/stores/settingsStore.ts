@@ -7,7 +7,6 @@ interface SettingsState {
   isSettingsOpen: boolean;
   isLoading: boolean;
 
-  // Actions
   openSettings: () => void;
   closeSettings: () => void;
   loadConfig: () => Promise<void>;
@@ -46,7 +45,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await invoke("save_config", { config: newConfig });
     } catch (error) {
       console.error("Failed to save config:", error);
-      // Optionally revert state on failure
     }
   },
 
@@ -65,5 +63,4 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 }));
 
-// Initialize config on store creation
 useSettingsStore.getState().loadConfig();

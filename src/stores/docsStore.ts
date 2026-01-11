@@ -34,9 +34,7 @@ interface DocsState {
 }
 
 export const useDocsStore = create<DocsState>((set, get) => {
-  // Настраиваем слушатели событий при создании store
   if (typeof window !== "undefined") {
-    // Слушатель прогресса установки
     listen<ScrapeProgress>("doc-install-progress", (event) => {
       console.log("[DocsStore] 📊 Install progress:", event.payload);
       set({ installProgress: event.payload });
@@ -44,7 +42,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
       console.error("[DocsStore] Failed to listen to doc-install-progress:", err);
     });
 
-    // Слушатель завершения установки
     listen<Documentation>("doc-install-complete", (event) => {
       console.log("[DocsStore] ✓ Install complete:", event.payload);
       set({ installProgress: null, isInstalling: false });
@@ -54,7 +51,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
       console.error("[DocsStore] Failed to listen to doc-install-complete:", err);
     });
 
-    // Слушатель ошибки установки
     listen<string>("doc-install-error", (event) => {
       console.error("[DocsStore] ✗ Install error:", event.payload);
       set({ installProgress: null, isInstalling: false, error: event.payload });
@@ -62,7 +58,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
       console.error("[DocsStore] Failed to listen to doc-install-error:", err);
     });
 
-    // Слушатель прогресса обновления
     listen<ScrapeProgress>("doc-update-progress", (event) => {
       console.log("[DocsStore] 📊 Update progress:", event.payload);
       set({ updateProgress: event.payload });
@@ -70,7 +65,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
       console.error("[DocsStore] Failed to listen to doc-update-progress:", err);
     });
 
-    // Слушатель завершения обновления
     listen<Documentation>("doc-update-complete", (event) => {
       console.log("[DocsStore] ✓ Update complete:", event.payload);
       set({ updateProgress: null });
@@ -83,7 +77,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
       console.error("[DocsStore] Failed to listen to doc-update-complete:", err);
     });
 
-    // Слушатель ошибки обновления
     listen<string>("doc-update-error", (event) => {
       console.error("[DocsStore] ✗ Update error:", event.payload);
       set({ updateProgress: null, error: event.payload });
@@ -142,8 +135,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
         const doc = await tauriService.installDocumentation(name);
         console.log(`[DocsStore] ✓ Installation successful:`, doc);
 
-        // Обновление состояния произойдет через событие doc-install-complete
-        // Но если событие не пришло, обновим вручную
         const { installedDocs } = get();
         if (!installedDocs.some((d) => d.id === doc.id)) {
           set({ installedDocs: [...installedDocs, doc] });
@@ -167,8 +158,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
         const updatedDoc = await tauriService.updateDocumentation(docId);
         console.log(`[DocsStore] ✓ Update successful:`, updatedDoc);
 
-        // Обновление состояния произойдет через событие doc-update-complete
-        // Но если событие не пришло, обновим вручную
         const { installedDocs } = get();
         const newDocs = installedDocs.map((doc) => (doc.id === docId ? updatedDoc : doc));
         set({ installedDocs: newDocs });
@@ -221,7 +210,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
     loadDocTree: async (docId: number) => {
       set({ isLoading: true, error: null });
       try {
-        // Загружаем только корневой уровень (без parentPath)
         const tree = await tauriService.getDocTree(docId);
         set({ docTree: tree });
       } catch (error) {

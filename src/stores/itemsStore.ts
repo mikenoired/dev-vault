@@ -141,7 +141,6 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
 
       await get().refreshItems();
 
-      // Update selected item after refresh
       const { items } = get();
       const updated = items.find((i) => i.id === id);
       if (updated) {

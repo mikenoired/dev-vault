@@ -213,11 +213,7 @@ impl HtmlFilter for ExtractTextFilter {
 
     fn process(&self, html: &str, _context: &FilterContext) -> String {
         let document = Html::parse_document(html);
-        let text: String = document
-            .root_element()
-            .text()
-            .collect::<Vec<_>>()
-            .join(" ");
+        let text: String = document.root_element().text().collect::<Vec<_>>().join(" ");
 
         let re = Regex::new(r"\s+").unwrap();
         re.replace_all(&text, " ").trim().to_string()
@@ -345,7 +341,10 @@ impl UrlScraper {
             anyhow::bail!("HTTP {} for {}", response.status(), url);
         }
 
-        response.text().await.context("Failed to read response body")
+        response
+            .text()
+            .await
+            .context("Failed to read response body")
     }
 
     fn parse_page(&self, html: &str, path: &str, url: &str) -> ScrapedPage {
@@ -576,9 +575,7 @@ impl UrlScraper {
     pub async fn scrape(&self) -> Result<Vec<ParsedDocEntry>> {
         let opts = &self.definition.options;
 
-        tracing::info!(
-            "╔═══════════════════════════════════════════════════════════════════"
-        );
+        tracing::info!("╔═══════════════════════════════════════════════════════════════════");
         tracing::info!(
             "║ 📚 Starting URL Scraper: {}",
             self.definition.display_name
@@ -590,9 +587,7 @@ impl UrlScraper {
             opts.max_pages,
             opts.max_depth
         );
-        tracing::info!(
-            "╚═══════════════════════════════════════════════════════════════════"
-        );
+        tracing::info!("╚═══════════════════════════════════════════════════════════════════");
 
         let mut visited: HashSet<String> = HashSet::new();
         let mut existing_paths: HashSet<String> = HashSet::new();
@@ -678,15 +673,9 @@ impl UrlScraper {
             }
         }
 
-        tracing::info!(
-            "╔═══════════════════════════════════════════════════════════════════"
-        );
         tracing::info!("║ ✅ Scraping completed!");
         tracing::info!("║ 📊 Total pages scraped: {}", page_count);
         tracing::info!("║ 📝 Entries created: {}", entries.len());
-        tracing::info!(
-            "╚═══════════════════════════════════════════════════════════════════"
-        );
 
         Ok(entries)
     }
@@ -709,17 +698,11 @@ impl UrlScraper {
             .await;
 
         tracing::info!(
-            "╔═══════════════════════════════════════════════════════════════════"
-        );
-        tracing::info!(
             "║ 📚 Starting URL Scraper: {}",
             self.definition.display_name
         );
         tracing::info!("║ 🌐 Base URL: {}", self.definition.base_url);
         tracing::info!("║ 📦 Version: {}", self.definition.version);
-        tracing::info!(
-            "╚═══════════════════════════════════════════════════════════════════"
-        );
 
         let mut visited: HashSet<String> = HashSet::new();
         let mut existing_paths: HashSet<String> = HashSet::new();
@@ -814,15 +797,9 @@ impl UrlScraper {
             })
             .await;
 
-        tracing::info!(
-            "╔═══════════════════════════════════════════════════════════════════"
-        );
         tracing::info!("║ ✅ Scraping completed!");
         tracing::info!("║ 📊 Total pages scraped: {}", page_count);
         tracing::info!("║ 📝 Entries created: {}", entries.len());
-        tracing::info!(
-            "╚═══════════════════════════════════════════════════════════════════"
-        );
 
         Ok(entries)
     }

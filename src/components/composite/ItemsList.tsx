@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { useItemsStore } from "../../stores/itemsStore";
-import { useTabsStore } from "../../stores/tabsStore";
-import { ItemCard } from "./ItemCard";
+import { ItemCard } from "@/components/composite/ItemCard";
+import { useItemsStore } from "@/stores/itemsStore";
+import { useTabsStore } from "@/stores/tabsStore";
 
 export const ItemsList = () => {
   const items = useItemsStore((state) => state.items);
@@ -18,7 +18,7 @@ export const ItemsList = () => {
   }, [loadItems]);
 
   const isSearchMode = searchQuery.trim().length > 0;
-  const activeTab = tabs.find(t => t.id === activeTabId);
+  const activeTab = tabs.find((t) => t.id === activeTabId);
   const selectedItemId = activeTab?.itemId;
 
   if (isLoading) {

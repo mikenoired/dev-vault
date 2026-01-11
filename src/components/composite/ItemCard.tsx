@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { ItemWithTags } from "../../types";
-import { Badge } from "../ui/Badge";
+import { Badge } from "@/components/ui";
+import type { ItemWithTags } from "@/types";
 
 interface ItemCardProps {
   item: ItemWithTags;
@@ -10,7 +10,13 @@ interface ItemCardProps {
   isSearchMode?: boolean;
 }
 
-export const ItemCard = ({ item, isSelected, onClick, onDoubleClick, isSearchMode = false }: ItemCardProps) => {
+export const ItemCard = ({
+  item,
+  isSelected,
+  onClick,
+  onDoubleClick,
+  isSearchMode = false,
+}: ItemCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

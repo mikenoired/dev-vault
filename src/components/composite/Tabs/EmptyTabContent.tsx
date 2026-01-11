@@ -1,6 +1,6 @@
 import { Book, Code2, Link2, Settings, StickyNote } from "lucide-react";
-import { useTabsStore } from "../../../stores/tabsStore";
-import type { ItemType } from "../../../types";
+import { useTabsStore } from "@/stores/tabsStore";
+import type { ItemType } from "@/types";
 
 interface EmptyTabContentProps {
   onCreateClick: (type: ItemType) => void;

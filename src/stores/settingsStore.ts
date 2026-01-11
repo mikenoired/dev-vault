@@ -1,12 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import type { AppConfig } from "../types";
+import type { AppConfig } from "@/types";
 
 interface SettingsState {
   config: AppConfig | null;
   isSettingsOpen: boolean;
   isLoading: boolean;
-  
+
   // Actions
   openSettings: () => void;
   closeSettings: () => void;
@@ -67,4 +67,3 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
 // Initialize config on store creation
 useSettingsStore.getState().loadConfig();
-

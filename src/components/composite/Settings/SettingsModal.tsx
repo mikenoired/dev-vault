@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useSettingsStore } from "../../../stores/settingsStore";
-import { Modal } from "../../ui/Modal";
-import { type SettingsSection, SettingsSidebar } from "./SettingsSidebar";
-import { AppearanceSection } from "./sections/AppearanceSection";
-import { DocumentationSection } from "./sections/DocumentationSection";
-import { GeneralSection } from "./sections/GeneralSection";
-import { SearchSection } from "./sections/SearchSection";
+import {
+  type SettingsSection,
+  SettingsSidebar,
+} from "@/components/composite/Settings/SettingsSidebar";
+import { AppearanceSection } from "@/components/composite/Settings/sections/AppearanceSection";
+import { DocumentationSection } from "@/components/composite/Settings/sections/DocumentationSection";
+import { GeneralSection } from "@/components/composite/Settings/sections/GeneralSection";
+import { SearchSection } from "@/components/composite/Settings/sections/SearchSection";
+import { Modal } from "@/components/ui/Modal";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export const SettingsModal = () => {
   const isOpen = useSettingsStore((state) => state.isSettingsOpen);

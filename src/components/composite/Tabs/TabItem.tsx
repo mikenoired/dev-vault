@@ -1,6 +1,6 @@
-import { Code2, FileText, Link2, Plus, Settings, StickyNote, X } from "lucide-react";
-import { type Tab, useTabsStore } from "../../../stores/tabsStore";
-import type { ItemType } from "../../../types";
+import { Code2, Link2, Plus, Settings, StickyNote, X } from "lucide-react";
+import { type Tab, useTabsStore } from "@/stores/tabsStore";
+import type { ItemType } from "@/types";
 
 const getIcon = (type: ItemType | "new") => {
   switch (type) {
@@ -8,8 +8,6 @@ const getIcon = (type: ItemType | "new") => {
       return <Code2 className="size-3.5" />;
     case "note":
       return <StickyNote className="size-3.5" />;
-    case "doc":
-      return <FileText className="size-3.5" />;
     case "config":
       return <Settings className="size-3.5" />;
     case "link":

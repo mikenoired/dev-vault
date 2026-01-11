@@ -1,13 +1,13 @@
 import { listen } from "@tauri-apps/api/event";
 import { create } from "zustand";
-import { tauriService } from "../services/tauri";
+import { tauriService } from "@/services/tauri";
 import type {
   AvailableDocumentation,
   DocEntry,
   DocTreeNode,
   Documentation,
   ScrapeProgress,
-} from "../types";
+} from "@/types";
 
 interface DocsState {
   availableDocs: AvailableDocumentation[];

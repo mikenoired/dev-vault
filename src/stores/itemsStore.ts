@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { tauriService } from "../services/tauri";
-import type { ItemType, ItemWithTags, Tag } from "../types";
+import { tauriService } from "@/services/tauri";
+import type { ItemType, ItemWithTags, Tag } from "@/types";
 
 interface ItemsState {
   items: ItemWithTags[];
@@ -19,12 +19,15 @@ interface ItemsState {
   selectItem: (item: ItemWithTags | null) => void;
   setEditing: (isEditing: boolean) => void;
   deleteItem: (id: number) => Promise<void>;
-  updateItem: (id: number, data: {
-    title?: string;
-    description?: string;
-    content?: string;
-    tagNames?: string[];
-  }) => Promise<void>;
+  updateItem: (
+    id: number,
+    data: {
+      title?: string;
+      description?: string;
+      content?: string;
+      tagNames?: string[];
+    },
+  ) => Promise<void>;
   refreshItems: () => Promise<void>;
   getItemCountByType: (type: ItemType) => number;
   createItem: (data: {
@@ -119,7 +122,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   updateItem: async (id, data) => {
     try {
       let tagIds: number[] | undefined;
-      
+
       if (data.tagNames) {
         tagIds = [];
         for (const tagName of data.tagNames) {
@@ -137,10 +140,10 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       });
 
       await get().refreshItems();
-      
+
       // Update selected item after refresh
       const { items } = get();
-      const updated = items.find(i => i.id === id);
+      const updated = items.find((i) => i.id === id);
       if (updated) {
         set({ selectedItem: updated, isEditing: false });
       }

@@ -1,4 +1,5 @@
 export type ItemType = "snippet" | "config" | "note" | "link" | "documentation";
+export type Theme = "dark" | "light" | "system";
 
 export interface Item {
   id: number;
@@ -97,7 +98,7 @@ export interface SearchConfig {
 }
 
 export interface UiConfig {
-  theme: "dark" | "light" | "system";
+  theme: Theme;
   editor_font_size: number;
   compact_mode: boolean;
 }

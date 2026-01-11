@@ -1,5 +1,6 @@
-import { useSettingsStore } from "../../../../stores/settingsStore";
-import { Select } from "../../../ui/Select";
+import { Select } from "@/components/ui/Select";
+import { useSettingsStore } from "@/stores/settingsStore";
+import type { Theme } from "@/types";
 
 export const GeneralSection = () => {
   const config = useSettingsStore((state) => state.config);
@@ -15,7 +16,7 @@ export const GeneralSection = () => {
           <Select
             label="Тема оформления"
             value={config.ui.theme}
-            onChange={(e) => updateUiConfig({ theme: e.target.value as any })}
+            onChange={(e) => updateUiConfig({ theme: e.target.value as Theme })}
             options={[
               { value: "dark", label: "Темная" },
               { value: "light", label: "Светлая" },
@@ -27,4 +28,3 @@ export const GeneralSection = () => {
     </div>
   );
 };
-

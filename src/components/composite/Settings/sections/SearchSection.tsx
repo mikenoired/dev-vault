@@ -1,5 +1,5 @@
-import { useSettingsStore } from "../../../../stores/settingsStore";
-import { Input } from "../../../ui/Input";
+import { Input } from "@/components/ui/Input";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export const SearchSection = () => {
   const config = useSettingsStore((state) => state.config);
@@ -13,12 +13,15 @@ export const SearchSection = () => {
         <h3 className="text-lg font-medium mb-4">Настройки поиска</h3>
         <div className="grid gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Баланс весов (FTS / Semantic)</label>
+            <label htmlFor="fts-weight-range" className="text-sm font-medium">
+              Баланс весов (FTS / Semantic)
+            </label>
             <div className="flex items-center gap-4">
               <span className="text-xs text-muted-foreground">
                 FTS: {Math.round(config.search.fts_weight * 100)}%
               </span>
               <input
+                id="fts-weight-range"
                 type="range"
                 min="0"
                 max="1"

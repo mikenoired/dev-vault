@@ -1,8 +1,8 @@
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useHotkey } from "../../hooks/useHotkey";
-import { useItemsStore } from "../../stores/itemsStore";
-import { useTabsStore } from "../../stores/tabsStore";
-import { Input } from "../ui/Input";
+import { Input } from "@/components/ui";
+import { useHotkey } from "@/hooks/useHotkey";
+import { useItemsStore } from "@/stores/itemsStore";
+import { useTabsStore } from "@/stores/tabsStore";
 
 export const SearchBar = () => {
   const [query, setQuery] = useState("");

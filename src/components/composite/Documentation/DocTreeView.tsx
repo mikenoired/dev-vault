@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useDocsStore } from "../../../stores/docsStore";
-import type { DocTreeNode } from "../../../types";
+import { useDocsStore } from "@/stores/docsStore";
+import type { DocTreeNode } from "@/types";
 
 interface DocTreeViewProps {
   docId: number;

@@ -10,7 +10,7 @@ import type {
   SearchResult,
   Tag,
   UpdateItemDto,
-} from "../types";
+} from "@/types";
 
 export const tauriService = {
   async createItem(dto: CreateItemDto): Promise<number> {

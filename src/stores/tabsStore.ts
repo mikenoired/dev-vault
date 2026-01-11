@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ItemType } from "../types";
+import type { ItemType } from "@/types";
 
 export type TabType = "item" | "new" | "documentation";
 

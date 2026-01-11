@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { useItemsStore } from "../../stores/itemsStore";
-import type { ItemType } from "../../types";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
-import { CodeEditor } from "./CodeEditor";
+import { CodeEditor } from "@/components/composite/CodeEditor";
+import { Button, Input, Modal, Select } from "@/components/ui";
+import { useItemsStore } from "@/stores/itemsStore";
+import type { ItemType } from "@/types";
 
 interface CreateItemModalProps {
   isOpen: boolean;

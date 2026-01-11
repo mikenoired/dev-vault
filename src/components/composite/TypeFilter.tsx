@@ -1,7 +1,7 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Book, Code, FileText, Link as LinkIcon, Settings, StickyNote } from "lucide-react";
-import { useItemsStore } from "../../stores/itemsStore";
-import type { ItemType } from "../../types";
+import { useItemsStore } from "@/stores/itemsStore";
+import type { ItemType } from "@/types";
 
 const typeConfig: Record<
   ItemType,

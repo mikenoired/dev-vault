@@ -1,12 +1,9 @@
 import { CalendarIcon, ClockIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useItemsStore } from "../../stores/itemsStore";
-import { useTabsStore } from "../../stores/tabsStore";
-import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Textarea } from "../ui/Textarea";
-import { CodeEditor } from "./CodeEditor";
+import { CodeEditor } from "@/components/composite/CodeEditor";
+import { Badge, Button, Input, Textarea } from "@/components/ui";
+import { useItemsStore } from "@/stores/itemsStore";
+import { useTabsStore } from "@/stores/tabsStore";
 
 interface ItemDetailProps {
   itemId?: number;

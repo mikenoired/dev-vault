@@ -1,4 +1,4 @@
-import type { DocEntry } from "../../../types";
+import type { DocEntry } from "@/types";
 
 interface DocViewerProps {
   entry: DocEntry;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useDocsStore } from "../../../../stores/docsStore";
-import { Button } from "../../../ui/Button";
-import { Card } from "../../../ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { useDocsStore } from "@/stores/docsStore";
 
 export function DocumentationSection() {
   const {

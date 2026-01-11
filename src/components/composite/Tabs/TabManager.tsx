@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
-import { useTabsStore } from "../../../stores/tabsStore";
-import { Button } from "../../ui/Button";
-import { TabItem } from "./TabItem";
+import { TabItem } from "@/components/composite/Tabs/TabItem";
+import { Button } from "@/components/ui/Button";
+import { useTabsStore } from "@/stores/tabsStore";
 
 export const TabManager = () => {
   const { tabs, activeTabId, openNewTab } = useTabsStore();

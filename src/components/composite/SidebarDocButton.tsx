@@ -1,5 +1,5 @@
 import { Book } from "lucide-react";
-import { useTabsStore } from "../../stores/tabsStore";
+import { useTabsStore } from "@/stores/tabsStore";
 
 export const SidebarDocButton = () => {
   const openDocumentationTab = useTabsStore((state) => state.openDocumentationTab);
@@ -17,4 +17,3 @@ export const SidebarDocButton = () => {
     </div>
   );
 };
-

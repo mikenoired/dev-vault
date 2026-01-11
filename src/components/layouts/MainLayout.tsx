@@ -1,22 +1,22 @@
 import { listen } from "@tauri-apps/api/event";
 import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useHotkey } from "../../hooks/useHotkey";
-import { useItemsStore } from "../../stores/itemsStore";
-import { useSettingsStore } from "../../stores/settingsStore";
-import { useTabsStore } from "../../stores/tabsStore";
-import { useUIStore } from "../../stores/uiStore";
-import type { ItemType } from "../../types";
-import { CreateItemModal } from "../composite/CreateItemModal";
-import { DocBrowser } from "../composite/Documentation/DocBrowser";
-import { ItemDetail } from "../composite/ItemDetail";
-import { ItemsList } from "../composite/ItemsList";
-import { SearchBar } from "../composite/SearchBar";
-import { SettingsModal } from "../composite/Settings/SettingsModal";
-import { SidebarDocButton } from "../composite/SidebarDocButton";
-import { EmptyTabContent } from "../composite/Tabs/EmptyTabContent";
-import { TabManager } from "../composite/Tabs/TabManager";
-import { TypeFilter } from "../composite/TypeFilter";
+import { CreateItemModal } from "@/components/composite/CreateItemModal";
+import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
+import { ItemDetail } from "@/components/composite/ItemDetail";
+import { ItemsList } from "@/components/composite/ItemsList";
+import { SearchBar } from "@/components/composite/SearchBar";
+import { SettingsModal } from "@/components/composite/Settings/SettingsModal";
+import { SidebarDocButton } from "@/components/composite/SidebarDocButton";
+import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
+import { TabManager } from "@/components/composite/Tabs/TabManager";
+import { TypeFilter } from "@/components/composite/TypeFilter";
+import { useHotkey } from "@/hooks/useHotkey";
+import { useItemsStore } from "@/stores/itemsStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useTabsStore } from "@/stores/tabsStore";
+import { useUIStore } from "@/stores/uiStore";
+import type { ItemType } from "@/types";
 
 export const MainLayout = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -25,15 +25,11 @@ export const MainLayout = () => {
   const isResizing = useRef(false);
 
   const searchQuery = useItemsStore((state) => state.searchQuery);
-  const tabs = useTabsStore((state) => state.tabs);
-  const activeTabId = useTabsStore((state) => state.activeTabId);
-  const closeTab = useTabsStore((state) => state.closeTab);
-  const openNewTab = useTabsStore((state) => state.openNewTab);
 
-  const sidebarWidth = useUIStore((state) => state.sidebarWidth);
-  const isSidebarVisible = useUIStore((state) => state.isSidebarVisible);
-  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
-  const setSidebarWidth = useUIStore((state) => state.setSidebarWidth);
+  const { tabs, activeTabId, closeTab, openNewTab } = useTabsStore((state) => state);
+  const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore(
+    (state) => state,
+  );
 
   const openSettings = useSettingsStore((state) => state.openSettings);
   const theme = useSettingsStore((state) => state.config?.ui.theme);

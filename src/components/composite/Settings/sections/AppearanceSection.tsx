@@ -1,5 +1,5 @@
-import { useSettingsStore } from "../../../../stores/settingsStore";
-import { Input } from "../../../ui/Input";
+import { Input } from "@/components/ui/Input";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export const AppearanceSection = () => {
   const config = useSettingsStore((state) => state.config);
@@ -35,4 +35,3 @@ export const AppearanceSection = () => {
     </div>
   );
 };
-

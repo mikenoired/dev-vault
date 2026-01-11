@@ -21,6 +21,9 @@ pub enum Theme {
     System,
 }
 
+pub const MAX_FONT_SIZE: u16 = 128;
+pub const MIN_FONT_SIZE: u16 = 4;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UiConfig {
     pub theme: Theme,

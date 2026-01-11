@@ -99,7 +99,7 @@ pub async fn search(
     state: State<'_, AppState>,
     query: SearchQuery,
 ) -> Result<SearchResult, String> {
-    println!("[Command] search called with query: {:?}", query);
+    tracing::info!("[Command] search called with query: {:?}", query);
     
     let storage = state.storage.lock().await;
     let pool = storage.pool.clone();
@@ -107,13 +107,13 @@ pub async fn search(
 
     let search_engine = SearchEngine::new(pool);
     let result = search_engine.search(query).await.map_err(|e| {
-        println!("[Command] Search error: {}", e);
+        tracing::error!("[Command] Search error: {}", e);
         e.to_string()
     })?;
     
-    println!("[Command] Search result: {} items found", result.total);
+    tracing::info!("[Command] Search result: {} items found", result.total);
     if !result.items.is_empty() {
-        println!("[Command] First item: {}, highlights: {:?}", 
+        tracing::info!("[Command] First item: {}, highlights: {:?}", 
             result.items[0].item.title, 
             result.items[0].highlights.as_ref().map(|h| h.len())
         );
@@ -126,16 +126,16 @@ pub async fn search(
 pub async fn list_available_docs(
     state: State<'_, AppState>,
 ) -> Result<Vec<AvailableDocumentation>, String> {
-    tracing::info!("📋 [Command] list_available_docs called");
+    tracing::info!("[Command] list_available_docs called");
     let doc_manager = state.doc_manager.lock().await;
     
     match doc_manager.list_available_documentations().await {
         Ok(docs) => {
-            tracing::info!("✓ [Command] Returned {} available docs", docs.len());
+            tracing::info!("[Command] Returned {} available docs", docs.len());
             Ok(docs)
         }
         Err(e) => {
-            tracing::error!("✗ [Command] Failed to list available docs: {:?}", e);
+            tracing::error!("[Command] Failed to list available docs: {:?}", e);
             Err(e.to_string())
         }
     }
@@ -145,16 +145,16 @@ pub async fn list_available_docs(
 pub async fn list_installed_docs(
     state: State<'_, AppState>,
 ) -> Result<Vec<Documentation>, String> {
-    tracing::info!("📋 [Command] list_installed_docs called");
+    tracing::info!("[Command] list_installed_docs called");
     let doc_manager = state.doc_manager.lock().await;
     
     match doc_manager.list_installed_documentations().await {
         Ok(docs) => {
-            tracing::info!("✓ [Command] Returned {} installed docs", docs.len());
+            tracing::info!("[Command] Returned {} installed docs", docs.len());
             Ok(docs)
         }
         Err(e) => {
-            tracing::error!("✗ [Command] Failed to list installed docs: {:?}", e);
+            tracing::error!("[Command] Failed to list installed docs: {:?}", e);
             Err(e.to_string())
         }
     }
@@ -166,7 +166,7 @@ pub async fn install_documentation(
     state: State<'_, AppState>,
     name: String,
 ) -> Result<Documentation, String> {
-    tracing::info!("📥 [Command] install_documentation called for: {}", name);
+    tracing::info!("[Command] install_documentation called for: {}", name);
     
     let (progress_tx, mut progress_rx) = mpsc::channel::<ScrapeProgress>(100);
     
@@ -181,7 +181,7 @@ pub async fn install_documentation(
     
     match doc_manager.install_documentation_with_progress(&name, progress_tx).await {
         Ok(doc) => {
-            tracing::info!("✓ [Command] Documentation installed successfully: {}", doc.display_name);
+            tracing::info!("[Command] Documentation installed successfully: {}", doc.display_name);
             let _ = app.emit("doc-install-complete", &doc);
             Ok(doc)
         }

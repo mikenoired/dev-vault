@@ -954,17 +954,6 @@ mod tests {
         let scraper = UrlScraper::new(definition).expect("Failed to create scraper");
         let entries = scraper.scrape().await.expect("Failed to scrape");
 
-        println!("\n=== Scraped {} entries ===", entries.len());
-        for entry in &entries {
-            println!("  Path: {}", entry.path);
-            println!("  Title: {}", entry.title);
-            println!(
-                "  Content: {}...",
-                entry.content.chars().take(100).collect::<String>()
-            );
-            println!();
-        }
-
         assert!(!entries.is_empty(), "Should scrape at least 1 entry");
     }
 }

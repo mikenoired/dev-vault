@@ -3,6 +3,7 @@ pub mod search_engine;
 pub mod config_manager;
 pub mod documentation_manager;
 pub mod parsers;
+pub mod docs;
 
 pub use storage::Storage;
 pub use search_engine::SearchEngine;

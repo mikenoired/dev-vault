@@ -1,4 +1,5 @@
-import { Code2, FileText, Link2, Settings, StickyNote } from "lucide-react";
+import { Book, Code2, Link2, Settings, StickyNote } from "lucide-react";
+import { useTabsStore } from "../../../stores/tabsStore";
 import type { ItemType } from "../../../types";
 
 interface EmptyTabContentProps {
@@ -6,16 +7,17 @@ interface EmptyTabContentProps {
 }
 
 export const EmptyTabContent = ({ onCreateClick }: EmptyTabContentProps) => {
+  const openDocumentationTab = useTabsStore((state) => state.openDocumentationTab);
+
   const actions = [
     { type: "snippet" as ItemType, label: "Сниппет", icon: Code2 },
     { type: "note" as ItemType, label: "Заметка", icon: StickyNote },
-    { type: "doc" as ItemType, label: "Документ", icon: FileText },
     { type: "config" as ItemType, label: "Конфиг", icon: Settings },
     { type: "link" as ItemType, label: "Ссылка", icon: Link2 },
   ];
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8 bg-background gap-4">
+    <div className="h-full flex flex-col items-center justify-center p-8 bg-background gap-6">
       <span className="text-center text-muted-foreground">
         <span className="font-medium">Создайте новый элемент в хранилище</span>
         <br />
@@ -34,6 +36,21 @@ export const EmptyTabContent = ({ onCreateClick }: EmptyTabContentProps) => {
           </button>
         ))}
       </div>
+
+      <div className="flex items-center gap-4 w-full max-w-md">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs text-muted-foreground">или</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+
+      <button
+        type="button"
+        onClick={openDocumentationTab}
+        className="flex items-center gap-3 px-6 py-3 bg-accent hover:bg-accent/80 rounded-lg transition-colors"
+      >
+        <Book className="size-5 text-foreground" />
+        <span className="font-medium text-foreground">Открыть документацию</span>
+      </button>
     </div>
   );
 };

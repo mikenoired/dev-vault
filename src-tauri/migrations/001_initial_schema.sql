@@ -4,7 +4,7 @@
 -- Items table: хранение всех типов контента
 CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL CHECK(type IN ('snippet', 'doc', 'config', 'note', 'link')),
+    type TEXT NOT NULL CHECK(type IN ('snippet', 'config', 'note', 'link')),
     title TEXT NOT NULL,
     description TEXT,
     content TEXT NOT NULL,

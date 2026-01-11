@@ -1,0 +1,493 @@
+use crate::models::{
+    AvailableDocumentation, DocEntry, DocTreeNode, Documentation, ParsedDocEntry,
+};
+use anyhow::{Context, Result};
+use sqlx::{Pool, Row, Sqlite};
+use std::collections::HashMap;
+
+use super::parsers::{
+    get_available_documentations, get_definition_by_name, scrape_by_name,
+    scrape_documentation_with_progress, ProgressSender,
+};
+
+pub struct DocumentationManager {
+    pool: Pool<Sqlite>,
+}
+
+impl DocumentationManager {
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        Self { pool }
+    }
+
+    pub async fn list_available_documentations(&self) -> Result<Vec<AvailableDocumentation>> {
+        tracing::info!("Listing available documentations");
+        let available = get_available_documentations();
+        tracing::info!("Found {} available documentations", available.len());
+
+        for doc in &available {
+            tracing::debug!("  → {} ({})", doc.display_name, doc.name);
+        }
+
+        Ok(available)
+    }
+
+    pub async fn list_installed_documentations(&self) -> Result<Vec<Documentation>> {
+        tracing::info!("Listing installed documentations from database");
+        
+        let rows = sqlx::query(
+            "SELECT id, name, display_name, version, source_url, 
+                    installed_at, updated_at, metadata
+             FROM documentations
+             ORDER BY display_name",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to list installed documentations")?;
+
+        tracing::info!("Found {} installed documentation(s)", rows.len());
+
+        let mut docs = Vec::new();
+        for row in rows {
+            let metadata_str: String = row.get("metadata");
+            let metadata = serde_json::from_str(&metadata_str).ok();
+
+            let doc = Documentation {
+                id: row.get("id"),
+                name: row.get("name"),
+                display_name: row.get("display_name"),
+                version: row.get("version"),
+                source_url: row.get("source_url"),
+                installed_at: row.get("installed_at"),
+                updated_at: row.get("updated_at"),
+                metadata,
+            };
+            tracing::debug!("  → {} (ID: {}, v{})", doc.display_name, doc.id, doc.version);
+            docs.push(doc);
+        }
+
+        Ok(docs)
+    }
+
+    // pub async fn install_documentation(&self, name: &str) -> Result<Documentation> {
+    //     tracing::info!("=== Starting documentation installation for: {} ===", name);
+
+    //     let entries = scrape_by_name(name)
+    //         .await
+    //         .context("Failed to scrape documentation")?;
+
+    //     self.install_documentation_with_entries(name, entries).await
+    // }
+
+    pub async fn install_documentation_with_progress(
+        &self,
+        name: &str,
+        progress_tx: ProgressSender,
+    ) -> Result<Documentation> {
+        tracing::info!("=== Starting documentation installation for: {} ===", name);
+
+        let entries = scrape_documentation_with_progress(name, progress_tx)
+            .await
+            .context("Failed to scrape documentation")?;
+
+        self.install_documentation_with_entries(name, entries).await
+    }
+
+    async fn install_documentation_with_entries(
+        &self,
+        name: &str,
+        entries: Vec<ParsedDocEntry>,
+    ) -> Result<Documentation> {
+        let definition = get_definition_by_name(name)
+            .context(format!("Documentation not found: {}", name))?;
+
+        let now = chrono::Utc::now().timestamp();
+
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .context("Failed to start transaction")?;
+
+        tracing::info!("Step 1: Inserting documentation metadata");
+        let doc_id = sqlx::query(
+            "INSERT INTO documentations (name, display_name, version, source_url, installed_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             RETURNING id",
+        )
+        .bind(&definition.name)
+        .bind(&definition.display_name)
+        .bind(&definition.version)
+        .bind(&definition.base_url)
+        .bind(now)
+        .bind(now)
+        .fetch_one(&mut *tx)
+        .await?
+        .get::<i64, _>(0);
+
+        tracing::info!("Step 2: Inserting {} entries in bulk", entries.len());
+        
+        for chunk in entries.chunks(100) {
+            for entry in chunk {
+                sqlx::query(
+                    "INSERT INTO doc_entries (doc_id, path, title, content, entry_type, parent_path, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+                )
+                .bind(doc_id)
+                .bind(&entry.path)
+                .bind(&entry.title)
+                .bind(&entry.content)
+                .bind(&entry.entry_type)
+                .bind(&entry.parent_path)
+                .bind(now)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+
+        tx.commit().await.context("Failed to commit transaction")?;
+        tracing::info!("✓ All entries inserted and transaction committed");
+
+        self.get_documentation(doc_id).await
+    }
+
+    async fn insert_doc_entry(&self, doc_id: i64, entry: ParsedDocEntry) -> Result<()> {
+        let now = chrono::Utc::now().timestamp();
+
+        tracing::debug!(
+            "Inserting entry: doc_id={}, path='{}', title='{}', content_length={}",
+            doc_id, entry.path, entry.title, entry.content.len()
+        );
+
+        sqlx::query(
+            "INSERT INTO doc_entries (doc_id, path, title, content, entry_type, parent_path, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+        )
+        .bind(doc_id)
+        .bind(&entry.path)
+        .bind(&entry.title)
+        .bind(&entry.content)
+        .bind(&entry.entry_type)
+        .bind(&entry.parent_path)
+        .bind(now)
+        .execute(&self.pool)
+        .await
+        .context(format!("Failed to insert doc entry: {}", entry.title))?;
+
+        Ok(())
+    }
+
+    pub async fn update_documentation(&self, doc_id: i64) -> Result<Documentation> {
+        tracing::info!(
+            "=== Starting documentation update for doc_id: {} ===",
+            doc_id
+        );
+
+        let doc = self.get_documentation(doc_id).await?;
+
+        let entries = scrape_by_name(&doc.name)
+            .await
+            .context("Failed to scrape documentation")?;
+
+        self.update_documentation_with_entries(doc_id, entries).await
+    }
+
+    pub async fn update_documentation_with_progress(
+        &self,
+        doc_id: i64,
+        progress_tx: ProgressSender,
+    ) -> Result<Documentation> {
+        tracing::info!(
+            "=== Starting documentation update for doc_id: {} ===",
+            doc_id
+        );
+
+        let doc = self.get_documentation(doc_id).await?;
+
+        let entries = scrape_documentation_with_progress(&doc.name, progress_tx)
+            .await
+            .context("Failed to scrape documentation")?;
+
+        self.update_documentation_with_entries(doc_id, entries).await
+    }
+
+    async fn update_documentation_with_entries(
+        &self,
+        doc_id: i64,
+        entries: Vec<ParsedDocEntry>,
+    ) -> Result<Documentation> {
+        let doc = self.get_documentation(doc_id).await?;
+        let definition = get_definition_by_name(&doc.name)
+            .context(format!("Documentation not found: {}", doc.name))?;
+
+        let now = chrono::Utc::now().timestamp();
+        let mut tx = self.pool.begin().await?;
+
+        tracing::info!("Step 1: Deleting old entries");
+        sqlx::query("DELETE FROM doc_entries WHERE doc_id = ?1")
+            .bind(doc_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tracing::info!("Step 2: Inserting {} new entries", entries.len());
+        for chunk in entries.chunks(100) {
+            for entry in chunk {
+                sqlx::query(
+                    "INSERT INTO doc_entries (doc_id, path, title, content, entry_type, parent_path, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                )
+                .bind(doc_id)
+                .bind(&entry.path)
+                .bind(&entry.title)
+                .bind(&entry.content)
+                .bind(&entry.entry_type)
+                .bind(&entry.parent_path)
+                .bind(now)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+
+        tracing::info!("Step 3: Updating metadata");
+        sqlx::query(
+            "UPDATE documentations
+             SET version = ?1, updated_at = ?2
+             WHERE id = ?3",
+        )
+        .bind(&definition.version)
+        .bind(now)
+        .bind(doc_id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        tracing::info!("=== ✓ Documentation update complete ===");
+
+        self.get_documentation(doc_id).await
+    }
+
+    pub async fn delete_documentation(&self, doc_id: i64) -> Result<()> {
+        tracing::info!("=== Starting documentation deletion for doc_id: {} ===", doc_id);
+        
+        tracing::info!("Step 1: Fetching documentation info");
+        let doc = match self.get_documentation(doc_id).await {
+            Ok(d) => {
+                tracing::info!("✓ Found documentation: {} (id={})", d.display_name, d.id);
+                Some(d)
+            }
+            Err(e) => {
+                tracing::warn!("⚠ Could not fetch doc info: {:?}", e);
+                None
+            }
+        };
+
+        tracing::info!("Step 2: Deleting from database (will cascade to entries)");
+        let result = sqlx::query("DELETE FROM documentations WHERE id = ?1")
+            .bind(doc_id)
+            .execute(&self.pool)
+            .await
+            .context("Failed to delete documentation")?;
+
+        tracing::info!("✓ Deleted {} rows", result.rows_affected());
+        
+        if let Some(doc) = doc {
+            tracing::info!("=== ✓ Documentation '{}' deleted successfully ===", doc.display_name);
+        } else {
+            tracing::info!("=== ✓ Documentation (id={}) deleted ===", doc_id);
+        }
+
+        Ok(())
+    }
+
+    async fn get_documentation(&self, doc_id: i64) -> Result<Documentation> {
+        let row = sqlx::query(
+            "SELECT id, name, display_name, version, source_url, 
+                    installed_at, updated_at, metadata
+             FROM documentations WHERE id = ?1",
+        )
+        .bind(doc_id)
+        .fetch_one(&self.pool)
+        .await
+        .context("Documentation not found")?;
+
+        let metadata_str: String = row.get("metadata");
+        let metadata = serde_json::from_str(&metadata_str).ok();
+
+        Ok(Documentation {
+            id: row.get("id"),
+            name: row.get("name"),
+            display_name: row.get("display_name"),
+            version: row.get("version"),
+            source_url: row.get("source_url"),
+            installed_at: row.get("installed_at"),
+            updated_at: row.get("updated_at"),
+            metadata,
+        })
+    }
+
+    pub async fn get_doc_entries(&self, doc_id: i64, parent_path: Option<String>) -> Result<Vec<DocEntry>> {
+        let query = if parent_path.is_some() {
+            "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
+             FROM doc_entries 
+             WHERE doc_id = ?1 AND parent_path = ?2
+             ORDER BY title"
+        } else {
+            "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
+             FROM doc_entries 
+             WHERE doc_id = ?1 AND parent_path IS NULL
+             ORDER BY title"
+        };
+
+        let mut query_builder = sqlx::query(query).bind(doc_id);
+        
+        if let Some(ref parent) = parent_path {
+            query_builder = query_builder.bind(parent);
+        }
+
+        let rows = query_builder
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to get doc entries")?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            entries.push(DocEntry {
+                id: row.get("id"),
+                doc_id: row.get("doc_id"),
+                path: row.get("path"),
+                title: row.get("title"),
+                content: row.get("content"),
+                entry_type: row.get("entry_type"),
+                parent_path: row.get("parent_path"),
+                created_at: row.get("created_at"),
+            });
+        }
+
+        Ok(entries)
+    }
+
+    pub async fn get_doc_entry_by_path(&self, doc_id: i64, path: &str) -> Result<DocEntry> {
+        let row = sqlx::query(
+            "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
+             FROM doc_entries 
+             WHERE doc_id = ?1 AND path = ?2"
+        )
+        .bind(doc_id)
+        .bind(path)
+        .fetch_one(&self.pool)
+        .await
+        .context("Doc entry not found")?;
+
+        Ok(DocEntry {
+            id: row.get("id"),
+            doc_id: row.get("doc_id"),
+            path: row.get("path"),
+            title: row.get("title"),
+            content: row.get("content"),
+            entry_type: row.get("entry_type"),
+            parent_path: row.get("parent_path"),
+            created_at: row.get("created_at"),
+        })
+    }
+
+    pub async fn build_doc_tree(&self, doc_id: i64) -> Result<Vec<DocTreeNode>> {
+        tracing::info!("Building full doc tree for doc_id: {}", doc_id);
+        
+        let all_entries = sqlx::query(
+            "SELECT path, title, entry_type, parent_path, (content != '') as has_content
+             FROM doc_entries 
+             WHERE doc_id = ?1"
+        )
+        .bind(doc_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch doc entries")?;
+
+        tracing::debug!("Fetched {} entries for tree", all_entries.len());
+
+        let mut entries_by_parent: HashMap<Option<String>, Vec<DocTreeNode>> = HashMap::new();
+
+        for row in all_entries {
+            let path: String = row.get("path");
+            let title: String = row.get("title");
+            let entry_type: Option<String> = row.get("entry_type");
+            let parent_path: Option<String> = row.get("parent_path");
+            let has_content: bool = row.get("has_content");
+            
+            let node = DocTreeNode {
+                path,
+                title,
+                entry_type,
+                children: Vec::new(),
+                has_content,
+                has_children: false, // Будет обновлено позже
+            };
+            
+            entries_by_parent.entry(parent_path).or_default().push(node);
+        }
+
+        // Рекурсивная функция для сборки дерева
+        fn build_recursive(
+            parent_path: Option<String>, 
+            entries_by_parent: &mut HashMap<Option<String>, Vec<DocTreeNode>>
+        ) -> Vec<DocTreeNode> {
+            if let Some(mut children) = entries_by_parent.remove(&parent_path) {
+                children.sort_by(|a, b| a.title.cmp(&b.title));
+                
+                for child in &mut children {
+                    child.children = build_recursive(Some(child.path.clone()), entries_by_parent);
+                    child.has_children = !child.children.is_empty();
+                }
+                children
+            } else {
+                Vec::new()
+            }
+        }
+
+        let root_nodes = build_recursive(None, &mut entries_by_parent);
+        tracing::info!("✓ Full doc tree built");
+        
+        Ok(root_nodes)
+    }
+
+    pub async fn get_doc_tree_level(&self, doc_id: i64, parent_path: Option<String>) -> Result<Vec<DocTreeNode>> {
+        let rows = if let Some(ref parent) = parent_path {
+            sqlx::query(
+                "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
+                        EXISTS(SELECT 1 FROM doc_entries de2 WHERE de2.parent_path = doc_entries.path) as has_children
+                 FROM doc_entries 
+                 WHERE doc_id = ?1 AND parent_path = ?2
+                 ORDER BY title"
+            )
+            .bind(doc_id)
+            .bind(parent)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
+                        EXISTS(SELECT 1 FROM doc_entries de2 WHERE de2.parent_path = doc_entries.path) as has_children
+                 FROM doc_entries 
+                 WHERE doc_id = ?1 AND parent_path IS NULL
+                 ORDER BY title"
+            )
+            .bind(doc_id)
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        let mut nodes = Vec::new();
+        for row in rows {
+            nodes.push(DocTreeNode {
+                path: row.get("path"),
+                title: row.get("title"),
+                entry_type: row.get("entry_type"),
+                children: Vec::new(),
+                has_content: row.get("has_content"),
+                has_children: row.get("has_children"),
+            });
+        }
+
+        Ok(nodes)
+    }
+}
+

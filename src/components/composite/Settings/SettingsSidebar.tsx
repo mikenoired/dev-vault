@@ -1,7 +1,7 @@
-import { Monitor, Palette, Search, Settings } from "lucide-react";
+import { Book, Palette, Search, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type SettingsSection = "general" | "appearance" | "search";
+export type SettingsSection = "general" | "appearance" | "search" | "documentation";
 
 interface SidebarItemProps {
   id: SettingsSection;
@@ -16,8 +16,8 @@ const SidebarItem = ({ id, label, icon, isActive, onClick }: SidebarItemProps) =
     type="button"
     onClick={() => onClick(id)}
     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-      isActive 
-        ? "bg-accent text-accent-foreground" 
+      isActive
+        ? "bg-accent text-accent-foreground"
         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
     }`}
   >
@@ -55,7 +55,13 @@ export const SettingsSidebar = ({ activeSection, onSectionChange }: SettingsSide
         isActive={activeSection === "search"}
         onClick={onSectionChange}
       />
+      <SidebarItem
+        id="documentation"
+        label="Документация"
+        icon={<Book size={16} />}
+        isActive={activeSection === "documentation"}
+        onClick={onSectionChange}
+      />
     </div>
   );
 };
-

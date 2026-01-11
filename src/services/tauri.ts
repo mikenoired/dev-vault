@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  AvailableDocumentation,
   CreateItemDto,
+  DocEntry,
+  DocTreeNode,
+  Documentation,
   ItemWithTags,
   SearchQuery,
   SearchResult,
@@ -43,5 +47,37 @@ export const tauriService = {
 
   async search(query: SearchQuery): Promise<SearchResult> {
     return await invoke<SearchResult>("search", { query });
+  },
+
+  async listAvailableDocs(): Promise<AvailableDocumentation[]> {
+    return invoke<AvailableDocumentation[]>("list_available_docs");
+  },
+
+  async listInstalledDocs(): Promise<Documentation[]> {
+    return invoke<Documentation[]>("list_installed_docs");
+  },
+
+  async installDocumentation(name: string): Promise<Documentation> {
+    return invoke<Documentation>("install_documentation", { name });
+  },
+
+  async updateDocumentation(docId: number): Promise<Documentation> {
+    return invoke<Documentation>("update_documentation", { docId });
+  },
+
+  async deleteDocumentation(docId: number): Promise<void> {
+    return invoke<void>("delete_documentation", { docId });
+  },
+
+  async getDocEntries(docId: number, parentPath?: string): Promise<DocEntry[]> {
+    return invoke<DocEntry[]>("get_doc_entries", { docId, parentPath });
+  },
+
+  async getDocEntryByPath(docId: number, path: string): Promise<DocEntry> {
+    return invoke<DocEntry>("get_doc_entry_by_path", { docId, path });
+  },
+
+  async getDocTree(docId: number, parentPath?: string): Promise<DocTreeNode[]> {
+    return invoke<DocTreeNode[]>("get_doc_tree", { docId, parentPath });
   },
 };

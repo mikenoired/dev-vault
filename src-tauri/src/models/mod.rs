@@ -1,15 +1,18 @@
 pub mod config;
+pub mod documentation;
 
 use serde::{Deserialize, Serialize};
+
+pub use documentation::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ItemType {
     Snippet,
-    Doc,
     Config,
     Note,
     Link,
+    Documentation,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

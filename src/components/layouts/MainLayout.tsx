@@ -8,10 +8,12 @@ import { useTabsStore } from "../../stores/tabsStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { ItemType } from "../../types";
 import { CreateItemModal } from "../composite/CreateItemModal";
+import { DocBrowser } from "../composite/Documentation/DocBrowser";
 import { ItemDetail } from "../composite/ItemDetail";
 import { ItemsList } from "../composite/ItemsList";
 import { SearchBar } from "../composite/SearchBar";
 import { SettingsModal } from "../composite/Settings/SettingsModal";
+import { SidebarDocButton } from "../composite/SidebarDocButton";
 import { EmptyTabContent } from "../composite/Tabs/EmptyTabContent";
 import { TabManager } from "../composite/Tabs/TabManager";
 import { TypeFilter } from "../composite/TypeFilter";
@@ -176,6 +178,7 @@ export const MainLayout = () => {
             <div className="flex-1 overflow-hidden">
               <ItemsList />
             </div>
+            <SidebarDocButton />
           </div>
 
           {isSidebarVisible && (
@@ -192,6 +195,8 @@ export const MainLayout = () => {
           {activeTab ? (
             activeTab.type === "new" ? (
               <EmptyTabContent onCreateClick={handleCreateClick} />
+            ) : activeTab.type === "documentation" ? (
+              <DocBrowser />
             ) : (
               <ItemDetail
                 itemId={activeTab.itemId}

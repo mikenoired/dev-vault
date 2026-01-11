@@ -73,7 +73,6 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
       console.error("Failed to update item:", error);
     });
 
-    // Обновляем заголовок в табе
     updateTabTitle(selectedItem.id, editTitle);
     setEditing(false);
   };
@@ -86,10 +85,14 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
         return "markdown";
       case "note":
         return "markdown";
+      case "documentation":
+        return "markdown";
       default:
         return "markdown";
     }
   };
+
+  const isDocumentation = selectedItem.type === "documentation";
 
   const handleInteraction = () => {
     if (onInteraction) {
@@ -97,7 +100,7 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
     }
   };
 
-  if (isEditing) {
+  if (isEditing && !isDocumentation) {
     return (
       <div className="h-full flex flex-col p-6 overflow-hidden" onPointerDown={handleInteraction}>
         <div className="flex items-center justify-between gap-4 mb-6">
@@ -182,12 +185,16 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
             )}
           </div>
           <div className="flex gap-2 shrink-0">
-            <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-              Изменить
-            </Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>
-              Удалить
-            </Button>
+            {!isDocumentation && (
+              <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+                Изменить
+              </Button>
+            )}
+            {!isDocumentation && (
+              <Button variant="danger" size="sm" onClick={handleDelete}>
+                Удалить
+              </Button>
+            )}
           </div>
         </div>
 

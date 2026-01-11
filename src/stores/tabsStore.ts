@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { ItemType } from "../types";
 
-export type TabType = "item" | "new";
+export type TabType = "item" | "new" | "documentation";
 
 export interface Tab {
   id: string;
@@ -18,6 +18,7 @@ interface TabsState {
 
   openItemTab: (itemId: number, itemType: ItemType, title: string, pin?: boolean) => void;
   openNewTab: () => void;
+  openDocumentationTab: () => void;
   closeTab: (tabId: string) => void;
   selectTab: (tabId: string) => void;
   pinTab: (tabId: string) => void;
@@ -82,6 +83,28 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       type: "new",
       isPinned: true,
       title: "Новая вкладка",
+    };
+    set({
+      tabs: [...tabs, newTab],
+      activeTabId: newTabId,
+    });
+  },
+
+  openDocumentationTab: () => {
+    const { tabs } = get();
+    const existingDocTab = tabs.find((t) => t.type === "documentation");
+
+    if (existingDocTab) {
+      set({ activeTabId: existingDocTab.id });
+      return;
+    }
+
+    const newTabId = `documentation-${Date.now()}`;
+    const newTab: Tab = {
+      id: newTabId,
+      type: "documentation",
+      isPinned: true,
+      title: "Документация",
     };
     set({
       tabs: [...tabs, newTab],

@@ -1,4 +1,4 @@
-export type ItemType = "snippet" | "doc" | "config" | "note" | "link";
+export type ItemType = "snippet" | "config" | "note" | "link" | "documentation";
 
 export interface Item {
   id: number;
@@ -14,6 +14,45 @@ export interface Item {
 export interface Tag {
   id: number;
   name: string;
+}
+
+export interface Documentation {
+  id: number;
+  name: string;
+  displayName: string;
+  version: string;
+  sourceUrl: string;
+  installedAt: number;
+  updatedAt: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DocEntry {
+  id: number;
+  docId: number;
+  path: string;
+  title: string;
+  content: string;
+  entryType?: string;
+  parentPath?: string;
+  createdAt: number;
+}
+
+export interface AvailableDocumentation {
+  name: string;
+  displayName: string;
+  version: string;
+  description: string;
+  sourceUrl: string;
+}
+
+export interface DocTreeNode {
+  path: string;
+  title: string;
+  entryType?: string;
+  children: DocTreeNode[];
+  hasContent: boolean;
+  hasChildren: boolean;
 }
 
 export interface ItemWithTags extends Item {
@@ -66,4 +105,14 @@ export interface UiConfig {
 export interface AppConfig {
   search: SearchConfig;
   ui: UiConfig;
+}
+
+export type ScrapeStatus = "starting" | "scraping" | "processing" | "completed" | "failed";
+
+export interface ScrapeProgress {
+  currentPage: number;
+  maxPages: number;
+  currentPath: string;
+  entriesCount: number;
+  status: ScrapeStatus;
 }

@@ -1,6 +1,6 @@
 use crate::models::*;
 use anyhow::{Context, Result};
-use sqlx::{sqlite::SqlitePool, Pool, Row, Sqlite};
+use sqlx::{sqlite::SqlitePool, Pool, Row, Sqlite, Executor};
 use std::path::PathBuf;
 
 pub struct Storage {
@@ -31,13 +31,38 @@ impl Storage {
     }
 
     async fn run_migrations(pool: &Pool<Sqlite>) -> Result<()> {
-        let migration = include_str!("../../migrations/001_initial_schema.sql");
+        tracing::info!("🔄 Running database migrations...");
         
-        sqlx::query(migration)
-            .execute(pool)
+        let migration_001 = include_str!("../../migrations/001_initial_schema.sql");
+        let migration_002 = include_str!("../../migrations/002_documentation_system.sql");
+        let migration_003 = include_str!("../../migrations/003_fix_doc_triggers.sql");
+        let migration_004 = include_str!("../../migrations/004_fix_fts_for_docs.sql");
+        
+        tracing::info!("  → Running migration 001: initial_schema");
+        pool.execute(migration_001)
             .await
-            .context("Failed to run migrations")?;
+            .context("Failed to run migration 001")?;
+        tracing::info!("  ✓ Migration 001 complete");
 
+        tracing::info!("  → Running migration 002: documentation_system");
+        pool.execute(migration_002)
+            .await
+            .context("Failed to run migration 002")?;
+        tracing::info!("  ✓ Migration 002 complete");
+
+        tracing::info!("  → Running migration 003: fix_doc_triggers");
+        pool.execute(migration_003)
+            .await
+            .context("Failed to run migration 003")?;
+        tracing::info!("  ✓ Migration 003 complete");
+
+        tracing::info!("  → Running migration 004: fix_fts_for_docs");
+        pool.execute(migration_004)
+            .await
+            .context("Failed to run migration 004")?;
+        tracing::info!("  ✓ Migration 004 complete");
+
+        tracing::info!("✅ All migrations completed successfully");
         Ok(())
     }
 
@@ -46,10 +71,10 @@ impl Storage {
         let metadata_json = serde_json::to_string(&dto.metadata.unwrap_or(serde_json::json!({})))?;
         let item_type_str = match dto.item_type {
             ItemType::Snippet => "snippet",
-            ItemType::Doc => "doc",
             ItemType::Config => "config",
             ItemType::Note => "note",
             ItemType::Link => "link",
+            ItemType::Documentation => "documentation",
         };
 
         let result = sqlx::query(
@@ -102,7 +127,7 @@ impl Storage {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<String, _>("metadata").parse().ok(),
+                metadata: row.get::<Option<String>, _>("metadata").and_then(|s| serde_json::from_str(&s).ok()),
             };
 
             let tags = self.get_item_tags(id).await?;
@@ -337,7 +362,7 @@ impl Storage {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<String, _>("metadata").parse().ok(),
+                metadata: row.get::<Option<String>, _>("metadata").and_then(|s| serde_json::from_str(&s).ok()),
             };
 
             let tags = self.get_item_tags(item.id).await?;
@@ -404,10 +429,10 @@ impl Storage {
     fn parse_item_type(s: &str) -> Result<ItemType> {
         match s {
             "snippet" => Ok(ItemType::Snippet),
-            "doc" => Ok(ItemType::Doc),
             "config" => Ok(ItemType::Config),
             "note" => Ok(ItemType::Note),
             "link" => Ok(ItemType::Link),
+            "documentation" => Ok(ItemType::Documentation),
             _ => anyhow::bail!("Unknown item type: {}", s),
         }
     }

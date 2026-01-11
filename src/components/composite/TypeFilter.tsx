@@ -1,5 +1,5 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Code, FileText, Link as LinkIcon, Settings, StickyNote } from "lucide-react";
+import { Book, Code, FileText, Link as LinkIcon, Settings, StickyNote } from "lucide-react";
 import { useItemsStore } from "../../stores/itemsStore";
 import type { ItemType } from "../../types";
 
@@ -8,10 +8,10 @@ const typeConfig: Record<
   { icon: React.ComponentType<{ className?: string }>; label: string }
 > = {
   snippet: { icon: Code, label: "Сниппеты" },
-  doc: { icon: FileText, label: "Документы" },
   config: { icon: Settings, label: "Конфиги" },
   note: { icon: StickyNote, label: "Заметки" },
   link: { icon: LinkIcon, label: "Ссылки" },
+  documentation: { icon: Book, label: "Документация" },
 };
 
 export const TypeFilter = () => {

@@ -11,6 +11,7 @@ import { SidebarDocButton } from "@/components/composite/SidebarDocButton";
 import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
 import { TabManager } from "@/components/composite/Tabs/TabManager";
 import { TypeFilter } from "@/components/composite/TypeFilter";
+import { cn } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -131,7 +132,10 @@ export const MainLayout = () => {
         className="border-b border-border bg-card h-10 flex items-center shrink-0 select-none"
       >
         <div
-          className={`h-full flex items-center border-r border-border pl-[72px] pr-2 overflow-hidden ${!isResizingState ? "transition-all duration-300 ease-in-out" : ""}`}
+          className={cn(
+            "h-full flex items-center border-r border-border pl-[72px] pr-2 overflow-hidden",
+            !isResizingState ? "transition-all duration-300 ease-in-out" : "",
+          )}
           style={{ width: isSidebarVisible ? sidebarWidth : 125 }}
         >
           <button
@@ -158,7 +162,10 @@ export const MainLayout = () => {
 
       <div className="flex-1 flex overflow-hidden relative">
         <aside
-          className={`border-r border-border flex flex-col shrink-0 relative overflow-hidden ${!isResizingState ? "transition-all duration-300 ease-in-out" : ""}`}
+          className={cn(
+            "border-r border-border flex flex-col shrink-0 relative overflow-hidden",
+            !isResizingState ? "transition-all duration-300 ease-in-out" : "",
+          )}
           style={{
             width: isSidebarVisible ? sidebarWidth : 0,
             opacity: isSidebarVisible ? 1 : 0,

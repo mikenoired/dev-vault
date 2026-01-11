@@ -1,4 +1,4 @@
-import { Select } from "@/components/ui/Select";
+import { Select } from "@/components/ui";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Theme } from "@/types";
 

@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import { cn } from "@/components/ui";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "secondary" | "outline";
@@ -14,7 +15,11 @@ export const Badge = ({ variant = "default", className = "", children, ...props 
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${variants[variant]} ${className}`}
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
+        variants[variant],
+        className,
+      )}
       {...props}
     >
       {children}

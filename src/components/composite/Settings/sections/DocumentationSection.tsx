@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { toast } from "sonner";
+import { Button, Card } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
 
-export function DocumentationSection() {
+export const DocumentationSection = () => {
   const {
     availableDocs,
     installedDocs,
@@ -22,43 +22,28 @@ export function DocumentationSection() {
   const [updatingDocId, setUpdatingDocId] = useState<number | null>(null);
 
   useEffect(() => {
-    console.log("[UI] DocumentationSection mounted, loading docs...");
     loadAvailableDocs();
     loadInstalledDocs();
   }, [loadAvailableDocs, loadInstalledDocs]);
 
   const handleInstall = async (name: string) => {
-    console.log(`[UI] User clicked install for: ${name}`);
     try {
-      console.log(`[UI] Calling installDoc...`);
       await installDoc(name);
-      console.log(`[UI] ✓ Installation completed successfully`);
       await loadInstalledDocs();
-      console.log(`[UI] ✓ Installed docs list reloaded`);
-    } catch (err) {
-      console.error("[UI] ✗ Installation failed:", err);
+    } catch {
+      toast.error("Failed to install documentation");
     }
   };
 
   const handleUpdate = async (docId: number) => {
-    console.log(`[UI] User clicked update for doc_id: ${docId}`);
     setUpdatingDocId(docId);
-    try {
-      console.log(`[UI] Calling updateDoc...`);
-      await updateDoc(docId);
-      console.log(`[UI] ✓ Update completed successfully`);
-      await loadInstalledDocs();
-    } catch (err) {
-      console.error("[UI] ✗ Update failed:", err);
-    } finally {
-      setUpdatingDocId(null);
-    }
+    await updateDoc(docId);
+    await loadInstalledDocs();
+    setUpdatingDocId(null);
   };
 
   const handleDelete = async (docId: number) => {
-    console.log(`[UI] User clicked delete for doc_id: ${docId}`);
     await deleteDoc(docId);
-    console.log(`[UI] ✓ Deletion completed successfully`);
   };
 
   const installedNames = new Set(installedDocs.map((doc) => doc.name));
@@ -192,4 +177,4 @@ export function DocumentationSection() {
       </div>
     </div>
   );
-}
+};

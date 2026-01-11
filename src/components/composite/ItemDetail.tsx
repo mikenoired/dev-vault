@@ -12,10 +12,7 @@ interface ItemDetailProps {
 
 export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
   const items = useItemsStore((state) => state.items);
-  const updateItem = useItemsStore((state) => state.updateItem);
-  const deleteItem = useItemsStore((state) => state.deleteItem);
-  const isEditing = useItemsStore((state) => state.isEditing);
-  const setEditing = useItemsStore((state) => state.setEditing);
+  const { updateItem, deleteItem, isEditing, setEditing } = useItemsStore((state) => state);
 
   const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
 

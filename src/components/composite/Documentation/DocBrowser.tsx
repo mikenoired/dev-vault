@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { DocTreeView } from "@/components/composite/Documentation/DocTreeView";
 import { DocViewer } from "@/components/composite/Documentation/DocViewer";
-import { Select } from "@/components/ui/Select";
+import { Select } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
 
-export function DocBrowser() {
+export const DocBrowser = () => {
   const { installedDocs, selectedDoc, selectedEntry, loadInstalledDocs, selectDoc } =
     useDocsStore();
 
@@ -60,4 +60,4 @@ export function DocBrowser() {
       </div>
     </div>
   );
-}
+};

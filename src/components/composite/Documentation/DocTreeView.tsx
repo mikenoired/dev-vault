@@ -12,7 +12,7 @@ interface TreeNodeProps {
   level: number;
 }
 
-function TreeNode({ node, docId, level }: TreeNodeProps) {
+const TreeNode = ({ node, docId, level }: TreeNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const { loadDocEntry, loadDocChildren } = useDocsStore();
@@ -72,9 +72,9 @@ function TreeNode({ node, docId, level }: TreeNodeProps) {
       )}
     </div>
   );
-}
+};
 
-export function DocTreeView({ docId }: DocTreeViewProps) {
+export const DocTreeView = ({ docId }: DocTreeViewProps) => {
   const { docTree, isLoading, loadDocTree } = useDocsStore();
 
   useEffect(() => {
@@ -96,4 +96,4 @@ export function DocTreeView({ docId }: DocTreeViewProps) {
       ))}
     </div>
   );
-}
+};

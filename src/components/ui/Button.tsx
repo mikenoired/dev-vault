@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "@/components/ui";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger";
@@ -32,7 +33,7 @@ export const Button = ({
   };
 
   return (
-    <button className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
+    <button className={cn(baseStyles, variants[variant], sizes[size], className)} {...props}>
       {children}
     </button>
   );

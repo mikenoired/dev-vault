@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Badge } from "@/components/ui";
+import { Badge, cn } from "@/components/ui";
 import type { ItemWithTags } from "@/types";
 
 interface ItemCardProps {
@@ -52,9 +52,10 @@ export const ItemCard = ({
       ref={cardRef}
       role="button"
       tabIndex={0}
-      className={`p-4 border-b border-border cursor-pointer transition-colors hover:bg-accent/50 ${
-        isSelected ? "bg-accent" : ""
-      }`}
+      className={cn(
+        "p-4 border-b border-border cursor-pointer transition-colors hover:bg-accent/50",
+        isSelected ? "bg-accent" : "",
+      )}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onKeyDown={(e) => {

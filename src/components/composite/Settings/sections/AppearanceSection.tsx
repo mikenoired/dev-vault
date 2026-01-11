@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui";
 import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@/constants";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { UiConfig } from "@/types";

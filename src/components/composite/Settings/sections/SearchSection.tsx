@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 export const SearchSection = () => {

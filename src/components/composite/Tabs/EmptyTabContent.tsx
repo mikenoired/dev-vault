@@ -6,15 +6,21 @@ interface EmptyTabContentProps {
   onCreateClick: (type: ItemType) => void;
 }
 
+interface Action {
+  type: ItemType;
+  label: string;
+  icon: React.ElementType;
+}
+
+const actions: Action[] = [
+  { type: "snippet", label: "Сниппет", icon: Code2 },
+  { type: "note", label: "Заметка", icon: StickyNote },
+  { type: "config", label: "Конфиг", icon: Settings },
+  { type: "link", label: "Ссылка", icon: Link2 },
+];
+
 export const EmptyTabContent = ({ onCreateClick }: EmptyTabContentProps) => {
   const openDocumentationTab = useTabsStore((state) => state.openDocumentationTab);
-
-  const actions = [
-    { type: "snippet" as ItemType, label: "Сниппет", icon: Code2 },
-    { type: "note" as ItemType, label: "Заметка", icon: StickyNote },
-    { type: "config" as ItemType, label: "Конфиг", icon: Settings },
-    { type: "link" as ItemType, label: "Ссылка", icon: Link2 },
-  ];
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 bg-background gap-6">

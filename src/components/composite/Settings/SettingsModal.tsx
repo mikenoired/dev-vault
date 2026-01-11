@@ -3,10 +3,12 @@ import {
   type SettingsSection,
   SettingsSidebar,
 } from "@/components/composite/Settings/SettingsSidebar";
-import { AppearanceSection } from "@/components/composite/Settings/sections/AppearanceSection";
-import { DocumentationSection } from "@/components/composite/Settings/sections/DocumentationSection";
-import { GeneralSection } from "@/components/composite/Settings/sections/GeneralSection";
-import { SearchSection } from "@/components/composite/Settings/sections/SearchSection";
+import {
+  AppearanceSection,
+  DocumentationSection,
+  GeneralSection,
+  SearchSection,
+} from "@/components/composite/Settings/sections";
 import { Modal } from "@/components/ui/Modal";
 import { useSettingsStore } from "@/stores/settingsStore";
 

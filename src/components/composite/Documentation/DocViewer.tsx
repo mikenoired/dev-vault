@@ -4,8 +4,7 @@ interface DocViewerProps {
   entry: DocEntry;
 }
 
-export function DocViewer({ entry }: DocViewerProps) {
-  console.log(entry.content);
+export const DocViewer = ({ entry }: DocViewerProps) => {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-6">
@@ -47,4 +46,4 @@ export function DocViewer({ entry }: DocViewerProps) {
       </div>
     </div>
   );
-}
+};

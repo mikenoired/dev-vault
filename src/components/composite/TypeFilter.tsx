@@ -1,12 +1,23 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Book, Code, FileText, Link as LinkIcon, Settings, StickyNote } from "lucide-react";
+import {
+  Book,
+  Code,
+  FileText,
+  Link as LinkIcon,
+  type LucideIcon,
+  Settings,
+  StickyNote,
+} from "lucide-react";
+import { cn } from "@/components/ui";
 import { useItemsStore } from "@/stores/itemsStore";
 import type { ItemType } from "@/types";
 
-const typeConfig: Record<
-  ItemType,
-  { icon: React.ComponentType<{ className?: string }>; label: string }
-> = {
+interface TypeItem {
+  icon: LucideIcon;
+  label: string;
+}
+
+const typeConfig: Record<ItemType, TypeItem> = {
   snippet: { icon: Code, label: "Сниппеты" },
   config: { icon: Settings, label: "Конфиги" },
   note: { icon: StickyNote, label: "Заметки" },
@@ -31,11 +42,12 @@ export const TypeFilter = () => {
             <button
               type="button"
               onClick={() => filterByType(null)}
-              className={`p-2 rounded-md transition-colors cursor-pointer ${
+              className={cn(
+                "p-2 rounded-md transition-colors cursor-pointer",
                 selectedType === null
                   ? "bg-primary text-primary-foreground"
-                  : "hover:bg-accent text-muted-foreground"
-              }`}
+                  : "hover:bg-accent text-muted-foreground",
+              )}
             >
               <FileText className="size-4" />
             </button>
@@ -63,13 +75,14 @@ export const TypeFilter = () => {
                   type="button"
                   onClick={() => !isDisabled && filterByType(type)}
                   disabled={isDisabled}
-                  className={`p-2 rounded-md transition-colors cursor-pointer ${
+                  className={cn(
+                    "p-2 rounded-md transition-colors cursor-pointer",
                     selectedType === type
                       ? "bg-primary text-primary-foreground"
                       : isDisabled
                         ? "text-muted-foreground/30 cursor-not-allowed"
-                        : "hover:bg-accent text-muted-foreground"
-                  }`}
+                        : "hover:bg-accent text-muted-foreground",
+                  )}
                 >
                   <Icon className="size-4" />
                 </button>

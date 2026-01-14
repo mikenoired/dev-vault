@@ -41,4 +41,5 @@ url = "2.5"
 regex = "1.11"
 html2md = "0.2.15"
 ego-tree = "0.10.0"
+tauri-plugin-shell = "2"
 

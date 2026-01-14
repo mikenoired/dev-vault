@@ -1,12 +1,12 @@
 use super::url_scraper::{DocDefinition, ProgressSender, UrlScraper};
+use crate::domain::docs::mdn::mdn_javascript_definition;
+use crate::domain::docs::nodejs::nodejs_definition;
+use crate::domain::docs::python::python_definition;
+use crate::domain::docs::react::react_definition;
+use crate::domain::docs::rust::rust_definition;
+use crate::domain::docs::typescript::typescript_definition;
 use crate::models::ParsedDocEntry;
 use anyhow::Result;
-use crate::domain::docs::python::python_definition;
-use crate::domain::docs::rust::rust_definition;
-use crate::domain::docs::react::react_definition;
-use crate::domain::docs::typescript::typescript_definition;
-use crate::domain::docs::nodejs::nodejs_definition;
-use crate::domain::docs::mdn::mdn_javascript_definition;
 
 pub fn get_doc_definitions() -> Vec<DocDefinition> {
     vec![

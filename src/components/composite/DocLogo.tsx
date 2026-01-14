@@ -7,7 +7,7 @@ const logos = {
   react: React,
   typescript: Typescript,
   nodejs: Nodejs,
-  mdn: Mdn,
+  "mdn-javascript": Mdn,
 } as const;
 
 export default function DocLogo({ name }: { name: DocName }) {

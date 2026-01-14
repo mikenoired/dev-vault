@@ -1,6 +1,4 @@
-use crate::models::{
-    AvailableDocumentation, DocEntry, DocTreeNode, Documentation, ParsedDocEntry,
-};
+use crate::models::{AvailableDocumentation, DocEntry, DocTreeNode, Documentation, ParsedDocEntry};
 use anyhow::{Context, Result};
 use sqlx::{Pool, Row, Sqlite};
 use std::collections::HashMap;
@@ -33,7 +31,7 @@ impl DocumentationManager {
 
     pub async fn list_installed_documentations(&self) -> Result<Vec<Documentation>> {
         tracing::info!("Listing installed documentations from database");
-        
+
         let rows = sqlx::query(
             "SELECT id, name, display_name, version, source_url, 
                     installed_at, updated_at, metadata
@@ -61,22 +59,17 @@ impl DocumentationManager {
                 updated_at: row.get("updated_at"),
                 metadata,
             };
-            tracing::debug!("  → {} (ID: {}, v{})", doc.display_name, doc.id, doc.version);
+            tracing::debug!(
+                "  → {} (ID: {}, v{})",
+                doc.display_name,
+                doc.id,
+                doc.version
+            );
             docs.push(doc);
         }
 
         Ok(docs)
     }
-
-    // pub async fn install_documentation(&self, name: &str) -> Result<Documentation> {
-    //     tracing::info!("=== Starting documentation installation for: {} ===", name);
-
-    //     let entries = scrape_by_name(name)
-    //         .await
-    //         .context("Failed to scrape documentation")?;
-
-    //     self.install_documentation_with_entries(name, entries).await
-    // }
 
     pub async fn install_documentation_with_progress(
         &self,
@@ -97,8 +90,8 @@ impl DocumentationManager {
         name: &str,
         entries: Vec<ParsedDocEntry>,
     ) -> Result<Documentation> {
-        let definition = get_definition_by_name(name)
-            .context(format!("Documentation not found: {}", name))?;
+        let definition =
+            get_definition_by_name(name).context(format!("Documentation not found: {}", name))?;
 
         let now = chrono::Utc::now().timestamp();
 
@@ -125,7 +118,7 @@ impl DocumentationManager {
         .get::<i64, _>(0);
 
         tracing::info!("Step 2: Inserting {} entries in bulk", entries.len());
-        
+
         for chunk in entries.chunks(100) {
             for entry in chunk {
                 sqlx::query(
@@ -155,7 +148,10 @@ impl DocumentationManager {
 
         tracing::debug!(
             "Inserting entry: doc_id={}, path='{}', title='{}', content_length={}",
-            doc_id, entry.path, entry.title, entry.content.len()
+            doc_id,
+            entry.path,
+            entry.title,
+            entry.content.len()
         );
 
         sqlx::query(
@@ -188,7 +184,8 @@ impl DocumentationManager {
             .await
             .context("Failed to scrape documentation")?;
 
-        self.update_documentation_with_entries(doc_id, entries).await
+        self.update_documentation_with_entries(doc_id, entries)
+            .await
     }
 
     pub async fn update_documentation_with_progress(
@@ -207,7 +204,8 @@ impl DocumentationManager {
             .await
             .context("Failed to scrape documentation")?;
 
-        self.update_documentation_with_entries(doc_id, entries).await
+        self.update_documentation_with_entries(doc_id, entries)
+            .await
     }
 
     async fn update_documentation_with_entries(
@@ -266,8 +264,11 @@ impl DocumentationManager {
     }
 
     pub async fn delete_documentation(&self, doc_id: i64) -> Result<()> {
-        tracing::info!("=== Starting documentation deletion for doc_id: {} ===", doc_id);
-        
+        tracing::info!(
+            "=== Starting documentation deletion for doc_id: {} ===",
+            doc_id
+        );
+
         tracing::info!("Step 1: Fetching documentation info");
         let doc = match self.get_documentation(doc_id).await {
             Ok(d) => {
@@ -288,9 +289,12 @@ impl DocumentationManager {
             .context("Failed to delete documentation")?;
 
         tracing::info!("✓ Deleted {} rows", result.rows_affected());
-        
+
         if let Some(doc) = doc {
-            tracing::info!("=== ✓ Documentation '{}' deleted successfully ===", doc.display_name);
+            tracing::info!(
+                "=== ✓ Documentation '{}' deleted successfully ===",
+                doc.display_name
+            );
         } else {
             tracing::info!("=== ✓ Documentation (id={}) deleted ===", doc_id);
         }
@@ -324,7 +328,11 @@ impl DocumentationManager {
         })
     }
 
-    pub async fn get_doc_entries(&self, doc_id: i64, parent_path: Option<String>) -> Result<Vec<DocEntry>> {
+    pub async fn get_doc_entries(
+        &self,
+        doc_id: i64,
+        parent_path: Option<String>,
+    ) -> Result<Vec<DocEntry>> {
         let query = if parent_path.is_some() {
             "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
              FROM doc_entries 
@@ -338,7 +346,7 @@ impl DocumentationManager {
         };
 
         let mut query_builder = sqlx::query(query).bind(doc_id);
-        
+
         if let Some(ref parent) = parent_path {
             query_builder = query_builder.bind(parent);
         }
@@ -369,7 +377,7 @@ impl DocumentationManager {
         let row = sqlx::query(
             "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
              FROM doc_entries 
-             WHERE doc_id = ?1 AND path = ?2"
+             WHERE doc_id = ?1 AND path = ?2",
         )
         .bind(doc_id)
         .bind(path)
@@ -391,11 +399,11 @@ impl DocumentationManager {
 
     pub async fn build_doc_tree(&self, doc_id: i64) -> Result<Vec<DocTreeNode>> {
         tracing::info!("Building full doc tree for doc_id: {}", doc_id);
-        
+
         let all_entries = sqlx::query(
             "SELECT path, title, entry_type, parent_path, (content != '') as has_content
              FROM doc_entries 
-             WHERE doc_id = ?1"
+             WHERE doc_id = ?1",
         )
         .bind(doc_id)
         .fetch_all(&self.pool)
@@ -412,7 +420,7 @@ impl DocumentationManager {
             let entry_type: Option<String> = row.get("entry_type");
             let parent_path: Option<String> = row.get("parent_path");
             let has_content: bool = row.get("has_content");
-            
+
             let node = DocTreeNode {
                 path,
                 title,
@@ -421,18 +429,18 @@ impl DocumentationManager {
                 has_content,
                 has_children: false, // Будет обновлено позже
             };
-            
+
             entries_by_parent.entry(parent_path).or_default().push(node);
         }
 
         // Рекурсивная функция для сборки дерева
         fn build_recursive(
-            parent_path: Option<String>, 
-            entries_by_parent: &mut HashMap<Option<String>, Vec<DocTreeNode>>
+            parent_path: Option<String>,
+            entries_by_parent: &mut HashMap<Option<String>, Vec<DocTreeNode>>,
         ) -> Vec<DocTreeNode> {
             if let Some(mut children) = entries_by_parent.remove(&parent_path) {
                 children.sort_by(|a, b| a.title.cmp(&b.title));
-                
+
                 for child in &mut children {
                     child.children = build_recursive(Some(child.path.clone()), entries_by_parent);
                     child.has_children = !child.children.is_empty();
@@ -445,11 +453,15 @@ impl DocumentationManager {
 
         let root_nodes = build_recursive(None, &mut entries_by_parent);
         tracing::info!("✓ Full doc tree built");
-        
+
         Ok(root_nodes)
     }
 
-    pub async fn get_doc_tree_level(&self, doc_id: i64, parent_path: Option<String>) -> Result<Vec<DocTreeNode>> {
+    pub async fn get_doc_tree_level(
+        &self,
+        doc_id: i64,
+        parent_path: Option<String>,
+    ) -> Result<Vec<DocTreeNode>> {
         let rows = if let Some(ref parent) = parent_path {
             sqlx::query(
                 "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
@@ -490,4 +502,3 @@ impl DocumentationManager {
         Ok(nodes)
     }
 }
-

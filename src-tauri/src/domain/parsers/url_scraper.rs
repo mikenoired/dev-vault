@@ -1,8 +1,10 @@
 use crate::models::ParsedDocEntry;
 use anyhow::{Context, Result};
+use ego_tree::NodeRef;
+use html2md::parse_html;
 use regex::Regex;
 use reqwest::Client;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Node, Selector};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
@@ -389,23 +391,59 @@ impl UrlScraper {
         "Untitled".to_string()
     }
 
-    fn extract_content(&self, document: &Html) -> String {
-        let selectors: Vec<&str> = self.definition.selectors.content.split(", ").collect();
+    fn process_node_to_markdown(node: NodeRef<'_, Node>, selectors: &ContentSelectors) -> String {
+        if let Some(element) = ElementRef::wrap(node) {
+            // Если это список определений, обрабатываем его по-своему
+            if element.value().name() == "dl" {
+                let mut md_string = String::new();
+                let dt_selector = Selector::parse("dt").unwrap();
+                let dd_selector = Selector::parse("dd").unwrap();
 
-        for selector_str in selectors {
-            if let Ok(selector) = Selector::parse(selector_str.trim()) {
-                if let Some(element) = document.select(&selector).next() {
-                    let html = element.inner_html();
-                    let text: String = element.text().collect::<Vec<_>>().join(" ");
-                    let cleaned = Regex::new(r"\s+")
-                        .map(|re| re.replace_all(&text, " ").to_string())
-                        .unwrap_or(text);
-
-                    if !cleaned.trim().is_empty() {
-                        return cleaned.trim().to_string();
+                // Проходимся по всем дочерним элементам <dl>
+                for child_node in element.children() {
+                    if let Some(child_element) = ElementRef::wrap(child_node) {
+                        if child_element.select(&dt_selector).next().is_some() {
+                            // Это <dt> (термин)
+                            let term = child_element.text().collect::<String>();
+                            md_string.push_str(&format!("\n**{}**\n", term.trim()));
+                        } else if child_element.select(&dd_selector).next().is_some() {
+                            // Это <dd> (описание)
+                            let description_html = child_element.inner_html();
+                            // Конвертируем HTML описания в Markdown
+                            let description_md = html2md::parse_html(&description_html);
+                            md_string.push_str(&format!(": {}\n", description_md.trim()));
+                        }
                     }
                 }
+                return md_string;
             }
+        }
+
+        // Для всех остальных узлов используем стандартную логику
+        // (Возможно, придется извлечь HTML и передать в html2md)
+        if let Some(element) = ElementRef::wrap(node) {
+            return html2md::parse_html(&element.inner_html());
+        } else if let Node::Text(text) = node.value() {
+            return text.text.to_string();
+        }
+
+        String::new()
+    }
+
+    fn extract_content(&self, document: &Html) -> String {
+        let content_selector = Selector::parse(&self.definition.selectors.content).unwrap();
+
+        if let Some(main_content) = document.select(&content_selector).next() {
+            let mut result_md = String::new();
+            // Итерируемся по дочерним узлам основного контента
+            for node in main_content.children() {
+                result_md.push_str(&UrlScraper::process_node_to_markdown(
+                    node,
+                    &self.definition.selectors,
+                ));
+                result_md.push_str("\n\n"); // Добавляем отступ между блоками
+            }
+            return result_md.trim().to_string();
         }
 
         String::new()

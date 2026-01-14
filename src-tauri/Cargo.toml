@@ -39,4 +39,6 @@ pulldown-cmark = "0.12"
 async-trait = "0.1"
 url = "2.5"
 regex = "1.11"
+html2md = "0.2.15"
+ego-tree = "0.10.0"
 

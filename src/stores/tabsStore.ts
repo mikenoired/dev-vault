@@ -1,13 +1,15 @@
 import { create } from "zustand";
 import type { ItemType } from "@/types";
 
-export type TabType = "item" | "new" | "documentation";
+export type TabType = "item" | "new" | "documentation" | "docEntry";
 
 export interface Tab {
   id: string;
   type: TabType;
   itemId?: number;
   itemType?: ItemType;
+  docId?: number;
+  docPath?: string;
   isPinned: boolean;
   title: string;
 }
@@ -19,6 +21,7 @@ interface TabsState {
   openItemTab: (itemId: number, itemType: ItemType, title: string, pin?: boolean) => void;
   openNewTab: () => void;
   openDocumentationTab: () => void;
+  openDocEntryTab: (docId: number, docPath: string, title: string) => void;
   closeTab: (tabId: string) => void;
   selectTab: (tabId: string) => void;
   pinTab: (tabId: string) => void;
@@ -92,10 +95,11 @@ export const useTabsStore = create<TabsState>((set, get) => ({
 
   openDocumentationTab: () => {
     const { tabs } = get();
-    const existingDocTab = tabs.find((t) => t.type === "documentation");
 
-    if (existingDocTab) {
-      set({ activeTabId: existingDocTab.id });
+    const existingTabIndex = tabs.findIndex((t) => t.type === "documentation");
+    if (existingTabIndex !== -1) {
+      const existingTab = tabs[existingTabIndex];
+      set({ activeTabId: existingTab.id });
       return;
     }
 
@@ -103,13 +107,51 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     const newTab: Tab = {
       id: newTabId,
       type: "documentation",
-      isPinned: true,
+      isPinned: false,
       title: "Документация",
     };
     set({
       tabs: [...tabs, newTab],
       activeTabId: newTabId,
     });
+  },
+
+  openDocEntryTab: (docId, docPath, title) => {
+    const { tabs } = get();
+
+    // Проверяем, есть ли уже вкладка с этой записью документации
+    const existingTabIndex = tabs.findIndex(
+      (t) => t.type === "docEntry" && t.docId === docId && t.docPath === docPath,
+    );
+    if (existingTabIndex !== -1) {
+      const existingTab = tabs[existingTabIndex];
+      set({ activeTabId: existingTab.id });
+      return;
+    }
+
+    // Ищем незакрепленную вкладку для замены
+    const previewTabIndex = tabs.findIndex((t) => t.type === "docEntry" && !t.isPinned);
+
+    const newTabId = `docEntry-${docId}-${docPath}-${Date.now()}`;
+    const newTab: Tab = {
+      id: newTabId,
+      type: "docEntry",
+      docId,
+      docPath,
+      isPinned: false,
+      title,
+    };
+
+    if (previewTabIndex !== -1) {
+      const newTabs = [...tabs];
+      newTabs[previewTabIndex] = newTab;
+      set({ tabs: newTabs, activeTabId: newTabId });
+    } else {
+      set({
+        tabs: [...tabs, newTab],
+        activeTabId: newTabId,
+      });
+    }
   },
 
   closeTab: (tabId) => {

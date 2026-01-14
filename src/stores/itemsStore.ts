@@ -29,7 +29,6 @@ interface ItemsState {
     },
   ) => Promise<void>;
   refreshItems: () => Promise<void>;
-  getItemCountByType: (type: ItemType) => number;
   createItem: (data: {
     type: ItemType;
     title: string;
@@ -92,10 +91,6 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
-  },
-
-  getItemCountByType: (type: ItemType) => {
-    return get().items.filter((item) => item.type === type).length;
   },
 
   selectItem: (item) => {

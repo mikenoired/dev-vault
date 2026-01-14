@@ -260,3 +260,6 @@ export const useDocsStore = create<DocsState>((set, get) => {
     },
   };
 });
+
+// Загружаем список установленных документаций при инициализации
+useDocsStore.getState().loadInstalledDocs();

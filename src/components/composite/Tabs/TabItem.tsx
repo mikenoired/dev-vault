@@ -1,9 +1,9 @@
-import { Code2, Link2, Plus, Settings, StickyNote, X } from "lucide-react";
+import { BookOpen, Code2, Link2, Plus, Settings, StickyNote, X } from "lucide-react";
 import { cn } from "@/components/ui";
 import { type Tab, useTabsStore } from "@/stores/tabsStore";
 import type { ItemType } from "@/types";
 
-const getIcon = (type: ItemType | "new") => {
+const getIcon = (type: ItemType | "new" | "documentation" | "docEntry") => {
   switch (type) {
     case "snippet":
       return <Code2 className="size-3.5" />;
@@ -15,6 +15,9 @@ const getIcon = (type: ItemType | "new") => {
       return <Link2 className="size-3.5" />;
     case "new":
       return <Plus className="size-3.5" />;
+    case "documentation":
+    case "docEntry":
+      return <BookOpen className="size-3.5" />;
     default:
       return null;
   }
@@ -62,7 +65,13 @@ export const TabItem = ({ tab, isActive }: TabItemProps) => {
       )}
     >
       <span className="shrink-0 opacity-70">
-        {tab.type === "new" ? getIcon("new") : tab.itemType ? getIcon(tab.itemType) : null}
+        {tab.type === "new"
+          ? getIcon("new")
+          : tab.type === "documentation" || tab.type === "docEntry"
+            ? getIcon(tab.type)
+            : tab.itemType
+              ? getIcon(tab.itemType)
+              : null}
       </span>
 
       <span className={cn("flex-1 truncate text-xs font-medium", !tab.isPinned ? "italic" : "")}>

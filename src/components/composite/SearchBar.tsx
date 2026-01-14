@@ -1,3 +1,4 @@
+import { SearchIcon } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
@@ -71,7 +72,8 @@ export const SearchBar = () => {
     <Input
       ref={inputRef}
       type="text"
-      placeholder="Поиск сниппетов, документов, конфигов..."
+      placeholder="Поиск"
+      icon={SearchIcon}
       value={query}
       onChange={(e) => setQuery(e.target.value)}
       onKeyDown={handleKeyDown}

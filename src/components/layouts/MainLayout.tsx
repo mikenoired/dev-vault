@@ -3,16 +3,17 @@ import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CreateItemModal } from "@/components/composite/CreateItemModal";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
+import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
 import { ItemDetail } from "@/components/composite/ItemDetail";
-import { ItemsList } from "@/components/composite/ItemsList";
+import { ItemsList } from "@/components/composite/Items";
 import { SearchBar } from "@/components/composite/SearchBar";
 import { SettingsModal } from "@/components/composite/Settings/SettingsModal";
-import { SidebarDocButton } from "@/components/composite/SidebarDocButton";
 import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
 import { TabManager } from "@/components/composite/Tabs/TabManager";
 import { TypeFilter } from "@/components/composite/TypeFilter";
 import { cn } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
+import { useDocsStore } from "@/stores/docsStore";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabsStore } from "@/stores/tabsStore";
@@ -26,11 +27,13 @@ export const MainLayout = () => {
   const isResizing = useRef(false);
 
   const searchQuery = useItemsStore((state) => state.searchQuery);
+  const filterByType = useItemsStore((state) => state.filterByType);
 
   const { tabs, activeTabId, closeTab, openNewTab } = useTabsStore((state) => state);
   const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore(
     (state) => state,
   );
+  const { installedDocs, selectDoc } = useDocsStore();
 
   const openSettings = useSettingsStore((state) => state.openSettings);
   const theme = useSettingsStore((state) => state.config?.ui.theme);
@@ -61,6 +64,33 @@ export const MainLayout = () => {
 
   const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);
+
+  const { selectedDoc } = useDocsStore();
+
+  // Синхронизируем selectedDoc и selectedType в store при переключении вкладок
+  useEffect(() => {
+    if (activeTab?.type === "docEntry" && activeTab.docId) {
+      const doc = installedDocs.find((d) => d.id === activeTab.docId);
+      if (doc && selectedDoc?.id !== doc.id) {
+        // Вызываем selectDoc только если документация изменилась
+        selectDoc(doc);
+      }
+      // Устанавливаем фильтр на документацию
+      filterByType("documentation");
+    } else if (activeTab?.type === "documentation") {
+      // Для вкладки типа "documentation" не меняем selectedDoc, но устанавливаем фильтр
+      filterByType("documentation");
+    } else if (activeTab?.type === "item" && activeTab.itemType) {
+      // Для вкладок с item устанавливаем соответствующий фильтр
+      filterByType(activeTab.itemType);
+    } else if (activeTab?.type === "new") {
+      // Для новой вкладки сбрасываем фильтр
+      filterByType(null);
+    } else if (!activeTab) {
+      // Если нет активной вкладки, сбрасываем фильтр
+      filterByType(null);
+    }
+  }, [activeTab, installedDocs, selectDoc, filterByType, selectedDoc]);
 
   const handleCreateClick = useCallback((type: ItemType) => {
     setModalType(type);
@@ -181,7 +211,6 @@ export const MainLayout = () => {
             <div className="flex-1 overflow-hidden">
               <ItemsList />
             </div>
-            <SidebarDocButton />
           </div>
 
           {isSidebarVisible && (
@@ -200,6 +229,8 @@ export const MainLayout = () => {
               <EmptyTabContent onCreateClick={handleCreateClick} />
             ) : activeTab.type === "documentation" ? (
               <DocBrowser />
+            ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
+              <DocEntryViewer docId={activeTab.docId} docPath={activeTab.docPath} />
             ) : (
               <ItemDetail
                 itemId={activeTab.itemId}

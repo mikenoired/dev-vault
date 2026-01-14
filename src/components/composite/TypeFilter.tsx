@@ -1,16 +1,11 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
-import {
-  Book,
-  Code,
-  FileText,
-  Link as LinkIcon,
-  type LucideIcon,
-  Settings,
-  StickyNote,
-} from "lucide-react";
+import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/components/ui";
+import { tauriService } from "@/services/tauri";
+import { useDocsStore } from "@/stores/docsStore";
 import { useItemsStore } from "@/stores/itemsStore";
-import type { ItemType } from "@/types";
+import type { ItemType, ItemWithTags } from "@/types";
 
 interface TypeItem {
   icon: LucideIcon;
@@ -28,41 +23,24 @@ const typeConfig: Record<ItemType, TypeItem> = {
 export const TypeFilter = () => {
   const selectedType = useItemsStore((state) => state.selectedType);
   const filterByType = useItemsStore((state) => state.filterByType);
-  const items = useItemsStore((state) => state.items);
+  const { installedDocs } = useDocsStore((state) => state);
+  const [allItems, setAllItems] = useState<ItemWithTags[]>([]);
+
+  useEffect(() => {
+    tauriService.listItems(500, 0).then(setAllItems).catch(console.error);
+  }, []);
 
   const getCountByType = (type: ItemType) => {
-    return items.filter((item) => item.type === type).length;
+    if (type === "documentation") {
+      return installedDocs.length;
+    }
+
+    return allItems.filter((item) => item.type === type).length;
   };
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <div className="flex p-1 gap-1 border-b border-border">
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>
-            <button
-              type="button"
-              onClick={() => filterByType(null)}
-              className={cn(
-                "p-2 rounded-md transition-colors cursor-pointer",
-                selectedType === null
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-accent text-muted-foreground",
-              )}
-            >
-              <FileText className="size-4" />
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Content
-              className="bg-card border border-border px-3 py-2 rounded-md shadow-lg text-sm text-foreground"
-              sideOffset={5}
-            >
-              Все элементы
-              <Tooltip.Arrow className="fill-border" />
-            </Tooltip.Content>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-
+      <div className="flex p-1.5 gap-1 border-b border-border">
         {(Object.keys(typeConfig) as ItemType[]).map((type) => {
           const { icon: Icon, label } = typeConfig[type];
           const count = getCountByType(type);

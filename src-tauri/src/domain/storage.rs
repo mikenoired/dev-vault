@@ -1,6 +1,6 @@
 use crate::models::*;
 use anyhow::{Context, Result};
-use sqlx::{sqlite::SqlitePool, Pool, Row, Sqlite, Executor};
+use sqlx::{sqlite::SqlitePool, Executor, Pool, Row, Sqlite};
 use std::path::PathBuf;
 
 pub struct Storage {
@@ -10,7 +10,7 @@ pub struct Storage {
 impl Storage {
     pub async fn new(db_path: PathBuf) -> Result<Self> {
         let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
-        
+
         let pool = SqlitePool::connect(&db_url)
             .await
             .context("Failed to connect to database")?;
@@ -32,12 +32,12 @@ impl Storage {
 
     async fn run_migrations(pool: &Pool<Sqlite>) -> Result<()> {
         tracing::info!("🔄 Running database migrations...");
-        
+
         let migration_001 = include_str!("../../migrations/001_initial_schema.sql");
         let migration_002 = include_str!("../../migrations/002_documentation_system.sql");
         let migration_003 = include_str!("../../migrations/003_fix_doc_triggers.sql");
         let migration_004 = include_str!("../../migrations/004_fix_fts_for_docs.sql");
-        
+
         tracing::info!("  → Running migration 001: initial_schema");
         pool.execute(migration_001)
             .await
@@ -111,7 +111,7 @@ impl Storage {
     pub async fn get_item(&self, id: i64) -> Result<Option<ItemWithTags>> {
         let row = sqlx::query(
             "SELECT id, type, title, description, content, created_at, updated_at, metadata
-             FROM items WHERE id = ?1"
+             FROM items WHERE id = ?1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -127,11 +127,17 @@ impl Storage {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<Option<String>, _>("metadata").and_then(|s| serde_json::from_str(&s).ok()),
+                metadata: row
+                    .get::<Option<String>, _>("metadata")
+                    .and_then(|s| serde_json::from_str(&s).ok()),
             };
 
             let tags = self.get_item_tags(id).await?;
-            Ok(Some(ItemWithTags { item, tags, highlights: None }))
+            Ok(Some(ItemWithTags {
+                item,
+                tags,
+                highlights: None,
+            }))
         } else {
             Ok(None)
         }
@@ -150,12 +156,24 @@ impl Storage {
             return Ok(false);
         }
 
-        if dto.title.is_some() || dto.description.is_some() || dto.content.is_some() || dto.metadata.is_some() {
+        if dto.title.is_some()
+            || dto.description.is_some()
+            || dto.content.is_some()
+            || dto.metadata.is_some()
+        {
             let mut parts = vec![];
-            if dto.title.is_some() { parts.push("t"); }
-            if dto.description.is_some() { parts.push("d"); }
-            if dto.content.is_some() { parts.push("c"); }
-            if dto.metadata.is_some() { parts.push("m"); }
+            if dto.title.is_some() {
+                parts.push("t");
+            }
+            if dto.description.is_some() {
+                parts.push("d");
+            }
+            if dto.content.is_some() {
+                parts.push("c");
+            }
+            if dto.metadata.is_some() {
+                parts.push("m");
+            }
             let update_pattern = parts.join("");
 
             match update_pattern.as_str() {
@@ -202,23 +220,27 @@ impl Storage {
                         .await?;
                 }
                 "tc" => {
-                    sqlx::query("UPDATE items SET title = ?1, content = ?2, updated_at = ?3 WHERE id = ?4")
-                        .bind(dto.title.unwrap())
-                        .bind(dto.content.unwrap())
-                        .bind(now)
-                        .bind(dto.id)
-                        .execute(&self.pool)
-                        .await?;
+                    sqlx::query(
+                        "UPDATE items SET title = ?1, content = ?2, updated_at = ?3 WHERE id = ?4",
+                    )
+                    .bind(dto.title.unwrap())
+                    .bind(dto.content.unwrap())
+                    .bind(now)
+                    .bind(dto.id)
+                    .execute(&self.pool)
+                    .await?;
                 }
                 "tm" => {
                     let metadata_json = serde_json::to_string(&dto.metadata.as_ref().unwrap())?;
-                    sqlx::query("UPDATE items SET title = ?1, metadata = ?2, updated_at = ?3 WHERE id = ?4")
-                        .bind(dto.title.unwrap())
-                        .bind(metadata_json)
-                        .bind(now)
-                        .bind(dto.id)
-                        .execute(&self.pool)
-                        .await?;
+                    sqlx::query(
+                        "UPDATE items SET title = ?1, metadata = ?2, updated_at = ?3 WHERE id = ?4",
+                    )
+                    .bind(dto.title.unwrap())
+                    .bind(metadata_json)
+                    .bind(now)
+                    .bind(dto.id)
+                    .execute(&self.pool)
+                    .await?;
                 }
                 "dc" => {
                     sqlx::query("UPDATE items SET description = ?1, content = ?2, updated_at = ?3 WHERE id = ?4")
@@ -338,13 +360,17 @@ impl Storage {
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn list_items(&self, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<ItemWithTags>> {
+    pub async fn list_items(
+        &self,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> Result<Vec<ItemWithTags>> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
 
         let rows = sqlx::query(
             "SELECT id, type, title, description, content, created_at, updated_at, metadata
-             FROM items ORDER BY updated_at DESC LIMIT ?1 OFFSET ?2"
+             FROM items ORDER BY updated_at DESC LIMIT ?1 OFFSET ?2",
         )
         .bind(limit)
         .bind(offset)
@@ -362,11 +388,17 @@ impl Storage {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<Option<String>, _>("metadata").and_then(|s| serde_json::from_str(&s).ok()),
+                metadata: row
+                    .get::<Option<String>, _>("metadata")
+                    .and_then(|s| serde_json::from_str(&s).ok()),
             };
 
             let tags = self.get_item_tags(item.id).await?;
-            result.push(ItemWithTags { item, tags, highlights: None });
+            result.push(ItemWithTags {
+                item,
+                tags,
+                highlights: None,
+            });
         }
 
         Ok(result)
@@ -401,10 +433,13 @@ impl Storage {
             .await
             .context("Failed to list tags")?;
 
-        Ok(rows.iter().map(|r| Tag {
-            id: r.get("id"),
-            name: r.get("name"),
-        }).collect())
+        Ok(rows
+            .iter()
+            .map(|r| Tag {
+                id: r.get("id"),
+                name: r.get("name"),
+            })
+            .collect())
     }
 
     async fn get_item_tags(&self, item_id: i64) -> Result<Vec<Tag>> {
@@ -413,17 +448,20 @@ impl Storage {
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
              WHERE it.item_id = ?1
-             ORDER BY t.name"
+             ORDER BY t.name",
         )
         .bind(item_id)
         .fetch_all(&self.pool)
         .await
         .context("Failed to get item tags")?;
 
-        Ok(rows.iter().map(|r| Tag {
-            id: r.get("id"),
-            name: r.get("name"),
-        }).collect())
+        Ok(rows
+            .iter()
+            .map(|r| Tag {
+                id: r.get("id"),
+                name: r.get("name"),
+            })
+            .collect())
     }
 
     fn parse_item_type(s: &str) -> Result<ItemType> {

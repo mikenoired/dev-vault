@@ -1,7 +1,10 @@
-pub mod url_scraper;
 pub mod doc_registry;
+pub mod url_scraper;
 
-pub use doc_registry::{get_doc_definitions, get_definition_by_name, scrape_documentation, scrape_documentation_with_progress};
+pub use doc_registry::{
+    get_definition_by_name, get_doc_definitions, scrape_documentation,
+    scrape_documentation_with_progress,
+};
 pub use url_scraper::{HtmlFilter, ProgressSender, ScrapeProgress};
 
 use crate::models::{AvailableDocumentation, ParsedDocEntry};

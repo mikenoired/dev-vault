@@ -1,6 +1,6 @@
-pub mod python;
-pub mod rust;
-pub mod react;
-pub mod typescript;
-pub mod nodejs;
 pub mod mdn;
+pub mod nodejs;
+pub mod python;
+pub mod react;
+pub mod rust;
+pub mod typescript;

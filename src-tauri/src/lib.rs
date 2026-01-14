@@ -12,13 +12,12 @@ use tracing_subscriber::{fmt, EnvFilter};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| {
-            EnvFilter::new("info")
-                .add_directive("dev_vault_lib=debug".parse().unwrap())
-                .add_directive("sqlx=warn".parse().unwrap())
-                .add_directive("reqwest=info".parse().unwrap())
-        });
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::new("info")
+            .add_directive("dev_vault_lib=debug".parse().unwrap())
+            .add_directive("sqlx=warn".parse().unwrap())
+            .add_directive("reqwest=info".parse().unwrap())
+    });
 
     fmt()
         .with_env_filter(filter)
@@ -37,10 +36,11 @@ pub fn run() {
     tracing::info!("💡 Set RUST_LOG env var to change log level (e.g., RUST_LOG=debug)");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             tracing::info!("⚙️  Setting up application...");
-            
+
             let app_dir = app
                 .path()
                 .app_data_dir()
@@ -62,7 +62,7 @@ pub fn run() {
 
             tracing::info!("⚙️  Initializing config manager...");
             let config_manager = domain::ConfigManager::new(app_dir.clone());
-            
+
             tracing::info!("📖 Initializing documentation manager...");
             let doc_manager = tauri::async_runtime::block_on(async {
                 DocumentationManager::new(storage.pool.clone())
@@ -80,12 +80,14 @@ pub fn run() {
 
             tracing::info!("🍎 Creating menu...");
             // Create Menu
-            let settings_i = MenuItem::with_id(app, "settings", "Настройки", true, Some("CmdOrCtrl+,"))?;
+            let settings_i =
+                MenuItem::with_id(app, "settings", "Настройки", true, Some("CmdOrCtrl+,"))?;
             let search_i = MenuItem::with_id(app, "search", "Поиск", true, Some("CmdOrCtrl+F"))?;
             let new_tab_i =
                 MenuItem::with_id(app, "new-tab", "Новая вкладка", true, Some("CmdOrCtrl+T"))?;
 
-            let actions_menu = Submenu::with_items(app, "Действия", true, &[&search_i, &new_tab_i])?;
+            let actions_menu =
+                Submenu::with_items(app, "Действия", true, &[&search_i, &new_tab_i])?;
 
             let create_snippet_i =
                 MenuItem::with_id(app, "create-snippet", "Сниппет", true, Some("CmdOrCtrl+N"))?;
@@ -96,8 +98,20 @@ pub fn run() {
                 true,
                 Some("CmdOrCtrl+Shift+N"),
             )?;
-            let create_config_i = MenuItem::with_id(app, "create-config", "Конфиг", true, Some("CmdOrCtrl+Shift+G"))?;
-            let create_link_i = MenuItem::with_id(app, "create-link", "Ссылка", true, Some("CmdOrCtrl+Shift+H"))?;
+            let create_config_i = MenuItem::with_id(
+                app,
+                "create-config",
+                "Конфиг",
+                true,
+                Some("CmdOrCtrl+Shift+G"),
+            )?;
+            let create_link_i = MenuItem::with_id(
+                app,
+                "create-link",
+                "Ссылка",
+                true,
+                Some("CmdOrCtrl+Shift+H"),
+            )?;
 
             let create_menu = Submenu::with_items(
                 app,

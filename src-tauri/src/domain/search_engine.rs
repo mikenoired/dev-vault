@@ -14,25 +14,31 @@ impl SearchEngine {
     pub async fn search(&self, query: SearchQuery) -> Result<SearchResult> {
         let limit = query.limit.unwrap_or(50);
         let search_query = Self::prepare_fts_query(&query.query);
-        
+
         // Получаем подходящие rowid из индекса
         // Мы берем чуть больше, чтобы после фильтрации по типу осталось достаточно
-        let fts_rows = sqlx::query(
-            "SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ?"
-        )
-        .bind(&search_query)
-        .bind(limit * 2) 
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to search in FTS index")?;
+        let fts_rows =
+            sqlx::query("SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ?")
+                .bind(&search_query)
+                .bind(limit * 2)
+                .fetch_all(&self.pool)
+                .await
+                .context("Failed to search in FTS index")?;
 
         let mut result_items = Vec::new();
         for fts_row in fts_rows {
             let rowid: i64 = fts_row.get("rowid");
-            
+
             if rowid > 0 {
                 // Обычный айтем (snippet, note, etc.)
-                if query.item_type.is_some() && !matches!(query.item_type, Some(ItemType::Snippet | ItemType::Config | ItemType::Note | ItemType::Link)) {
+                if query.item_type.is_some()
+                    && !matches!(
+                        query.item_type,
+                        Some(
+                            ItemType::Snippet | ItemType::Config | ItemType::Note | ItemType::Link
+                        )
+                    )
+                {
                     continue;
                 }
                 if let Some(item) = self.get_item_for_search(rowid, &query).await? {
@@ -40,7 +46,9 @@ impl SearchEngine {
                 }
             } else {
                 // Запись документации
-                if query.item_type.is_some() && !matches!(query.item_type, Some(ItemType::Documentation)) {
+                if query.item_type.is_some()
+                    && !matches!(query.item_type, Some(ItemType::Documentation))
+                {
                     continue;
                 }
                 let doc_entry_id = -rowid;
@@ -62,10 +70,14 @@ impl SearchEngine {
         })
     }
 
-    async fn get_item_for_search(&self, id: i64, query: &SearchQuery) -> Result<Option<ItemWithTags>> {
+    async fn get_item_for_search(
+        &self,
+        id: i64,
+        query: &SearchQuery,
+    ) -> Result<Option<ItemWithTags>> {
         let mut sql = String::from(
             "SELECT id, type, title, description, content, created_at, updated_at, metadata
-             FROM items WHERE id = ?"
+             FROM items WHERE id = ?",
         );
 
         if let Some(ref item_type) = query.item_type {
@@ -95,27 +107,39 @@ impl SearchEngine {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-                metadata: row.get::<Option<String>, _>("metadata").and_then(|s| serde_json::from_str(&s).ok()),
+                metadata: row
+                    .get::<Option<String>, _>("metadata")
+                    .and_then(|s| serde_json::from_str(&s).ok()),
             };
 
             let tags = self.get_item_tags(id).await?;
-            
+
             // Фильтрация по тегам если нужно
             if let Some(ref tag_ids) = query.tag_ids {
                 if !tag_ids.is_empty() {
                     let has_tag = tags.iter().any(|t| tag_ids.contains(&t.id));
-                    if !has_tag { return Ok(None); }
+                    if !has_tag {
+                        return Ok(None);
+                    }
                 }
             }
 
             let highlights = Self::extract_highlights(&item.content, &query.query);
-            Ok(Some(ItemWithTags { item, tags, highlights: Some(highlights) }))
+            Ok(Some(ItemWithTags {
+                item,
+                tags,
+                highlights: Some(highlights),
+            }))
         } else {
             Ok(None)
         }
     }
 
-    async fn get_doc_entry_for_search(&self, id: i64, query: &SearchQuery) -> Result<Option<ItemWithTags>> {
+    async fn get_doc_entry_for_search(
+        &self,
+        id: i64,
+        query: &SearchQuery,
+    ) -> Result<Option<ItemWithTags>> {
         let row = sqlx::query(
             "SELECT de.id, de.title, de.content, de.created_at, de.path, d.display_name, d.id as doc_real_id
              FROM doc_entries de
@@ -139,14 +163,23 @@ impl SearchEngine {
                 content: row.get("content"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("created_at"),
-                metadata: Some(serde_json::json!({ "docId": doc_id, "path": row.get::<String, _>("path") })),
+                metadata: Some(
+                    serde_json::json!({ "docId": doc_id, "path": row.get::<String, _>("path") }),
+                ),
             };
 
             // Для документации тегом выступает название самой доки
-            let tags = vec![Tag { id: -doc_id, name: doc_name }];
+            let tags = vec![Tag {
+                id: -doc_id,
+                name: doc_name,
+            }];
 
             let highlights = Self::extract_highlights(&item.content, &query.query);
-            Ok(Some(ItemWithTags { item, tags, highlights: Some(highlights) }))
+            Ok(Some(ItemWithTags {
+                item,
+                tags,
+                highlights: Some(highlights),
+            }))
         } else {
             Ok(None)
         }
@@ -154,7 +187,7 @@ impl SearchEngine {
 
     fn prepare_fts_query(query: &str) -> String {
         let terms: Vec<&str> = query.split_whitespace().collect();
-        
+
         if terms.is_empty() {
             return String::from("*");
         }
@@ -176,17 +209,20 @@ impl SearchEngine {
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
              WHERE it.item_id = ?
-             ORDER BY t.name"
+             ORDER BY t.name",
         )
         .bind(item_id)
         .fetch_all(&self.pool)
         .await
         .context("Failed to get item tags")?;
 
-        Ok(rows.iter().map(|r| Tag {
-            id: r.get("id"),
-            name: r.get("name"),
-        }).collect())
+        Ok(rows
+            .iter()
+            .map(|r| Tag {
+                id: r.get("id"),
+                name: r.get("name"),
+            })
+            .collect())
     }
 
     fn parse_item_type(s: &str) -> Result<ItemType> {
@@ -208,40 +244,35 @@ impl SearchEngine {
 
         let content_lower = content.to_lowercase();
         let query_lower = query.to_lowercase();
-        
+
         let terms: Vec<&str> = query_lower.split_whitespace().collect();
-        
+
         for term in terms {
             let mut start = 0;
             while let Some(pos) = content_lower[start..].find(term) {
                 let actual_pos = start + pos;
                 let before_start = actual_pos.saturating_sub(10);
                 let after_end = (actual_pos + term.len() + 10).min(content.len());
-                
+
                 let before = &content[before_start..actual_pos];
                 let matched = &content[actual_pos..actual_pos + term.len()];
                 let after = &content[actual_pos + term.len()..after_end];
-                
-                let highlight = format!(
-                    "{}**{}**{}",
-                    before,
-                    matched,
-                    after
-                );
-                
+
+                let highlight = format!("{}**{}**{}", before, matched, after);
+
                 highlights.push(highlight);
                 start = actual_pos + term.len();
-                
+
                 if highlights.len() >= 3 {
                     break;
                 }
             }
-            
+
             if highlights.len() >= 3 {
                 break;
             }
         }
-        
+
         highlights
     }
 }

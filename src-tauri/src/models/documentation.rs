@@ -69,4 +69,3 @@ pub struct ParsedDocEntry {
     pub entry_type: Option<String>,
     pub parent_path: Option<String>,
 }
-

@@ -159,7 +159,7 @@ impl HtmlFilter for CleanHtmlFilter {
             (r"<script[^>]*>[\s\S]*?</script>", ""),
             (r"<style[^>]*>[\s\S]*?</style>", ""),
             (r"<!--[\s\S]*?-->", ""),
-            (r"\s+", " "),
+            // (r"\s+", " "),
         ];
 
         for (pattern, replacement) in patterns {
@@ -393,23 +393,18 @@ impl UrlScraper {
 
     fn process_node_to_markdown(node: NodeRef<'_, Node>, selectors: &ContentSelectors) -> String {
         if let Some(element) = ElementRef::wrap(node) {
-            // Если это список определений, обрабатываем его по-своему
             if element.value().name() == "dl" {
                 let mut md_string = String::new();
                 let dt_selector = Selector::parse("dt").unwrap();
                 let dd_selector = Selector::parse("dd").unwrap();
 
-                // Проходимся по всем дочерним элементам <dl>
                 for child_node in element.children() {
                     if let Some(child_element) = ElementRef::wrap(child_node) {
                         if child_element.select(&dt_selector).next().is_some() {
-                            // Это <dt> (термин)
                             let term = child_element.text().collect::<String>();
                             md_string.push_str(&format!("\n**{}**\n", term.trim()));
                         } else if child_element.select(&dd_selector).next().is_some() {
-                            // Это <dd> (описание)
                             let description_html = child_element.inner_html();
-                            // Конвертируем HTML описания в Markdown
                             let description_md = html2md::parse_html(&description_html);
                             md_string.push_str(&format!(": {}\n", description_md.trim()));
                         }
@@ -419,8 +414,6 @@ impl UrlScraper {
             }
         }
 
-        // Для всех остальных узлов используем стандартную логику
-        // (Возможно, придется извлечь HTML и передать в html2md)
         if let Some(element) = ElementRef::wrap(node) {
             return html2md::parse_html(&element.inner_html());
         } else if let Node::Text(text) = node.value() {
@@ -430,20 +423,146 @@ impl UrlScraper {
         String::new()
     }
 
+    fn extract_language(element: &ElementRef) -> Option<String> {
+        // Log: Checking language in element
+        tracing::debug!(
+            "extract_language: Checking element: {:?}",
+            element.value().name()
+        );
+
+        let find_in_el = |el: &ElementRef| -> Option<String> {
+            if let Some(class_attr) = el.value().attr("class") {
+                tracing::debug!("Class attribute: {:?}", class_attr);
+                for class in class_attr.split_whitespace() {
+                    tracing::debug!("Checking class: {:?}", class);
+                    if let Some(lang) = class.strip_prefix("language-") {
+                        tracing::debug!("Found language- prefix: {}", lang);
+                        if !lang.is_empty() {
+                            tracing::info!(
+                                "extract_language: Found language '{}' in element '{}'",
+                                lang,
+                                el.value().name()
+                            );
+                            return Some(lang.to_string());
+                        }
+                    }
+                    if let Some(lang) = class.strip_prefix("highlight-") {
+                        let lang_name: String =
+                            lang.chars().take_while(|c| c.is_alphabetic()).collect();
+                        tracing::debug!(
+                            "Found highlight- prefix (raw: '{}'), parsed: '{}'",
+                            lang,
+                            lang_name
+                        );
+                        if !lang_name.is_empty() {
+                            tracing::info!(
+                                "extract_language: Found highlight language '{}' in element '{}'",
+                                lang_name,
+                                el.value().name()
+                            );
+                            return Some(lang_name);
+                        }
+                    }
+                }
+            }
+            None
+        };
+
+        if let Some(lang) = find_in_el(element) {
+            tracing::debug!("extract_language: Language found in the passed element.");
+            return Some(lang);
+        }
+
+        let mut current_parent = element.parent();
+        let mut depth = 0;
+        while let Some(parent) = current_parent {
+            depth += 1;
+            if let Some(parent_el) = ElementRef::wrap(parent) {
+                tracing::debug!(
+                    "extract_language: Checking parent at depth {}: '{}'",
+                    depth,
+                    parent_el.value().name()
+                );
+                if let Some(lang) = find_in_el(&parent_el) {
+                    tracing::info!(
+                        "extract_language: Language found in parent (depth {}): '{}'",
+                        depth,
+                        lang
+                    );
+                    return Some(lang);
+                }
+                current_parent = parent_el.parent();
+            } else {
+                tracing::warn!(
+                    "extract_language: Parent at depth {} not an element, breaking.",
+                    depth
+                );
+                break;
+            }
+        }
+
+        tracing::debug!("extract_language: No language found.");
+        None
+    }
+
+    ///
+    /// ИСПРАВЛЕННАЯ ФУНКЦИЯ
+    ///
     fn extract_content(&self, document: &Html) -> String {
         let content_selector = Selector::parse(&self.definition.selectors.content).unwrap();
 
-        if let Some(main_content) = document.select(&content_selector).next() {
-            let mut result_md = String::new();
-            // Итерируемся по дочерним узлам основного контента
-            for node in main_content.children() {
-                result_md.push_str(&UrlScraper::process_node_to_markdown(
-                    node,
-                    &self.definition.selectors,
-                ));
-                result_md.push_str("\n\n"); // Добавляем отступ между блоками
+        if let Some(content_element) = document.select(&content_selector).next() {
+            let mut markdown_parts: Vec<String> = Vec::new();
+
+            for child_node in content_element.children() {
+                let mut processed_as_code = false;
+
+                if let Some(element) = ElementRef::wrap(child_node) {
+                    let mut is_code_container = false;
+                    let name = element.value().name();
+
+                    if name == "pre" {
+                        is_code_container = true;
+                    }
+
+                    if let Some(class_attr) = element.value().attr("class") {
+                        if (name == "code" && class_attr.contains("language-"))
+                            || (name == "div" && class_attr.contains("highlight-"))
+                        {
+                            is_code_container = true;
+                        }
+                    }
+
+                    if is_code_container {
+                        let lang = Self::extract_language(&element).unwrap_or_default();
+                        let code_text = element.text().collect::<String>();
+
+                        if !code_text.trim().is_empty() {
+                            markdown_parts.push(format!("```{}\n{}\n```", lang, code_text.trim()));
+                            processed_as_code = true;
+                        }
+                    }
+                }
+
+                if !processed_as_code {
+                    let node_html = if let Some(el_ref) = ElementRef::wrap(child_node) {
+                        el_ref.html()
+                    } else if let Some(text_node) = child_node.value().as_text() {
+                        text_node.to_string()
+                    } else {
+                        String::new()
+                    };
+
+                    if !node_html.trim().is_empty() {
+                        let md = html2md::parse_html(&node_html);
+                        if !md.trim().is_empty() {
+                            markdown_parts.push(md);
+                        }
+                    }
+                }
             }
-            return result_md.trim().to_string();
+
+            return markdown_parts.join("\n\n");
         }
 
         String::new()

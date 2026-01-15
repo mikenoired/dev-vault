@@ -1,11 +1,10 @@
 use crate::models::{AvailableDocumentation, DocEntry, DocTreeNode, Documentation, ParsedDocEntry};
 use anyhow::{Context, Result};
 use sqlx::{Pool, Row, Sqlite};
-use std::collections::HashMap;
 
 use super::parsers::{
-    get_available_documentations, get_definition_by_name, scrape_by_name,
-    scrape_documentation_with_progress, ProgressSender,
+    get_available_documentations, get_doc_metadata_by_name, scrape_documentation_with_progress,
+    ProgressSender,
 };
 
 pub struct DocumentationManager {
@@ -90,8 +89,8 @@ impl DocumentationManager {
         name: &str,
         entries: Vec<ParsedDocEntry>,
     ) -> Result<Documentation> {
-        let definition =
-            get_definition_by_name(name).context(format!("Documentation not found: {}", name))?;
+        let metadata =
+            get_doc_metadata_by_name(name).context(format!("Documentation not found: {}", name))?;
 
         let now = chrono::Utc::now().timestamp();
 
@@ -107,10 +106,10 @@ impl DocumentationManager {
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              RETURNING id",
         )
-        .bind(&definition.name)
-        .bind(&definition.display_name)
-        .bind(&definition.version)
-        .bind(&definition.base_url)
+        .bind(&metadata.name)
+        .bind(&metadata.display_name)
+        .bind(&metadata.version)
+        .bind(&metadata.base_url)
         .bind(now)
         .bind(now)
         .fetch_one(&mut *tx)
@@ -143,51 +142,6 @@ impl DocumentationManager {
         self.get_documentation(doc_id).await
     }
 
-    async fn insert_doc_entry(&self, doc_id: i64, entry: ParsedDocEntry) -> Result<()> {
-        let now = chrono::Utc::now().timestamp();
-
-        tracing::debug!(
-            "Inserting entry: doc_id={}, path='{}', title='{}', content_length={}",
-            doc_id,
-            entry.path,
-            entry.title,
-            entry.content.len()
-        );
-
-        sqlx::query(
-            "INSERT INTO doc_entries (doc_id, path, title, content, entry_type, parent_path, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
-        )
-        .bind(doc_id)
-        .bind(&entry.path)
-        .bind(&entry.title)
-        .bind(&entry.content)
-        .bind(&entry.entry_type)
-        .bind(&entry.parent_path)
-        .bind(now)
-        .execute(&self.pool)
-        .await
-        .context(format!("Failed to insert doc entry: {}", entry.title))?;
-
-        Ok(())
-    }
-
-    pub async fn update_documentation(&self, doc_id: i64) -> Result<Documentation> {
-        tracing::info!(
-            "=== Starting documentation update for doc_id: {} ===",
-            doc_id
-        );
-
-        let doc = self.get_documentation(doc_id).await?;
-
-        let entries = scrape_by_name(&doc.name)
-            .await
-            .context("Failed to scrape documentation")?;
-
-        self.update_documentation_with_entries(doc_id, entries)
-            .await
-    }
-
     pub async fn update_documentation_with_progress(
         &self,
         doc_id: i64,
@@ -214,7 +168,7 @@ impl DocumentationManager {
         entries: Vec<ParsedDocEntry>,
     ) -> Result<Documentation> {
         let doc = self.get_documentation(doc_id).await?;
-        let definition = get_definition_by_name(&doc.name)
+        let metadata = get_doc_metadata_by_name(&doc.name)
             .context(format!("Documentation not found: {}", doc.name))?;
 
         let now = chrono::Utc::now().timestamp();
@@ -251,7 +205,7 @@ impl DocumentationManager {
              SET version = ?1, updated_at = ?2
              WHERE id = ?3",
         )
-        .bind(&definition.version)
+        .bind(&metadata.version)
         .bind(now)
         .bind(doc_id)
         .execute(&mut *tx)
@@ -395,66 +349,6 @@ impl DocumentationManager {
             parent_path: row.get("parent_path"),
             created_at: row.get("created_at"),
         })
-    }
-
-    pub async fn build_doc_tree(&self, doc_id: i64) -> Result<Vec<DocTreeNode>> {
-        tracing::info!("Building full doc tree for doc_id: {}", doc_id);
-
-        let all_entries = sqlx::query(
-            "SELECT path, title, entry_type, parent_path, (content != '') as has_content
-             FROM doc_entries 
-             WHERE doc_id = ?1",
-        )
-        .bind(doc_id)
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to fetch doc entries")?;
-
-        tracing::debug!("Fetched {} entries for tree", all_entries.len());
-
-        let mut entries_by_parent: HashMap<Option<String>, Vec<DocTreeNode>> = HashMap::new();
-
-        for row in all_entries {
-            let path: String = row.get("path");
-            let title: String = row.get("title");
-            let entry_type: Option<String> = row.get("entry_type");
-            let parent_path: Option<String> = row.get("parent_path");
-            let has_content: bool = row.get("has_content");
-
-            let node = DocTreeNode {
-                path,
-                title,
-                entry_type,
-                children: Vec::new(),
-                has_content,
-                has_children: false, // Будет обновлено позже
-            };
-
-            entries_by_parent.entry(parent_path).or_default().push(node);
-        }
-
-        // Рекурсивная функция для сборки дерева
-        fn build_recursive(
-            parent_path: Option<String>,
-            entries_by_parent: &mut HashMap<Option<String>, Vec<DocTreeNode>>,
-        ) -> Vec<DocTreeNode> {
-            if let Some(mut children) = entries_by_parent.remove(&parent_path) {
-                children.sort_by(|a, b| a.title.cmp(&b.title));
-
-                for child in &mut children {
-                    child.children = build_recursive(Some(child.path.clone()), entries_by_parent);
-                    child.has_children = !child.children.is_empty();
-                }
-                children
-            } else {
-                Vec::new()
-            }
-        }
-
-        let root_nodes = build_recursive(None, &mut entries_by_parent);
-        tracing::info!("✓ Full doc tree built");
-
-        Ok(root_nodes)
     }
 
     pub async fn get_doc_tree_level(

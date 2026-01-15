@@ -42,4 +42,6 @@ regex = "1.11"
 html2md = "0.2.15"
 ego-tree = "0.10.0"
 tauri-plugin-shell = "2"
+base64 = "0.22"
+uuid = { version = "1.10", features = ["v4", "fast-rng"] }
 

@@ -1,6 +1,4 @@
-pub mod mdn;
+pub mod github_docs;
 pub mod nodejs;
-pub mod python;
 pub mod react;
 pub mod rust;
-pub mod typescript;

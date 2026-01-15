@@ -1,7 +1,6 @@
 use crate::models::ParsedDocEntry;
 use anyhow::{Context, Result};
 use ego_tree::NodeRef;
-use html2md::parse_html;
 use regex::Regex;
 use reqwest::Client;
 use scraper::{ElementRef, Html, Node, Selector};

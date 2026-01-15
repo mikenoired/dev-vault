@@ -28,6 +28,7 @@ export const MainLayout = () => {
 
   const searchQuery = useItemsStore((state) => state.searchQuery);
   const filterByType = useItemsStore((state) => state.filterByType);
+  const setSelectedType = useItemsStore((state) => state.setSelectedType);
 
   const { tabs, activeTabId, closeTab, openNewTab } = useTabsStore((state) => state);
   const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore(
@@ -66,31 +67,31 @@ export const MainLayout = () => {
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   const { selectedDoc } = useDocsStore();
+  const selectedType = useItemsStore((state) => state.selectedType);
+
+  // При первом запуске без вкладок выбираем первый доступный фильтр
+  useEffect(() => {
+    if (tabs.length === 0 && selectedType === null) {
+      filterByType("snippet");
+    }
+  }, []);
 
   // Синхронизируем selectedDoc и selectedType в store при переключении вкладок
   useEffect(() => {
     if (activeTab?.type === "docEntry" && activeTab.docId) {
       const doc = installedDocs.find((d) => d.id === activeTab.docId);
       if (doc && selectedDoc?.id !== doc.id) {
-        // Вызываем selectDoc только если документация изменилась
         selectDoc(doc);
       }
-      // Устанавливаем фильтр на документацию
-      filterByType("documentation");
+      setSelectedType("documentation");
     } else if (activeTab?.type === "documentation") {
-      // Для вкладки типа "documentation" не меняем selectedDoc, но устанавливаем фильтр
-      filterByType("documentation");
+      setSelectedType("documentation");
     } else if (activeTab?.type === "item" && activeTab.itemType) {
-      // Для вкладок с item устанавливаем соответствующий фильтр
       filterByType(activeTab.itemType);
     } else if (activeTab?.type === "new") {
-      // Для новой вкладки сбрасываем фильтр
-      filterByType(null);
-    } else if (!activeTab) {
-      // Если нет активной вкладки, сбрасываем фильтр
-      filterByType(null);
+      setSelectedType(null);
     }
-  }, [activeTab, installedDocs, selectDoc, filterByType, selectedDoc]);
+  }, [activeTab, installedDocs, selectDoc, filterByType, selectedDoc, setSelectedType]);
 
   const handleCreateClick = useCallback((type: ItemType) => {
     setModalType(type);

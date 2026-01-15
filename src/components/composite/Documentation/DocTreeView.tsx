@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
 import { useTabsStore } from "@/stores/tabsStore";
 import type { DocTreeNode } from "@/types";
@@ -51,24 +52,29 @@ const TreeNode = ({ node, docId, level, expandedPaths, onToggleExpand }: TreeNod
       <button
         type="button"
         onClick={handleClick}
-        className={`w-full text-left px-4 py-2 hover:bg-accent transition-colors flex items-center gap-2 text-sm ${
-          isActive ? "bg-accent/50 border-l-2 border-primary" : ""
-        }`}
-        style={{ paddingLeft: `${indent + 16}px` }}
+        className={cn(
+          "w-full text-left py-1.5 hover:bg-accent/50 transition-colors flex items-center gap-2 text-sm",
+          isActive && "bg-accent border-l-2 border-primary",
+        )}
+        style={{ paddingLeft: `${indent + 12}px`, paddingRight: "12px" }}
       >
-        {hasChildren && (
-          <span className="text-muted-foreground text-[10px] w-3 text-center">
+        {hasChildren ? (
+          <span className="text-muted-foreground text-[10px] w-3 flex-shrink-0">
             {isLoadingChildren ? "⋯" : isExpanded ? "▼" : "▶"}
           </span>
+        ) : (
+          <span className="w-3 flex-shrink-0" />
         )}
-        {!hasChildren && <span className="w-3" />}
         <span
-          className={`${node.hasContent ? "text-foreground" : "text-muted-foreground font-medium"}`}
+          className={cn(
+            "flex-1 min-w-0 truncate",
+            node.hasContent ? "text-foreground" : "text-muted-foreground font-medium",
+          )}
         >
           {node.title}
         </span>
         {node.entryType && (
-          <span className="text-[10px] text-muted-foreground/70 uppercase tracking-tighter">
+          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex-shrink-0">
             {node.entryType}
           </span>
         )}
@@ -141,10 +147,12 @@ export const DocTreeView = ({ docId }: DocTreeViewProps) => {
   };
 
   useEffect(() => {
-    if (!activeTab?.docPath || docTree.length === 0) return;
+    if (!activeTab?.docPath) return;
+
+    if (docTree.length === 0) return;
 
     const pathToActive = findPathToNode(docTree, activeTab.docPath);
-    if (pathToActive) {
+    if (pathToActive && pathToActive.length > 0) {
       setExpandedPaths((prevExpanded) => {
         const newExpandedPaths = new Set(prevExpanded);
         let needsUpdate = false;
@@ -154,12 +162,12 @@ export const DocTreeView = ({ docId }: DocTreeViewProps) => {
           if (!newExpandedPaths.has(parentPath)) {
             newExpandedPaths.add(parentPath);
             needsUpdate = true;
-          }
 
-          if (!isNodeChildrenLoaded(docTree, parentPath)) {
-            loadDocChildren(docId, parentPath).catch((error) => {
-              console.error(`Failed to load children for ${parentPath}:`, error);
-            });
+            if (!isNodeChildrenLoaded(docTree, parentPath)) {
+              loadDocChildren(docId, parentPath).catch((error) => {
+                console.error(`Failed to load children for ${parentPath}:`, error);
+              });
+            }
           }
         }
 

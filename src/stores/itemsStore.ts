@@ -16,6 +16,7 @@ interface ItemsState {
   loadTags: () => Promise<void>;
   searchItems: (query: string) => Promise<void>;
   filterByType: (type: ItemType | null) => Promise<void>;
+  setSelectedType: (type: ItemType | null) => void;
   selectItem: (item: ItemWithTags | null) => void;
   setEditing: (isEditing: boolean) => void;
   deleteItem: (id: number) => Promise<void>;
@@ -91,6 +92,10 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
+  },
+
+  setSelectedType: (type: ItemType | null) => {
+    set({ selectedType: type });
   },
 
   selectItem: (item) => {

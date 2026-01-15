@@ -11,6 +11,7 @@ interface MarkdownRenderProps {
   remarkPlugins?: Plugin[];
   rehypePlugins?: Plugin[];
   components?: Partial<Components>;
+  copyToClipboard?: boolean;
 }
 
 export default function MarkdownRender({
@@ -18,6 +19,7 @@ export default function MarkdownRender({
   remarkPlugins = [],
   rehypePlugins = [],
   components = {},
+  copyToClipboard,
   ...props
 }: MarkdownRenderProps & Readonly<Options>) {
   const allRemarkPlugins = [remarkGfm, ...remarkPlugins];
@@ -63,6 +65,7 @@ export default function MarkdownRender({
           readOnly={true}
           value={String(children).replace(/\n$/, "")}
           language={language}
+          copyToClipboard={copyToClipboard}
         />
       );
     },

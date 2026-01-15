@@ -29,6 +29,7 @@ export default function DocRender({ content }: { content: string }) {
             return <AdmonitionBlock type={type}>{children}</AdmonitionBlock>;
           },
         }}
+        copyToClipboard={true}
         content={processedContent}
         remarkPlugins={[remarkDirective, reactMarkdownRemarkDirective]}
       />

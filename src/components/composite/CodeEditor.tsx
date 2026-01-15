@@ -7,7 +7,10 @@ import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { basicSetup, EditorView } from "codemirror";
-import { useEffect, useRef } from "react";
+import { CheckIcon, CopyIcon } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/components/ui";
+import { Button } from "@/components/ui/Button";
 import type { SupportedLanguages } from "@/types";
 
 interface CodeEditorProps {
@@ -15,6 +18,7 @@ interface CodeEditorProps {
   onChange?: (value: string) => void;
   language?: SupportedLanguages;
   readOnly?: boolean;
+  copyToClipboard?: boolean;
 }
 
 const bashLang = StreamLanguage.define(shell);
@@ -56,9 +60,11 @@ export default function CodeEditor({
   onChange,
   language = "javascript",
   readOnly = false,
+  copyToClipboard = false,
 }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -119,5 +125,33 @@ export default function CodeEditor({
     }
   }, [value]);
 
-  return <div ref={editorRef} className="w-full h-full" />;
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(value);
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  }, [value]);
+
+  return (
+    <div ref={editorRef} className="w-full h-full relative group">
+      {copyToClipboard && (
+        <Button
+          className={cn(
+            "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity",
+            isCopied && "opacity-100 bg-green-500 hover:bg-green-500",
+          )}
+          size="icon"
+          variant="secondary"
+          onClick={handleCopy}
+        >
+          {isCopied ? (
+            <CheckIcon className="w-4 h-4 text-black" />
+          ) : (
+            <CopyIcon className="w-4 h-4 text-neutral-400" />
+          )}
+        </Button>
+      )}
+    </div>
+  );
 }

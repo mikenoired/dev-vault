@@ -1,6 +1,6 @@
 import { CalendarIcon, ClockIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CodeEditor } from "@/components/composite/CodeEditor";
+import CodeEditor from "@/components/composite/CodeEditor";
 import { Badge, Button, Input, Textarea } from "@/components/ui";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useTabsStore } from "@/stores/tabsStore";

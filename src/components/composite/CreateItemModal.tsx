@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CodeEditor } from "@/components/composite/CodeEditor";
+import CodeEditor from "@/components/composite/CodeEditor";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import { useItemsStore } from "@/stores/itemsStore";
 import type { ItemType } from "@/types";

@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-const Nuxt = (props: SVGProps<SVGSVGElement>) => (
+const Nuxtjs = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 256 168" preserveAspectRatio="xMidYMid">
     <title>Nuxt.js logo</title>
     <path
@@ -10,4 +10,4 @@ const Nuxt = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export { Nuxt };
+export { Nuxtjs };

@@ -2,7 +2,6 @@ export * from "./language";
 
 export type ItemType = "snippet" | "config" | "note" | "link" | "documentation";
 export type Theme = "dark" | "light" | "system";
-export type DocName = "python" | "rust" | "react" | "typescript" | "nodejs" | "mdn-javascript";
 
 export interface Item {
   id: number;

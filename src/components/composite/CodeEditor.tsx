@@ -2,40 +2,77 @@ import { javascript } from "@codemirror/lang-javascript";
 import { markdown } from "@codemirror/lang-markdown";
 import { python } from "@codemirror/lang-python";
 import { rust } from "@codemirror/lang-rust";
+import { StreamLanguage } from "@codemirror/language";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { basicSetup, EditorView } from "codemirror";
 import { useEffect, useRef } from "react";
+import type { SupportedLanguages } from "@/types";
 
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
-  language?: "javascript" | "python" | "rust" | "markdown";
+  language?: SupportedLanguages;
   readOnly?: boolean;
 }
 
-export const CodeEditor = ({
+const bashLang = StreamLanguage.define(shell);
+
+function getLangExtension(lang: SupportedLanguages | undefined) {
+  if (!lang) return [];
+  switch (lang.toLowerCase()) {
+    case "js":
+    case "jsx":
+    case "javascript":
+    case "ts":
+    case "tsx":
+    case "typescript":
+      return [
+        javascript({
+          jsx: true,
+          typescript: true,
+        }),
+      ];
+    case "py":
+    case "python":
+      return [python()];
+    case "rs":
+    case "rust":
+      return [rust()];
+    case "bash":
+    case "sh":
+      return [bashLang];
+    case "md":
+    case "markdown":
+      return [markdown()];
+    default:
+      return [];
+  }
+}
+
+export default function CodeEditor({
   value,
   onChange,
   language = "javascript",
   readOnly = false,
-}: CodeEditorProps) => {
+}: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const languageExtensions = {
-      javascript: javascript(),
-      python: python(),
-      rust: rust(),
-      markdown: markdown(),
-    };
+    const theme = EditorView.theme({
+      ".cm-content, .cm-gutterElement": {
+        fontSize: "14px",
+      },
+    });
 
     const extensions = [
       basicSetup,
-      languageExtensions[language],
+      getLangExtension(language),
+      theme,
       oneDark,
       EditorView.lineWrapping,
       EditorState.readOnly.of(readOnly),
@@ -83,4 +120,4 @@ export const CodeEditor = ({
   }, [value]);
 
   return <div ref={editorRef} className="w-full h-full" />;
-};
+}

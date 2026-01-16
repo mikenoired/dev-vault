@@ -149,6 +149,10 @@ export const MainLayout = () => {
     [setSidebarWidth],
   );
 
+  const handleTabInteraction = useCallback((tabId: string) => {
+    useTabsStore.getState().pinTab(tabId);
+  }, []);
+
   useEffect(() => {
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
@@ -231,11 +235,15 @@ export const MainLayout = () => {
             ) : activeTab.type === "documentation" ? (
               <DocBrowser />
             ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
-              <DocEntryViewer docId={activeTab.docId} docPath={activeTab.docPath} />
+              <DocEntryViewer
+                docId={activeTab.docId}
+                docPath={activeTab.docPath}
+                onInteraction={() => handleTabInteraction(activeTab.id)}
+              />
             ) : (
               <ItemDetail
                 itemId={activeTab.itemId}
-                onInteraction={() => useTabsStore.getState().pinTab(activeTab.id)}
+                onInteraction={() => handleTabInteraction(activeTab.id)}
               />
             )
           ) : (

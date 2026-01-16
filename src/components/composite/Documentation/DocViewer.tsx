@@ -4,6 +4,7 @@ import StatusBar from "./StatusBar";
 
 interface DocViewerProps {
   entry: DocEntry;
+  onInteraction?: () => void;
 }
 
 const contentProcessor = (content: string) => {
@@ -26,11 +27,11 @@ const contentProcessor = (content: string) => {
   return result;
 };
 
-export const DocViewer = ({ entry }: DocViewerProps) => {
+export const DocViewer = ({ entry, onInteraction }: DocViewerProps) => {
   const content = contentProcessor(entry.content);
 
   return (
-    <div className="mx-auto h-full w-full flex flex-col relative">
+    <div className="mx-auto h-full w-full flex flex-col relative" onPointerDown={onInteraction}>
       <div className="flex-1 overflow-y-auto">
         <div className="p-8 pb-16">
           <div className="max-w-[65ch] mx-auto">

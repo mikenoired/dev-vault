@@ -6,9 +6,10 @@ import type { DocEntry } from "@/types";
 interface DocEntryViewerProps {
   docId: number;
   docPath: string;
+  onInteraction?: () => void;
 }
 
-export const DocEntryViewer = ({ docId, docPath }: DocEntryViewerProps) => {
+export const DocEntryViewer = ({ docId, docPath, onInteraction }: DocEntryViewerProps) => {
   const [entry, setEntry] = useState<DocEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,5 +59,5 @@ export const DocEntryViewer = ({ docId, docPath }: DocEntryViewerProps) => {
     );
   }
 
-  return <DocViewer entry={entry} />;
+  return <DocViewer entry={entry} onInteraction={onInteraction} />;
 };

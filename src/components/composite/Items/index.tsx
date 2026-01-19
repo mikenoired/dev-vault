@@ -6,6 +6,7 @@ import DocItems from "./DocItems";
 
 export const ItemsList = () => {
   const isLoading = useItemsStore((state) => state.isLoading);
+  const items = useItemsStore((state) => state.items);
   const searchQuery = useItemsStore((state) => state.searchQuery);
   const selectedType = useItemsStore((state) => state.selectedType);
   const loadItems = useItemsStore((state) => state.loadItems);
@@ -20,7 +21,7 @@ export const ItemsList = () => {
   const isSearchMode = searchQuery.trim().length > 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  if (isLoading) {
+  if (isLoading && items.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Загрузка...</p>

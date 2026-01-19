@@ -21,7 +21,12 @@ interface TabsState {
   openItemTab: (itemId: number, itemType: ItemType, title: string, pin?: boolean) => void;
   openNewTab: () => void;
   openDocumentationTab: () => void;
-  openDocEntryTab: (docId: number, docPath: string, title: string) => void;
+  openDocEntryTab: (
+    docId: number,
+    docPath: string,
+    title: string,
+    pin?: boolean,
+  ) => void;
   closeTab: (tabId: string) => void;
   selectTab: (tabId: string) => void;
   pinTab: (tabId: string) => void;
@@ -116,7 +121,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     });
   },
 
-  openDocEntryTab: (docId, docPath, title) => {
+  openDocEntryTab: (docId, docPath, title, pin = false) => {
     const { tabs } = get();
 
     // Проверяем, есть ли уже вкладка с этой записью документации
@@ -126,6 +131,11 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     if (existingTabIndex !== -1) {
       const existingTab = tabs[existingTabIndex];
       set({ activeTabId: existingTab.id });
+      if (pin && !existingTab.isPinned) {
+        const newTabs = [...tabs];
+        newTabs[existingTabIndex] = { ...existingTab, isPinned: true };
+        set({ tabs: newTabs });
+      }
       return;
     }
 
@@ -138,7 +148,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       type: "docEntry",
       docId,
       docPath,
-      isPinned: false,
+      isPinned: pin,
       title,
     };
 

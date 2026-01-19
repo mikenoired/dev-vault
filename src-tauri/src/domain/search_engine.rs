@@ -13,14 +13,18 @@ impl SearchEngine {
 
     pub async fn search(&self, query: SearchQuery) -> Result<SearchResult> {
         let limit = query.limit.unwrap_or(50);
+        let offset = query.offset.unwrap_or(0);
         let search_query = Self::prepare_fts_query(&query.query);
 
         // Получаем подходящие rowid из индекса
         // Мы берем чуть больше, чтобы после фильтрации по типу осталось достаточно
         let fts_rows =
-            sqlx::query("SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ?")
+            sqlx::query(
+                "SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ? OFFSET ?",
+            )
                 .bind(&search_query)
                 .bind(limit * 2)
+                .bind(offset)
                 .fetch_all(&self.pool)
                 .await
                 .context("Failed to search in FTS index")?;

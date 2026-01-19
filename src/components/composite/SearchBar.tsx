@@ -13,6 +13,7 @@ export const SearchBar = () => {
   const searchItems = useItemsStore((state) => state.searchItems);
 
   const openItemTab = useTabsStore((state) => state.openItemTab);
+  const openDocEntryTab = useTabsStore((state) => state.openDocEntryTab);
   const pinTab = useTabsStore((state) => state.pinTab);
   const tabs = useTabsStore((state) => state.tabs);
   const activeTabId = useTabsStore((state) => state.activeTabId);
@@ -59,11 +60,25 @@ export const SearchBar = () => {
       e.preventDefault();
       const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
       const nextItem = items[nextIndex];
+      if (nextItem.type === "documentation") {
+        const metadata = nextItem.metadata as { docId?: number; path?: string } | null;
+        if (metadata?.docId && metadata.path) {
+          openDocEntryTab(metadata.docId, metadata.path, nextItem.title, false);
+          return;
+        }
+      }
       openItemTab(nextItem.id, nextItem.type, nextItem.title, false);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
       const prevItem = items[prevIndex];
+      if (prevItem.type === "documentation") {
+        const metadata = prevItem.metadata as { docId?: number; path?: string } | null;
+        if (metadata?.docId && metadata.path) {
+          openDocEntryTab(metadata.docId, metadata.path, prevItem.title, false);
+          return;
+        }
+      }
       openItemTab(prevItem.id, prevItem.type, prevItem.title, false);
     }
   };

@@ -86,6 +86,7 @@ export interface SearchQuery {
   type?: ItemType;
   tagIds?: number[];
   limit?: number;
+  offset?: number;
 }
 
 export interface SearchResult {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DocViewer } from "@/components/composite/Documentation/DocViewer";
 import { tauriService } from "@/services/tauri";
 import type { DocEntry } from "@/types";
+import { getCachedDocEntry, setCachedDocEntry } from "@/utils/docEntryCache";
 
 interface DocEntryViewerProps {
   docId: number;
@@ -18,12 +19,21 @@ export const DocEntryViewer = ({ docId, docPath, onInteraction }: DocEntryViewer
     let cancelled = false;
 
     const loadEntry = async () => {
+      const cached = getCachedDocEntry(docId, docPath);
+      if (cached) {
+        setEntry(cached);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {
         const loadedEntry = await tauriService.getDocEntryByPath(docId, docPath);
         if (!cancelled) {
           setEntry(loadedEntry);
+          setCachedDocEntry(loadedEntry);
         }
       } catch (err) {
         if (!cancelled) {

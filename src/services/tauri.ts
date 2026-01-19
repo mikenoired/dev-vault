@@ -5,6 +5,7 @@ import type {
   DocEntry,
   DocTreeNode,
   Documentation,
+  ItemType,
   ItemWithTags,
   SearchQuery,
   SearchResult,
@@ -29,8 +30,8 @@ export const tauriService = {
     return invoke<boolean>("delete_item", { id });
   },
 
-  async listItems(limit?: number, offset?: number): Promise<ItemWithTags[]> {
-    return invoke<ItemWithTags[]>("list_items", { limit, offset });
+  async listItems(limit?: number, offset?: number, type?: ItemType): Promise<ItemWithTags[]> {
+    return invoke<ItemWithTags[]>("list_items", { limit, offset, item_type: type });
   },
 
   async createTag(name: string): Promise<number> {
@@ -43,6 +44,10 @@ export const tauriService = {
 
   async listTags(): Promise<Tag[]> {
     return invoke<Tag[]>("list_tags");
+  },
+
+  async listItemTypeCounts(): Promise<{ type: ItemType; count: number }[]> {
+    return invoke<{ type: ItemType; count: number }[]>("list_item_type_counts");
   },
 
   async search(query: SearchQuery): Promise<SearchResult> {

@@ -36,6 +36,13 @@ pub struct Tag {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ItemTypeCount {
+    #[serde(rename = "type")]
+    pub item_type: ItemType,
+    pub count: i64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ItemWithTags {
     #[serde(flatten)]
@@ -77,6 +84,7 @@ pub struct SearchQuery {
     #[serde(rename = "tagIds")]
     pub tag_ids: Option<Vec<i64>>,
     pub limit: Option<i64>,
+    pub offset: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]

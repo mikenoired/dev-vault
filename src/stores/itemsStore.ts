@@ -9,11 +9,17 @@ interface ItemsState {
   searchQuery: string;
   selectedType: ItemType | null;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  offset: number;
+  hasMore: boolean;
+  typeCounts: Record<ItemType, number>;
   isEditing: boolean;
   error: string | null;
 
   loadItems: () => Promise<void>;
+  loadNextPage: () => Promise<void>;
   loadTags: () => Promise<void>;
+  loadTypeCounts: () => Promise<void>;
   searchItems: (query: string) => Promise<void>;
   filterByType: (type: ItemType | null) => Promise<void>;
   setSelectedType: (type: ItemType | null) => void;
@@ -39,6 +45,15 @@ interface ItemsState {
   }) => Promise<void>;
 }
 
+const PAGE_SIZE = 50;
+const emptyTypeCounts: Record<ItemType, number> = {
+  snippet: 0,
+  config: 0,
+  note: 0,
+  link: 0,
+  documentation: 0,
+};
+
 export const useItemsStore = create<ItemsState>((set, get) => ({
   items: [],
   tags: [],
@@ -46,16 +61,58 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   searchQuery: "",
   selectedType: null,
   isLoading: false,
+  isLoadingMore: false,
+  offset: 0,
+  hasMore: true,
+  typeCounts: { ...emptyTypeCounts },
   isEditing: false,
   error: null,
 
   loadItems: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, items: [], offset: 0, hasMore: true });
+    const { selectedType } = get();
+    const searchQuery = get().searchQuery.trim();
     try {
-      const items = await tauriService.listItems(100, 0);
-      set({ items, isLoading: false });
+      const limit = PAGE_SIZE + 1;
+      const result = searchQuery
+        ? await tauriService.search({ query: searchQuery, limit, offset: 0 })
+        : await tauriService.listItems(limit, 0, selectedType ?? undefined);
+
+      const fetchedItems = Array.isArray(result) ? result : result.items;
+      const hasMore = fetchedItems.length > PAGE_SIZE;
+      const items = hasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
+
+      set({ items, hasMore, offset: items.length, isLoading: false });
+      get().loadTypeCounts();
     } catch (error) {
       set({ error: String(error), isLoading: false });
+    }
+  },
+
+  loadNextPage: async () => {
+    const { isLoadingMore, isLoading, hasMore, offset, selectedType, items } = get();
+    const searchQuery = get().searchQuery.trim();
+    if (isLoadingMore || isLoading || !hasMore) return;
+
+    set({ isLoadingMore: true, error: null });
+    try {
+      const limit = PAGE_SIZE + 1;
+      const result = searchQuery
+        ? await tauriService.search({ query: searchQuery, limit, offset })
+        : await tauriService.listItems(limit, offset, selectedType ?? undefined);
+
+      const fetchedItems = Array.isArray(result) ? result : result.items;
+      const nextHasMore = fetchedItems.length > PAGE_SIZE;
+      const nextItems = nextHasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
+
+      set({
+        items: [...items, ...nextItems],
+        hasMore: nextHasMore,
+        offset: offset + nextItems.length,
+        isLoadingMore: false,
+      });
+    } catch (error) {
+      set({ error: String(error), isLoadingMore: false });
     }
   },
 
@@ -68,30 +125,33 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     }
   },
 
-  searchItems: async (query: string) => {
-    set({ isLoading: true, error: null, searchQuery: query, selectedType: null });
+  loadTypeCounts: async () => {
     try {
-      if (!query.trim()) {
-        await get().loadItems();
-        return;
+      const counts = await tauriService.listItemTypeCounts();
+      const nextCounts = { ...emptyTypeCounts };
+      for (const entry of counts) {
+        nextCounts[entry.type] = entry.count;
       }
-
-      const result = await tauriService.search({ query, limit: 100 });
-      set({ items: result.items, isLoading: false });
+      set({ typeCounts: nextCounts });
     } catch (error) {
-      set({ error: String(error), isLoading: false });
+      console.error("Failed to load item type counts:", error);
     }
   },
 
-  filterByType: async (type: ItemType | null) => {
-    set({ isLoading: true, error: null, selectedType: type, searchQuery: "" });
-    try {
-      const allItems = await tauriService.listItems(500, 0);
-      const filtered = type ? allItems.filter((item) => item.type === type) : allItems;
-      set({ items: filtered, isLoading: false });
-    } catch (error) {
-      set({ error: String(error), isLoading: false });
+  searchItems: async (query: string) => {
+    const trimmed = query.trim();
+    set({ searchQuery: query, selectedType: null });
+    if (!trimmed) {
+      await get().loadItems();
+      return;
     }
+
+    await get().loadItems();
+  },
+
+  filterByType: async (type: ItemType | null) => {
+    set({ selectedType: type, searchQuery: "" });
+    await get().loadItems();
   },
 
   setSelectedType: (type: ItemType | null) => {
@@ -153,12 +213,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   },
 
   refreshItems: async () => {
-    const { searchQuery } = get();
-    if (searchQuery) {
-      await get().searchItems(searchQuery);
-    } else {
-      await get().loadItems();
-    }
+    await get().loadItems();
   },
 
   createItem: async (data) => {

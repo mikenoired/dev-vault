@@ -59,10 +59,11 @@ pub async fn list_items(
     state: State<'_, AppState>,
     limit: Option<i64>,
     offset: Option<i64>,
+    item_type: Option<ItemType>,
 ) -> Result<Vec<ItemWithTags>, String> {
     let storage = state.storage.lock().await;
     storage
-        .list_items(limit, offset)
+        .list_items(limit, offset, item_type)
         .await
         .map_err(|e| e.to_string())
 }
@@ -92,6 +93,17 @@ pub async fn get_or_create_tag(state: State<'_, AppState>, name: String) -> Resu
 pub async fn list_tags(state: State<'_, AppState>) -> Result<Vec<Tag>, String> {
     let storage = state.storage.lock().await;
     storage.list_tags().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_item_type_counts(
+    state: State<'_, AppState>,
+) -> Result<Vec<ItemTypeCount>, String> {
+    let storage = state.storage.lock().await;
+    storage
+        .list_item_type_counts()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

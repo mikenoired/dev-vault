@@ -1,11 +1,10 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { cn } from "@/components/ui";
-import { tauriService } from "@/services/tauri";
 import { useDocsStore } from "@/stores/docsStore";
 import { useItemsStore } from "@/stores/itemsStore";
-import type { ItemType, ItemWithTags } from "@/types";
+import type { ItemType } from "@/types";
 
 interface TypeItem {
   icon: LucideIcon;
@@ -23,19 +22,20 @@ const typeConfig: Record<ItemType, TypeItem> = {
 export const TypeFilter = () => {
   const selectedType = useItemsStore((state) => state.selectedType);
   const filterByType = useItemsStore((state) => state.filterByType);
+  const typeCounts = useItemsStore((state) => state.typeCounts);
+  const loadTypeCounts = useItemsStore((state) => state.loadTypeCounts);
   const { installedDocs } = useDocsStore((state) => state);
-  const [allItems, setAllItems] = useState<ItemWithTags[]>([]);
 
   useEffect(() => {
-    tauriService.listItems(500, 0).then(setAllItems).catch(console.error);
-  }, []);
+    loadTypeCounts();
+  }, [loadTypeCounts]);
 
   const getCountByType = (type: ItemType) => {
     if (type === "documentation") {
       return installedDocs.length;
     }
 
-    return allItems.filter((item) => item.type === type).length;
+    return typeCounts[type] ?? 0;
   };
 
   return (

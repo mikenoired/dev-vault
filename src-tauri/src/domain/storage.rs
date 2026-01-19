@@ -8,6 +8,16 @@ pub struct Storage {
 }
 
 impl Storage {
+    fn item_type_to_str(item_type: ItemType) -> &'static str {
+        match item_type {
+            ItemType::Snippet => "snippet",
+            ItemType::Config => "config",
+            ItemType::Note => "note",
+            ItemType::Link => "link",
+            ItemType::Documentation => "documentation",
+        }
+    }
+
     pub async fn new(db_path: PathBuf) -> Result<Self> {
         let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
 
@@ -364,19 +374,34 @@ impl Storage {
         &self,
         limit: Option<i64>,
         offset: Option<i64>,
+        item_type: Option<ItemType>,
     ) -> Result<Vec<ItemWithTags>> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
 
-        let rows = sqlx::query(
+        let mut sql = String::from(
             "SELECT id, type, title, description, content, created_at, updated_at, metadata
-             FROM items ORDER BY updated_at DESC LIMIT ?1 OFFSET ?2",
-        )
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(&self.pool)
-        .await
-        .context("Failed to list items")?;
+             FROM items",
+        );
+
+        if item_type.is_some() {
+            sql.push_str(" WHERE type = ?");
+        }
+
+        sql.push_str(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
+
+        let mut query = sqlx::query(&sql);
+
+        if let Some(item_type) = item_type {
+            query = query.bind(Self::item_type_to_str(item_type));
+        }
+
+        let rows = query
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to list items")?;
 
         let mut result = Vec::new();
         for row in rows {
@@ -402,6 +427,24 @@ impl Storage {
         }
 
         Ok(result)
+    }
+
+    pub async fn list_item_type_counts(&self) -> Result<Vec<ItemTypeCount>> {
+        let rows = sqlx::query("SELECT type, COUNT(*) as count FROM items GROUP BY type")
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to list item counts by type")?;
+
+        let mut counts = Vec::new();
+        for row in rows {
+            let item_type = Self::parse_item_type(row.get("type"))?;
+            counts.push(ItemTypeCount {
+                item_type,
+                count: row.get("count"),
+            });
+        }
+
+        Ok(counts)
     }
 
     pub async fn create_tag(&self, name: String) -> Result<i64> {

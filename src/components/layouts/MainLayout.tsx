@@ -78,6 +78,10 @@ export const MainLayout = () => {
 
   // Синхронизируем selectedDoc и selectedType в store при переключении вкладок
   useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      return;
+    }
+
     if (activeTab?.type === "docEntry" && activeTab.docId) {
       const doc = installedDocs.find((d) => d.id === activeTab.docId);
       if (doc && selectedDoc?.id !== doc.id) {
@@ -91,7 +95,15 @@ export const MainLayout = () => {
     } else if (activeTab?.type === "new") {
       setSelectedType(null);
     }
-  }, [activeTab, installedDocs, selectDoc, filterByType, selectedDoc, setSelectedType]);
+  }, [
+    activeTab,
+    installedDocs,
+    searchQuery,
+    selectDoc,
+    filterByType,
+    selectedDoc,
+    setSelectedType,
+  ]);
 
   const handleCreateClick = useCallback((type: ItemType) => {
     setModalType(type);
@@ -149,9 +161,13 @@ export const MainLayout = () => {
     [setSidebarWidth],
   );
 
-  const handleTabInteraction = useCallback((tabId: string) => {
-    useTabsStore.getState().pinTab(tabId);
-  }, []);
+  const handleTabInteraction = useCallback(
+    (tabId: string) => {
+      if (searchQuery.trim().length > 0) return;
+      useTabsStore.getState().pinTab(tabId);
+    },
+    [searchQuery],
+  );
 
   useEffect(() => {
     return () => {

@@ -332,6 +332,15 @@ impl Storage {
             }
         }
 
+        if let Some(item_type) = dto.item_type {
+            sqlx::query("UPDATE items SET type = ?1, updated_at = ?2 WHERE id = ?3")
+                .bind(Self::item_type_to_str(item_type))
+                .bind(now)
+                .bind(dto.id)
+                .execute(&self.pool)
+                .await?;
+        }
+
         if let Some(tag_ids) = dto.tag_ids {
             sqlx::query("DELETE FROM item_tags WHERE item_id = ?1")
                 .bind(dto.id)

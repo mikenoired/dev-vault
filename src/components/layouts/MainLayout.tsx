@@ -1,7 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CreateItemModal } from "@/components/composite/CreateItemModal";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
 import { ItemDetail } from "@/components/composite/ItemDetail";
@@ -12,6 +11,7 @@ import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
 import { TabManager } from "@/components/composite/Tabs/TabManager";
 import { TypeFilter } from "@/components/composite/TypeFilter";
 import { cn } from "@/components/ui";
+import { ItemActionsProvider } from "@/contexts/ItemActionsContext";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useDocsStore } from "@/stores/docsStore";
 import { useItemsStore } from "@/stores/itemsStore";
@@ -21,8 +21,6 @@ import { useUIStore } from "@/stores/uiStore";
 import type { ItemType } from "@/types";
 
 export const MainLayout = () => {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<ItemType>("snippet");
   const [isResizingState, setIsResizingState] = useState(false);
   const isResizing = useRef(false);
 
@@ -30,7 +28,9 @@ export const MainLayout = () => {
   const filterByType = useItemsStore((state) => state.filterByType);
   const setSelectedType = useItemsStore((state) => state.setSelectedType);
 
-  const { tabs, activeTabId, closeTab, openNewTab } = useTabsStore((state) => state);
+  const { tabs, activeTabId, closeTab, openNewTab, openDraftItemTab } = useTabsStore(
+    (state) => state,
+  );
   const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore(
     (state) => state,
   );
@@ -92,6 +92,8 @@ export const MainLayout = () => {
       setSelectedType("documentation");
     } else if (activeTab?.type === "item" && activeTab.itemType) {
       filterByType(activeTab.itemType);
+    } else if (activeTab?.type === "draft" && activeTab.itemType) {
+      setSelectedType(activeTab.itemType);
     } else if (activeTab?.type === "new") {
       setSelectedType(null);
     }
@@ -105,10 +107,12 @@ export const MainLayout = () => {
     setSelectedType,
   ]);
 
-  const handleCreateClick = useCallback((type: ItemType) => {
-    setModalType(type);
-    setIsCreateModalOpen(true);
-  }, []);
+  const handleCreateClick = useCallback(
+    (type: ItemType) => {
+      openDraftItemTab(type);
+    },
+    [openDraftItemTab],
+  );
 
   useEffect(() => {
     const unlistenSearch = listen("menu-search", () => {
@@ -211,70 +215,72 @@ export const MainLayout = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <aside
-          className={cn(
-            "border-r border-border flex flex-col shrink-0 relative overflow-hidden",
-            !isResizingState ? "transition-all duration-300 ease-in-out" : "",
-          )}
-          style={{
-            width: isSidebarVisible ? sidebarWidth : 0,
-            opacity: isSidebarVisible ? 1 : 0,
-            visibility: isSidebarVisible ? "visible" : "hidden",
-          }}
-        >
-          <div
-            className="flex flex-col h-full"
-            style={{ width: sidebarWidth, minWidth: isSidebarVisible ? undefined : sidebarWidth }}
+      <ItemActionsProvider>
+        <div className="flex-1 flex overflow-hidden relative">
+          <aside
+            className={cn(
+              "border-r border-border flex flex-col shrink-0 relative overflow-hidden",
+              !isResizingState ? "transition-all duration-300 ease-in-out" : "",
+            )}
+            style={{
+              width: isSidebarVisible ? sidebarWidth : 0,
+              opacity: isSidebarVisible ? 1 : 0,
+              visibility: isSidebarVisible ? "visible" : "hidden",
+            }}
           >
-            <SearchBar />
-            {showTypeFilter && <TypeFilter />}
-            <div className="flex-1 overflow-hidden">
-              <ItemsList />
-            </div>
-          </div>
-
-          {isSidebarVisible && (
             <div
-              role="button"
-              tabIndex={0}
-              onMouseDown={startResizing}
-              className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-10"
-            />
-          )}
-        </aside>
-
-        <main className="flex-1 overflow-hidden relative">
-          {activeTab ? (
-            activeTab.type === "new" ? (
-              <EmptyTabContent onCreateClick={handleCreateClick} />
-            ) : activeTab.type === "documentation" ? (
-              <DocBrowser />
-            ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
-              <DocEntryViewer
-                docId={activeTab.docId}
-                docPath={activeTab.docPath}
-                onInteraction={() => handleTabInteraction(activeTab.id)}
-              />
-            ) : (
-              <ItemDetail
-                itemId={activeTab.itemId}
-                onInteraction={() => handleTabInteraction(activeTab.id)}
-              />
-            )
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground italic">
-              Выберите элемент или создайте новую вкладку
+              className="flex flex-col h-full"
+              style={{ width: sidebarWidth, minWidth: isSidebarVisible ? undefined : sidebarWidth }}
+            >
+              <SearchBar />
+              {showTypeFilter && <TypeFilter />}
+              <div className="flex-1 overflow-hidden">
+                <ItemsList />
+              </div>
             </div>
-          )}
-        </main>
-      </div>
 
-      <CreateItemModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        initialType={modalType}
-      />
+            {isSidebarVisible && (
+              <div
+                role="button"
+                tabIndex={0}
+                onMouseDown={startResizing}
+                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-10"
+              />
+            )}
+          </aside>
+
+          <main className="flex-1 overflow-hidden relative">
+            {activeTab ? (
+              activeTab.type === "new" ? (
+                <EmptyTabContent onCreateClick={handleCreateClick} />
+              ) : activeTab.type === "documentation" ? (
+                <DocBrowser />
+              ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
+                <DocEntryViewer
+                  docId={activeTab.docId}
+                  docPath={activeTab.docPath}
+                  onInteraction={() => handleTabInteraction(activeTab.id)}
+                />
+              ) : activeTab.type === "draft" ? (
+                <ItemDetail
+                  draftType={activeTab.itemType}
+                  draftTabId={activeTab.id}
+                  onInteraction={() => handleTabInteraction(activeTab.id)}
+                />
+              ) : (
+                <ItemDetail
+                  itemId={activeTab.itemId}
+                  onInteraction={() => handleTabInteraction(activeTab.id)}
+                />
+              )
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground italic">
+                Выберите элемент или создайте новую вкладку
+              </div>
+            )}
+          </main>
+        </div>
+      </ItemActionsProvider>
       <SettingsModal />
     </div>
   );

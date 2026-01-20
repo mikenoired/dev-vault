@@ -74,6 +74,7 @@ export interface CreateItemDto {
 
 export interface UpdateItemDto {
   id: number;
+  type?: ItemType;
   title?: string;
   description?: string;
   content?: string;

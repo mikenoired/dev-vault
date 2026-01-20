@@ -1,29 +1,89 @@
-import { CalendarIcon, ClockIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import {
+  CalendarIcon,
+  ChevronDown,
+  ClockIcon,
+  Code2,
+  Link2,
+  Settings,
+  StickyNote,
+} from "lucide-react";
+import { type ElementType, useEffect, useMemo, useRef, useState } from "react";
 import CodeEditor from "@/components/composite/CodeEditor";
-import { Badge, Button, Input, Textarea } from "@/components/ui";
+import { Badge, Input, Textarea } from "@/components/ui";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useTabsStore } from "@/stores/tabsStore";
+import type { ItemType } from "@/types";
 
 interface ItemDetailProps {
   itemId?: number;
+  draftType?: ItemType;
+  draftTabId?: string;
   onInteraction?: () => void;
 }
 
-export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
+const itemTypeOptions: { value: ItemType; label: string; icon: ElementType }[] = [
+  { value: "snippet", label: "Сниппет", icon: Code2 },
+  { value: "note", label: "Заметка", icon: StickyNote },
+  { value: "config", label: "Конфиг", icon: Settings },
+  { value: "link", label: "Ссылка", icon: Link2 },
+];
+
+const getLanguage = (type: ItemType): "javascript" | "python" | "rust" | "markdown" => {
+  switch (type) {
+    case "snippet":
+      return "javascript";
+    case "note":
+    case "documentation":
+      return "markdown";
+    case "config":
+      return "markdown";
+    case "link":
+      return "markdown";
+    default:
+      return "markdown";
+  }
+};
+
+const parseTags = (value: string) =>
+  value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+
+export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: ItemDetailProps) => {
   const items = useItemsStore((state) => state.items);
-  const { updateItem, deleteItem, isEditing, setEditing } = useItemsStore((state) => state);
+  const storeSelectedItem = useItemsStore((state) => state.selectedItem);
+  const { updateItem, createItem } = useItemsStore((state) => state);
 
   const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
+  const updateTabTitleById = useTabsStore((state) => state.updateTabTitleById);
+  const promoteDraftTab = useTabsStore((state) => state.promoteDraftTab);
 
   const selectedItem = useMemo(() => {
-    return items.find((i) => i.id === itemId) || null;
-  }, [items, itemId]);
+    if (!itemId) return null;
+    const fromList = items.find((i) => i.id === itemId);
+    if (fromList) return fromList;
+    if (storeSelectedItem?.id === itemId) return storeSelectedItem;
+    return null;
+  }, [items, itemId, storeSelectedItem]);
 
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [currentType, setCurrentType] = useState<ItemType>(draftType ?? "snippet");
+  const [titleError, setTitleError] = useState("");
+  const titleBeforeEditRef = useRef("");
+  const lastSavedRef = useRef({
+    title: "",
+    description: "",
+    content: "",
+    tags: "",
+    type: draftType ?? "snippet",
+  });
+  const isCreatingRef = useRef(false);
+  const hasPendingDraftChangesRef = useRef(false);
 
   useEffect(() => {
     if (selectedItem) {
@@ -31,62 +91,113 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
       setEditDescription(selectedItem.description || "");
       setEditContent(selectedItem.content);
       setEditTags(selectedItem.tags.map((t) => t.name).join(", "));
+      setCurrentType(selectedItem.type);
+      setTitleError("");
+      lastSavedRef.current = {
+        title: selectedItem.title,
+        description: selectedItem.description || "",
+        content: selectedItem.content,
+        tags: selectedItem.tags.map((t) => t.name).join(", "),
+        type: selectedItem.type,
+      };
+      return;
     }
-  }, [selectedItem]);
 
-  if (!selectedItem) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground text-lg">Элемент не найден</p>
-      </div>
-    );
-  }
+    if (draftType && !itemId) {
+      setEditTitle("");
+      setEditDescription("");
+      setEditContent("");
+      setEditTags("");
+      setCurrentType(draftType);
+      setTitleError("");
+      lastSavedRef.current = {
+        title: "",
+        description: "",
+        content: "",
+        tags: "",
+        type: draftType,
+      };
+    }
+  }, [selectedItem?.id, selectedItem?.updatedAt, draftType, itemId]);
+
+  const isDraft = !itemId && !!draftType;
+  const isDocumentation = selectedItem?.type === "documentation";
+
+  useEffect(() => {
+    if (!isDraft || !draftTabId) return;
+    const trimmedTitle = editTitle.trim();
+    if (trimmedTitle) {
+      updateTabTitleById(draftTabId, trimmedTitle);
+    } else {
+      const fallbackLabel = itemTypeOptions.find((opt) => opt.value === currentType)?.label;
+      updateTabTitleById(draftTabId, `Новый ${fallbackLabel ?? "элемент"}`);
+    }
+  }, [editTitle, currentType, isDraft, draftTabId, updateTabTitleById]);
+
+  useEffect(() => {
+    if (!isDraft || !isCreatingRef.current) return;
+    hasPendingDraftChangesRef.current = true;
+  }, [editTitle, editDescription, editContent, editTags, currentType, isDraft]);
+
+  useEffect(() => {
+    if (!selectedItem || isDocumentation) return;
+
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle || titleError) return;
+
+    const lastSaved = lastSavedRef.current;
+    if (
+      lastSaved.title === trimmedTitle &&
+      lastSaved.description === editDescription &&
+      lastSaved.content === editContent &&
+      lastSaved.tags === editTags &&
+      lastSaved.type === currentType
+    ) {
+      return;
+    }
+
+    const handler = window.setTimeout(async () => {
+      const tagNames = parseTags(editTags);
+      const shouldUpdateType = currentType !== lastSavedRef.current.type;
+      await updateItem(selectedItem.id, {
+        type: shouldUpdateType ? currentType : undefined,
+        title: trimmedTitle,
+        description: editDescription,
+        content: editContent,
+        tagNames,
+      }).catch((error) => {
+        console.error("Failed to update item:", error);
+      });
+
+      updateTabTitle(selectedItem.id, trimmedTitle);
+      lastSavedRef.current = {
+        title: trimmedTitle,
+        description: editDescription,
+        content: editContent,
+        tags: editTags,
+        type: currentType,
+      };
+    }, 500);
+
+    return () => {
+      window.clearTimeout(handler);
+    };
+  }, [
+    selectedItem,
+    editTitle,
+    editDescription,
+    editContent,
+    editTags,
+    currentType,
+    titleError,
+    updateItem,
+    updateTabTitle,
+    isDocumentation,
+  ]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleString("ru-RU");
   };
-
-  const handleDelete = async () => {
-    if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
-      await deleteItem(selectedItem.id);
-    }
-  };
-
-  const handleSave = async () => {
-    const tagNames = editTags
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    await updateItem(selectedItem.id, {
-      title: editTitle,
-      description: editDescription,
-      content: editContent,
-      tagNames,
-    }).catch((error) => {
-      console.error("Failed to update item:", error);
-    });
-
-    updateTabTitle(selectedItem.id, editTitle);
-    setEditing(false);
-  };
-
-  const getLanguage = (type: string): "javascript" | "python" | "rust" | "markdown" => {
-    switch (type) {
-      case "snippet":
-        return "javascript";
-      case "doc":
-        return "markdown";
-      case "note":
-        return "markdown";
-      case "documentation":
-        return "markdown";
-      default:
-        return "markdown";
-    }
-  };
-
-  const isDocumentation = selectedItem.type === "documentation";
 
   const handleInteraction = () => {
     if (onInteraction) {
@@ -94,132 +205,232 @@ export const ItemDetail = ({ itemId, onInteraction }: ItemDetailProps) => {
     }
   };
 
-  if (isEditing && !isDocumentation) {
+  const handleTitleChange = (value: string) => {
+    setEditTitle(value);
+    const trimmed = value.trim();
+
+    if (selectedItem) {
+      if (!trimmed) {
+        setTitleError("Заголовок не может быть пустым.");
+      } else {
+        setTitleError("");
+      }
+    }
+
+    if (!selectedItem && isDraft && trimmed && !isCreatingRef.current) {
+      isCreatingRef.current = true;
+      const tagNames = parseTags(editTags);
+      createItem({
+        type: currentType,
+        title: trimmed,
+        description: editDescription || undefined,
+        content: editContent,
+        tagNames,
+      })
+        .then(async (created) => {
+          if (hasPendingDraftChangesRef.current) {
+            hasPendingDraftChangesRef.current = false;
+            await updateItem(created.id, {
+              type: currentType,
+              title: editTitle.trim() || created.title,
+              description: editDescription,
+              content: editContent,
+              tagNames: parseTags(editTags),
+            }).catch((error) => {
+              console.error("Failed to sync draft changes:", error);
+            });
+          }
+          if (draftTabId) {
+            const finalTitle = editTitle.trim() || trimmed;
+            promoteDraftTab(draftTabId, created.id, currentType, finalTitle);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to create item:", error);
+        })
+        .finally(() => {
+          isCreatingRef.current = false;
+        });
+    }
+  };
+
+  const handleTitleFocus = () => {
+    titleBeforeEditRef.current = editTitle;
+  };
+
+  const handleTitleBlur = () => {
+    if (!selectedItem) return;
+
+    if (!editTitle.trim()) {
+      setEditTitle(titleBeforeEditRef.current);
+      setTitleError("");
+    }
+  };
+
+  if (!selectedItem && !isDraft) {
     return (
-      <div className="h-full flex flex-col p-6 overflow-hidden" onPointerDown={handleInteraction}>
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <h2 className="text-2xl font-bold">Редактирование</h2>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
-              Отмена
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleSave}>
-              Сохранить
-            </Button>
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground text-lg">Элемент не найден</p>
+      </div>
+    );
+  }
+
+  if (selectedItem && isDocumentation) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
+        <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 line-clamp-1">
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
+                  {selectedItem.type}
+                </Badge>
+                <h1 className="text-2xl font-bold leading-tight line-clamp-1">
+                  {selectedItem.title}
+                </h1>
+              </div>
+              {selectedItem.description && (
+                <p className="text-muted-foreground">{selectedItem.description}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex gap-1.5 flex-wrap">
+              {selectedItem.tags.map((tag) => (
+                <Badge key={tag.id} variant="outline" className="bg-accent/30">
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+            <div className="ml-auto flex gap-3">
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="size-4" />
+                <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ClockIcon className="size-4" />
+                <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-          <div className="space-y-2">
-            <label htmlFor="editTitle" className="text-sm font-medium">
-              Заголовок
-            </label>
-            <Input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="Введите заголовок"
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="rounded-xl border border-border bg-muted/30 overflow-hidden min-h-full">
+            <CodeEditor
+              value={selectedItem.content}
+              readOnly={true}
+              language={getLanguage(selectedItem.type)}
             />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="editDescription" className="text-sm font-medium">
-              Описание
-            </label>
-            <Textarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="Введите описание (необязательно)"
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="editTags" className="text-sm font-medium">
-              Теги (через запятую)
-            </label>
-            <Input
-              value={editTags}
-              onChange={(e) => setEditTags(e.target.value)}
-              placeholder="react, typescript, ui"
-            />
-          </div>
-
-          <div className="space-y-2 flex-1 flex flex-col min-h-[300px]">
-            <label htmlFor="editContent" className="text-sm font-medium">
-              Контент
-            </label>
-            <div className="flex-1 border border-border rounded-md overflow-hidden">
-              <CodeEditor
-                value={editContent}
-                onChange={setEditContent}
-                language={getLanguage(selectedItem.type)}
-              />
-            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  const activeType = currentType;
+  const typeConfig =
+    itemTypeOptions.find((option) => option.value === activeType) ?? itemTypeOptions[0];
+  const TypeIcon = typeConfig.icon;
+
   return (
     <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
       <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 line-clamp-1">
-              <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
-                {selectedItem.type}
-              </Badge>
-              <h1 className="text-2xl font-bold leading-tight line-clamp-1">
-                {selectedItem.title}
-              </h1>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground">
+              <TypeIcon className="size-5" />
             </div>
-            {selectedItem.description && (
-              <p className="text-muted-foreground">{selectedItem.description}</p>
-            )}
+            <div className="flex-1">
+              <Input
+                id="editTitle"
+                label="Заголовок"
+                value={editTitle}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                onFocus={handleTitleFocus}
+                onBlur={handleTitleBlur}
+                placeholder="Введите заголовок"
+                error={titleError}
+              />
+            </div>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent/40 transition-colors"
+                >
+                  {typeConfig.label}
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  align="end"
+                  className="min-w-[180px] rounded-md border border-border bg-popover p-1 shadow-md"
+                >
+                  {itemTypeOptions.map((option) => (
+                    <DropdownMenu.Item
+                      key={option.value}
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground outline-none hover:bg-accent"
+                      onSelect={() => {
+                        setCurrentType(option.value);
+                      }}
+                    >
+                      <option.icon className="size-4 text-muted-foreground" />
+                      <span>{option.label}</span>
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
           </div>
-          <div className="flex gap-2 shrink-0">
-            {!isDocumentation && (
-              <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-                Изменить
-              </Button>
-            )}
-            {!isDocumentation && (
-              <Button variant="danger" size="sm" onClick={handleDelete}>
-                Удалить
-              </Button>
-            )}
-          </div>
-        </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex gap-1.5 flex-wrap">
-            {selectedItem.tags.map((tag) => (
-              <Badge key={tag.id} variant="outline" className="bg-accent/30">
-                {tag.name}
-              </Badge>
-            ))}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Textarea
+              id="editDescription"
+              label="Описание"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Введите описание (необязательно)"
+              rows={2}
+            />
+            <Input
+              id="editTags"
+              label="Теги (через запятую)"
+              value={editTags}
+              onChange={(e) => setEditTags(e.target.value)}
+              placeholder="react, typescript, ui"
+            />
           </div>
-          <div className="ml-auto flex gap-3">
-            <div className="flex items-center gap-1">
-              <CalendarIcon className="size-4" />
-              <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
+
+          {selectedItem && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="size-4" />
+                <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ClockIcon className="size-4" />
+                <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <ClockIcon className="size-4" />
-              <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto">
-        <div className="rounded-xl border border-border bg-muted/30 overflow-hidden min-h-full">
-          <CodeEditor
-            value={selectedItem.content}
-            readOnly={true}
-            language={getLanguage(selectedItem.type)}
-          />
+        <div className="flex flex-col gap-2 h-full">
+          <label htmlFor="editContent" className="text-sm font-medium">
+            Контент
+          </label>
+          <div className="rounded-xl border border-border bg-muted/30 overflow-hidden min-h-full">
+            <CodeEditor
+              value={editContent}
+              onChange={setEditContent}
+              language={getLanguage(activeType)}
+            />
+          </div>
         </div>
       </div>
     </div>

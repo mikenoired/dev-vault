@@ -13,7 +13,6 @@ interface ItemsState {
   offset: number;
   hasMore: boolean;
   typeCounts: Record<ItemType, number>;
-  isEditing: boolean;
   error: string | null;
 
   loadItems: () => Promise<void>;
@@ -24,11 +23,11 @@ interface ItemsState {
   filterByType: (type: ItemType | null) => Promise<void>;
   setSelectedType: (type: ItemType | null) => void;
   selectItem: (item: ItemWithTags | null) => void;
-  setEditing: (isEditing: boolean) => void;
   deleteItem: (id: number) => Promise<void>;
   updateItem: (
     id: number,
     data: {
+      type?: ItemType;
       title?: string;
       description?: string;
       content?: string;
@@ -42,7 +41,7 @@ interface ItemsState {
     description?: string;
     content: string;
     tagNames: string[];
-  }) => Promise<void>;
+  }) => Promise<ItemWithTags>;
 }
 
 const PAGE_SIZE = 50;
@@ -65,7 +64,6 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   offset: 0,
   hasMore: true,
   typeCounts: { ...emptyTypeCounts },
-  isEditing: false,
   error: null,
 
   loadItems: async () => {
@@ -159,11 +157,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   },
 
   selectItem: (item) => {
-    set({ selectedItem: item, isEditing: false });
-  },
-
-  setEditing: (isEditing) => {
-    set({ isEditing });
+    set({ selectedItem: item });
   },
 
   deleteItem: async (id: number) => {
@@ -172,8 +166,8 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       set((state) => ({
         items: state.items.filter((item) => item.id !== id),
         selectedItem: state.selectedItem?.id === id ? null : state.selectedItem,
-        isEditing: false,
       }));
+      get().loadTypeCounts();
     } catch (error) {
       set({ error: String(error) });
     }
@@ -191,20 +185,35 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
         }
       }
 
+      const { items, searchQuery, selectedType } = get();
+      const previous = items.find((i) => i.id === id);
+
       await tauriService.updateItem({
         id,
+        type: data.type,
         title: data.title,
         description: data.description,
         content: data.content,
         tagIds,
       });
 
-      await get().refreshItems();
-
-      const { items } = get();
-      const updated = items.find((i) => i.id === id);
+      const updated = await tauriService.getItem(id);
       if (updated) {
-        set({ selectedItem: updated, isEditing: false });
+        const trimmedQuery = searchQuery.trim();
+        if (!trimmedQuery) {
+          const shouldInclude = !selectedType || selectedType === updated.type;
+          let nextItems = items.filter((item) => item.id !== id);
+          if (shouldInclude) {
+            nextItems = [updated, ...nextItems];
+          }
+          set({ items: nextItems, selectedItem: updated });
+        } else {
+          set({ selectedItem: updated });
+        }
+      }
+
+      if (data.type && previous?.type !== data.type) {
+        get().loadTypeCounts();
       }
     } catch (error) {
       set({ error: String(error) });
@@ -225,7 +234,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
         tagIds.push(tagId);
       }
 
-      await tauriService.createItem({
+      const itemId = await tauriService.createItem({
         type: data.type,
         title: data.title,
         description: data.description,
@@ -233,7 +242,27 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
         tagIds: tagIds.length > 0 ? tagIds : undefined,
       });
 
-      await get().refreshItems();
+      const created = await tauriService.getItem(itemId);
+      if (created) {
+        const { items, searchQuery, selectedType } = get();
+        const trimmedQuery = searchQuery.trim();
+        if (!trimmedQuery) {
+          const shouldInclude = !selectedType || selectedType === created.type;
+          if (shouldInclude) {
+            set({ items: [created, ...items], selectedItem: created });
+          } else {
+            set({ selectedItem: created });
+          }
+        } else {
+          set({ selectedItem: created });
+        }
+      }
+
+      await get().loadTypeCounts();
+      if (!created) {
+        throw new Error("Failed to load created item.");
+      }
+      return created;
     } catch (error) {
       set({ error: String(error) });
       throw error;

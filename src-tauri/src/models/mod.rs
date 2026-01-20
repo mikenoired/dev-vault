@@ -67,6 +67,8 @@ pub struct CreateItemDto {
 #[derive(Debug, Clone, Deserialize)]
 pub struct UpdateItemDto {
     pub id: i64,
+    #[serde(rename = "type")]
+    pub item_type: Option<ItemType>,
     pub title: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,

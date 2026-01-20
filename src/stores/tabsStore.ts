@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { ItemType } from "@/types";
 
-export type TabType = "item" | "new" | "documentation" | "docEntry";
+export type TabType = "item" | "new" | "draft" | "documentation" | "docEntry";
 
 export interface Tab {
   id: string;
@@ -20,18 +20,24 @@ interface TabsState {
 
   openItemTab: (itemId: number, itemType: ItemType, title: string, pin?: boolean) => void;
   openNewTab: () => void;
+  openDraftItemTab: (itemType: ItemType) => void;
   openDocumentationTab: () => void;
-  openDocEntryTab: (
-    docId: number,
-    docPath: string,
-    title: string,
-    pin?: boolean,
-  ) => void;
+  openDocEntryTab: (docId: number, docPath: string, title: string, pin?: boolean) => void;
   closeTab: (tabId: string) => void;
   selectTab: (tabId: string) => void;
   pinTab: (tabId: string) => void;
   updateTabTitle: (itemId: number, title: string) => void;
+  updateTabTitleById: (tabId: string, title: string) => void;
+  promoteDraftTab: (draftTabId: string, itemId: number, itemType: ItemType, title: string) => void;
 }
+
+const typeLabels: Record<ItemType, string> = {
+  snippet: "Сниппет",
+  note: "Заметка",
+  config: "Конфиг",
+  link: "Ссылка",
+  documentation: "Документация",
+};
 
 export const useTabsStore = create<TabsState>((set, get) => ({
   tabs: [],
@@ -92,6 +98,23 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       isPinned: true,
       title: "Новая вкладка",
     };
+    set({
+      tabs: [...tabs, newTab],
+      activeTabId: newTabId,
+    });
+  },
+
+  openDraftItemTab: (itemType) => {
+    const { tabs } = get();
+    const newTabId = `draft-${Date.now()}`;
+    const newTab: Tab = {
+      id: newTabId,
+      type: "draft",
+      itemType,
+      isPinned: true,
+      title: `Новый ${typeLabels[itemType] ?? "элемент"}`,
+    };
+
     set({
       tabs: [...tabs, newTab],
       activeTabId: newTabId,
@@ -197,5 +220,32 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     set((state) => ({
       tabs: state.tabs.map((t) => (t.itemId === itemId ? { ...t, title } : t)),
     }));
+  },
+
+  updateTabTitleById: (tabId, title) => {
+    set((state) => ({
+      tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, title } : t)),
+    }));
+  },
+
+  promoteDraftTab: (draftTabId, itemId, itemType, title) => {
+    const { tabs } = get();
+    const draftIndex = tabs.findIndex((t) => t.id === draftTabId);
+    if (draftIndex === -1) return;
+
+    const nextTabId = `item-${itemId}`;
+    const draftTab = tabs[draftIndex];
+    const nextTab: Tab = {
+      id: nextTabId,
+      type: "item",
+      itemId,
+      itemType,
+      title,
+      isPinned: draftTab.isPinned,
+    };
+
+    const nextTabs = [...tabs];
+    nextTabs[draftIndex] = nextTab;
+    set({ tabs: nextTabs, activeTabId: nextTabId });
   },
 }));

@@ -23,6 +23,18 @@ export const GeneralSection = () => {
               { value: "system", label: "Системная" },
             ]}
           />
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="autosave-enabled"
+              checked={config.ui.autosave_enabled}
+              onChange={(e) => updateUiConfig({ autosave_enabled: e.target.checked })}
+              className="size-4 rounded border-input bg-background"
+            />
+            <label htmlFor="autosave-enabled" className="text-sm font-medium leading-none">
+              Автосохранение изменений
+            </label>
+          </div>
         </div>
       </div>
     </div>

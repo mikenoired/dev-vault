@@ -2,6 +2,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { BookOpenIcon, Clipboard, ClockIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { useSettingsStore } from "@/stores/settingsStore";
 import calculateReadingTime from "@/utils/readTime";
 
 interface StatusBarProps {
@@ -9,7 +10,8 @@ interface StatusBarProps {
 }
 
 export default function StatusBar({ content }: StatusBarProps) {
-  const { words, minutes } = calculateReadingTime(content);
+  const readingSpeed = useSettingsStore((state) => state.config?.ui.reading_speed_wpm ?? 200);
+  const { words, minutes } = calculateReadingTime(content, readingSpeed);
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = useCallback(() => {

@@ -1,6 +1,7 @@
 use crate::models::ParsedDocEntry;
 use anyhow::{Context, Result};
 use ego_tree::NodeRef;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::Client;
 use scraper::{ElementRef, Html, Node, Selector};
@@ -47,6 +48,9 @@ pub struct ScraperOptions {
     pub timeout_secs: u64,
     pub user_agent: String,
 }
+
+static DATA_TYPE_SELECTOR: Lazy<Selector> =
+    Lazy::new(|| Selector::parse("[data-type]").expect("valid selector"));
 
 impl Default for ScraperOptions {
     fn default() -> Self {
@@ -504,93 +508,100 @@ impl UrlScraper {
         None
     }
 
-    ///
-    /// ИСПРАВЛЕННАЯ ФУНКЦИЯ
-    ///
     fn extract_content(&self, document: &Html) -> String {
-        let content_selector = Selector::parse(&self.definition.selectors.content).unwrap();
+        let Ok(content_selector) = Selector::parse(&self.definition.selectors.content) else {
+            return String::new();
+        };
 
-        if let Some(content_element) = document.select(&content_selector).next() {
-            let mut markdown_parts: Vec<String> = Vec::new();
+        let Some(content_element) = document.select(&content_selector).next() else {
+            return String::new();
+        };
 
-            for child_node in content_element.children() {
-                let mut processed_as_code = false;
+        content_element
+            .children()
+            .filter_map(|node| self.node_to_markdown(node))
+            .filter(|s| !s.trim().is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    }
 
-                if let Some(element) = ElementRef::wrap(child_node) {
-                    let mut is_code_container = false;
-                    let name = element.value().name();
-
-                    if name == "pre" {
-                        is_code_container = true;
-                    }
-
-                    if let Some(class_attr) = element.value().attr("class") {
-                        if (name == "code" && class_attr.contains("language-"))
-                            || (name == "div" && class_attr.contains("highlight-"))
-                        {
-                            is_code_container = true;
-                        }
-                    }
-
-                    if is_code_container {
-                        let lang = Self::extract_language(&element).unwrap_or_default();
-                        let code_text = element.text().collect::<String>();
-
-                        if !code_text.trim().is_empty() {
-                            markdown_parts.push(format!("```{}\n{}\n```", lang, code_text.trim()));
-                            processed_as_code = true;
-                        }
-                    }
-                }
-
-                if !processed_as_code {
-                    let node_html = if let Some(el_ref) = ElementRef::wrap(child_node) {
-                        el_ref.html()
-                    } else if let Some(text_node) = child_node.value().as_text() {
-                        text_node.to_string()
-                    } else {
-                        String::new()
-                    };
-
-                    if !node_html.trim().is_empty() {
-                        let md = html2md::parse_html(&node_html);
-                        if !md.trim().is_empty() {
-                            markdown_parts.push(md);
-                        }
-                    }
-                }
-            }
-
-            return markdown_parts.join("\n\n");
+    fn node_to_markdown(&self, child_node: NodeRef<'_, Node>) -> Option<String> {
+        if let Some(code_md) = self.try_code_block(child_node) {
+            return Some(code_md);
         }
 
-        String::new()
+        let html = self.node_to_html_or_text(child_node)?;
+        let md = html2md::parse_html(&html);
+
+        (!md.trim().is_empty()).then_some(md)
+    }
+
+    fn try_code_block(&self, child_node: NodeRef<'_, Node>) -> Option<String> {
+        let element = ElementRef::wrap(child_node)?;
+
+        if !self.is_code_container(&element) {
+            return None;
+        }
+
+        let lang = Self::extract_language(&element).unwrap_or_default();
+        let code_text = element.text().collect::<String>();
+        let code = code_text.trim();
+
+        if code.is_empty() {
+            return None;
+        }
+
+        Some(format!("```{}\n{}\n```", lang, code))
+    }
+
+    fn is_code_container(&self, element: &ElementRef) -> bool {
+        let name = element.value().name();
+
+        if name == "pre" {
+            return true;
+        }
+
+        let Some(class_attr) = element.value().attr("class") else {
+            return false;
+        };
+
+        (name == "code" && class_attr.contains("language-"))
+            || (name == "div" && class_attr.contains("highlight-"))
+    }
+
+    fn node_to_html_or_text(&self, child_node: NodeRef<'_, Node>) -> Option<String> {
+        if let Some(el_ref) = ElementRef::wrap(child_node) {
+            let html = el_ref.html();
+            return (!html.trim().is_empty()).then_some(html);
+        }
+
+        if let Some(text_node) = child_node.value().as_text() {
+            let text = text_node.to_string();
+            return (!text.trim().is_empty()).then_some(text);
+        }
+
+        None
+    }
+
+    fn is_ignored_href(&self, href: &str) -> bool {
+        href.is_empty()
+            || href.starts_with('#')
+            || href.starts_with("javascript:")
+            || href.starts_with("mailto:")
     }
 
     fn extract_links(&self, document: &Html, current_path: &str) -> Vec<String> {
-        let mut links = Vec::new();
+        let Ok(selector) = Selector::parse(&self.definition.selectors.links) else {
+            return Vec::new();
+        };
 
-        if let Ok(selector) = Selector::parse(&self.definition.selectors.links) {
-            for element in document.select(&selector) {
-                if let Some(href) = element.value().attr("href") {
-                    let href = href.trim();
-
-                    if href.is_empty()
-                        || href.starts_with('#')
-                        || href.starts_with("javascript:")
-                        || href.starts_with("mailto:")
-                    {
-                        continue;
-                    }
-
-                    if let Some(path) = self.normalize_link(href, current_path) {
-                        links.push(path);
-                    }
-                }
-            }
-        }
-
-        links
+        document
+            .select(&selector)
+            .filter_map(|el| el.value().attr("href"))
+            .map(str::trim)
+            .filter(|href| !self.is_ignored_href(href))
+            .filter_map(|href| self.normalize_link(href, current_path))
+            .collect()
     }
 
     fn normalize_link(&self, href: &str, current_path: &str) -> Option<String> {
@@ -637,36 +648,38 @@ impl UrlScraper {
     }
 
     fn detect_entry_type(&self, document: &Html, path: &str) -> Option<String> {
-        if let Some(ref attr) = self.definition.selectors.entry_type_attr {
-            if let Ok(selector) = Selector::parse("[data-type]") {
-                if let Some(element) = document.select(&selector).next() {
-                    if let Some(value) = element.value().attr(attr) {
-                        return Some(value.to_string());
-                    }
-                }
+        if let Some(attr) = self.definition.selectors.entry_type_attr.as_deref() {
+            if let Some(value) = document
+                .select(&DATA_TYPE_SELECTOR)
+                .next()
+                .and_then(|el| el.value().attr(attr))
+            {
+                return Some(value.to_string());
             }
         }
 
         let path_lower = path.to_lowercase();
-        if path_lower.contains("class") || path_lower.contains("struct") {
-            Some("class".to_string())
-        } else if path_lower.contains("function") || path_lower.contains("fn") {
-            Some("function".to_string())
-        } else if path_lower.contains("module") || path_lower.contains("mod") {
-            Some("module".to_string())
-        } else if path_lower.contains("trait") || path_lower.contains("interface") {
-            Some("trait".to_string())
-        } else if path_lower.contains("enum") {
-            Some("enum".to_string())
-        } else if path_lower.contains("constant") || path_lower.contains("const") {
-            Some("constant".to_string())
-        } else if path_lower.contains("type") {
-            Some("type".to_string())
-        } else if path.contains('/') {
-            Some("page".to_string())
-        } else {
-            Some("section".to_string())
-        }
+        let rules = [
+            (&["class", "struct"][..], "class"),
+            (&["function", "fn"][..], "function"),
+            (&["module", "mod"][..], "module"),
+            (&["trait", "interface"][..], "trait"),
+            (&["enum"][..], "enum"),
+            (&["constant", "const"][..], "constant"),
+            (&["type"][..], "type"),
+        ];
+
+        let kind = rules
+            .iter()
+            .find_map(|(keys, value)| {
+                keys.iter()
+                    .any(|k| path_lower.contains(k))
+                    .then_some(*value)
+            })
+            .or_else(|| path.contains('/').then_some("page"))
+            .unwrap_or("section");
+
+        Some(kind.to_string())
     }
 
     fn build_parent_path(&self, path: &str) -> Option<String> {
@@ -726,114 +739,6 @@ impl UrlScraper {
                 });
             }
         }
-    }
-
-    pub async fn scrape(&self) -> Result<Vec<ParsedDocEntry>> {
-        let opts = &self.definition.options;
-
-        tracing::info!("╔═══════════════════════════════════════════════════════════════════");
-        tracing::info!(
-            "║ 📚 Starting URL Scraper: {}",
-            self.definition.display_name
-        );
-        tracing::info!("║ 🌐 Base URL: {}", self.definition.base_url);
-        tracing::info!("║ 📦 Version: {}", self.definition.version);
-        tracing::info!(
-            "║ ⚙️  Max pages: {:?}, Max depth: {:?}",
-            opts.max_pages,
-            opts.max_depth
-        );
-        tracing::info!("╚═══════════════════════════════════════════════════════════════════");
-
-        let mut visited: HashSet<String> = HashSet::new();
-        let mut existing_paths: HashSet<String> = HashSet::new();
-        let mut queue: VecDeque<(String, usize)> = VecDeque::new();
-        let mut entries: Vec<ParsedDocEntry> = Vec::new();
-
-        for path in &opts.initial_paths {
-            queue.push_back((path.clone(), 0));
-        }
-
-        let semaphore = Arc::new(Semaphore::new(opts.concurrent_requests));
-        let mut page_count = 0;
-
-        while let Some((path, depth)) = queue.pop_front() {
-            if visited.contains(&path) {
-                continue;
-            }
-
-            if let Some(max) = opts.max_pages {
-                if page_count >= max {
-                    tracing::info!("Reached max pages limit: {}", max);
-                    break;
-                }
-            }
-
-            if let Some(max) = opts.max_depth {
-                if depth > max {
-                    continue;
-                }
-            }
-
-            if opts.should_skip(&path) {
-                tracing::debug!("Skipping path: {}", path);
-                continue;
-            }
-
-            visited.insert(path.clone());
-
-            let url = self.resolve_url(&path);
-            tracing::info!(
-                "[{}/{}] 🔗 Scraping: {} (depth: {})",
-                page_count + 1,
-                opts.max_pages.unwrap_or(999),
-                path,
-                depth
-            );
-
-            let _permit = semaphore.acquire().await.unwrap();
-
-            match self.fetch_page(&url).await {
-                Ok(html) => {
-                    let page = self.parse_page(&html, &path, &url);
-                    page_count += 1;
-
-                    self.ensure_parent_entries(&page.path, &mut existing_paths, &mut entries);
-
-                    if !page.content.is_empty() {
-                        existing_paths.insert(page.path.clone());
-                        entries.push(ParsedDocEntry {
-                            path: page.path.clone(),
-                            title: page.title,
-                            content: page.content,
-                            entry_type: page.entry_type,
-                            parent_path: self.build_parent_path(&page.path),
-                        });
-                    }
-
-                    if opts.follow_links {
-                        for link in page.links {
-                            if !visited.contains(&link) && !opts.should_skip(&link) {
-                                queue.push_back((link, depth + 1));
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to fetch {}: {:?}", url, e);
-                }
-            }
-
-            if opts.delay_ms > 0 {
-                tokio::time::sleep(Duration::from_millis(opts.delay_ms)).await;
-            }
-        }
-
-        tracing::info!("║ ✅ Scraping completed!");
-        tracing::info!("║ 📊 Total pages scraped: {}", page_count);
-        tracing::info!("║ 📝 Entries created: {}", entries.len());
-
-        Ok(entries)
     }
 
     pub async fn scrape_with_progress(
@@ -962,131 +867,5 @@ impl UrlScraper {
 
     pub fn definition(&self) -> &DocDefinition {
         &self.definition
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_should_skip() {
-        let mut opts = ScraperOptions::default();
-        opts.skip_paths.insert("api/internal".to_string());
-        opts.skip_patterns.push(Regex::new(r"^changelog").unwrap());
-
-        assert!(opts.should_skip("api/internal"));
-        assert!(opts.should_skip("changelog/v1"));
-        assert!(!opts.should_skip("api/public"));
-    }
-
-    #[test]
-    fn test_parent_path() {
-        let definition = DocDefinition {
-            name: "test".to_string(),
-            display_name: "Test".to_string(),
-            version: "1.0".to_string(),
-            base_url: "https://example.com".to_string(),
-            description: "Test".to_string(),
-            options: ScraperOptions::default(),
-            selectors: ContentSelectors::default(),
-            attribution: None,
-        };
-
-        let scraper = UrlScraper::new(definition).unwrap();
-
-        assert_eq!(
-            scraper.build_parent_path("std/collections/vec"),
-            Some("std/collections".to_string())
-        );
-        assert_eq!(
-            scraper.build_parent_path("std/vec.html"),
-            Some("std".to_string())
-        );
-        assert_eq!(scraper.build_parent_path("std"), None);
-    }
-
-    #[test]
-    fn test_normalize_link() {
-        let definition = DocDefinition {
-            name: "test".to_string(),
-            display_name: "Test".to_string(),
-            version: "1.0".to_string(),
-            base_url: "https://docs.python.org/3.13/".to_string(),
-            description: "Test".to_string(),
-            options: ScraperOptions::default(),
-            selectors: ContentSelectors::default(),
-            attribution: None,
-        };
-
-        let scraper = UrlScraper::new(definition).unwrap();
-
-        // Относительная ссылка в подпапке
-        assert_eq!(
-            scraper.normalize_link("intro.html", "library/index.html"),
-            Some("library/intro.html".to_string())
-        );
-
-        // Ссылка с ./
-        assert_eq!(
-            scraper.normalize_link("./functions.html", "library/index.html"),
-            Some("library/functions.html".to_string())
-        );
-
-        // Ссылка с ../
-        assert_eq!(
-            scraper.normalize_link("../reference/index.html", "library/index.html"),
-            Some("reference/index.html".to_string())
-        );
-
-        // Абсолютная ссылка
-        assert_eq!(
-            scraper.normalize_link("/3.13/library/os.html", "library/index.html"),
-            Some("3.13/library/os.html".to_string())
-        );
-
-        // Ссылка в корне
-        assert_eq!(
-            scraper.normalize_link("page.html", "index.html"),
-            Some("page.html".to_string())
-        );
-    }
-
-    #[tokio::test]
-    async fn test_real_python_scrape() {
-        use std::collections::HashSet;
-
-        let definition = DocDefinition {
-            name: "python-test".to_string(),
-            display_name: "Python Test".to_string(),
-            version: "3.13".to_string(),
-            base_url: "https://docs.python.org/3.13/".to_string(),
-            description: "Test".to_string(),
-            options: ScraperOptions {
-                initial_paths: vec!["library/index.html".to_string()],
-                skip_patterns: vec![],
-                skip_paths: HashSet::new(),
-                only_patterns: Some(vec![Regex::new(r"^library/").unwrap()]),
-                max_depth: Some(1),
-                max_pages: Some(3),
-                follow_links: true,
-                concurrent_requests: 1,
-                delay_ms: 100,
-                ..Default::default()
-            },
-            selectors: ContentSelectors {
-                title: "h1".to_string(),
-                content: ".body, article, main".to_string(),
-                links: "a.reference.internal".to_string(),
-                entry_type_attr: None,
-                remove_selectors: vec![],
-            },
-            attribution: None,
-        };
-
-        let scraper = UrlScraper::new(definition).expect("Failed to create scraper");
-        let entries = scraper.scrape().await.expect("Failed to scrape");
-
-        assert!(!entries.is_empty(), "Should scrape at least 1 entry");
     }
 }

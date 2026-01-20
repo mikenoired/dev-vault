@@ -16,25 +16,21 @@ impl SearchEngine {
         let offset = query.offset.unwrap_or(0);
         let search_query = Self::prepare_fts_query(&query.query);
 
-        // Получаем подходящие rowid из индекса
-        // Мы берем чуть больше, чтобы после фильтрации по типу осталось достаточно
-        let fts_rows =
-            sqlx::query(
-                "SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ? OFFSET ?",
-            )
-                .bind(&search_query)
-                .bind(limit * 2)
-                .bind(offset)
-                .fetch_all(&self.pool)
-                .await
-                .context("Failed to search in FTS index")?;
+        let fts_rows = sqlx::query(
+            "SELECT rowid FROM search_index WHERE search_index MATCH ? LIMIT ? OFFSET ?",
+        )
+        .bind(&search_query)
+        .bind(limit * 2)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to search in FTS index")?;
 
         let mut result_items = Vec::new();
         for fts_row in fts_rows {
             let rowid: i64 = fts_row.get("rowid");
 
             if rowid > 0 {
-                // Обычный айтем (snippet, note, etc.)
                 if query.item_type.is_some()
                     && !matches!(
                         query.item_type,
@@ -49,7 +45,6 @@ impl SearchEngine {
                     result_items.push(item);
                 }
             } else {
-                // Запись документации
                 if query.item_type.is_some()
                     && !matches!(query.item_type, Some(ItemType::Documentation))
                 {
@@ -118,7 +113,6 @@ impl SearchEngine {
 
             let tags = self.get_item_tags(id).await?;
 
-            // Фильтрация по тегам если нужно
             if let Some(ref tag_ids) = query.tag_ids {
                 if !tag_ids.is_empty() {
                     let has_tag = tags.iter().any(|t| tag_ids.contains(&t.id));
@@ -160,7 +154,7 @@ impl SearchEngine {
             let doc_id: i64 = row.get("doc_real_id");
 
             let item = Item {
-                id: -id, // Возвращаем отрицательный ID для фронтенда, чтобы он знал что это дока
+                id: -id, // use negative id for docs
                 item_type: ItemType::Documentation,
                 title: format!("{} > {}", doc_name, row.get::<String, _>("title")),
                 description: Some(path),
@@ -172,7 +166,6 @@ impl SearchEngine {
                 ),
             };
 
-            // Для документации тегом выступает название самой доки
             let tags = vec![Tag {
                 id: -doc_id,
                 name: doc_name,

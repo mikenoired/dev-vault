@@ -48,29 +48,21 @@ impl Storage {
         let migration_003 = include_str!("../../migrations/003_fix_doc_triggers.sql");
         let migration_004 = include_str!("../../migrations/004_fix_fts_for_docs.sql");
 
-        tracing::info!("  → Running migration 001: initial_schema");
         pool.execute(migration_001)
             .await
             .context("Failed to run migration 001")?;
-        tracing::info!("  ✓ Migration 001 complete");
 
-        tracing::info!("  → Running migration 002: documentation_system");
         pool.execute(migration_002)
             .await
             .context("Failed to run migration 002")?;
-        tracing::info!("  ✓ Migration 002 complete");
 
-        tracing::info!("  → Running migration 003: fix_doc_triggers");
         pool.execute(migration_003)
             .await
             .context("Failed to run migration 003")?;
-        tracing::info!("  ✓ Migration 003 complete");
 
-        tracing::info!("  → Running migration 004: fix_fts_for_docs");
         pool.execute(migration_004)
             .await
             .context("Failed to run migration 004")?;
-        tracing::info!("  ✓ Migration 004 complete");
 
         tracing::info!("✅ All migrations completed successfully");
         Ok(())

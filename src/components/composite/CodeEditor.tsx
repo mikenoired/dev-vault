@@ -19,6 +19,7 @@ interface CodeEditorProps {
   language?: SupportedLanguages;
   readOnly?: boolean;
   copyToClipboard?: boolean;
+  fontSize?: number;
 }
 
 const bashLang = StreamLanguage.define(shell);
@@ -61,6 +62,7 @@ export default function CodeEditor({
   language = "javascript",
   readOnly = false,
   copyToClipboard = false,
+  fontSize = 14,
 }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -71,7 +73,7 @@ export default function CodeEditor({
 
     const theme = EditorView.theme({
       ".cm-content, .cm-gutterElement": {
-        fontSize: "14px",
+        fontSize: `${fontSize}px`,
       },
     });
 
@@ -110,7 +112,7 @@ export default function CodeEditor({
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language, readOnly]);
+  }, [fontSize, language, readOnly]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

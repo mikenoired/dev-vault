@@ -1,4 +1,6 @@
-use crate::models::config::{AppConfig, MAX_FONT_SIZE, MIN_FONT_SIZE};
+use crate::models::config::{
+    AppConfig, MAX_FONT_SIZE, MAX_READING_SPEED_WPM, MIN_FONT_SIZE, MIN_READING_SPEED_WPM,
+};
 use anyhow::Result;
 use std::path::PathBuf;
 use tokio::fs;
@@ -32,6 +34,14 @@ impl ConfigManager {
                 "editor font size must be between {} and {}",
                 MIN_FONT_SIZE,
                 MAX_FONT_SIZE
+            ));
+        }
+
+        if !(MIN_READING_SPEED_WPM..=MAX_READING_SPEED_WPM).contains(&config.ui.reading_speed_wpm) {
+            return Err(anyhow::anyhow!(
+                "reading speed must be between {} and {}",
+                MIN_READING_SPEED_WPM,
+                MAX_READING_SPEED_WPM
             ));
         }
 

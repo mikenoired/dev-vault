@@ -26,14 +26,15 @@ const getIcon = (type: ItemType | "new" | "documentation" | "docEntry") => {
 interface TabItemProps {
   tab: Tab;
   isActive: boolean;
+  onRequestClose: (tabId: string) => void;
 }
 
-export const TabItem = ({ tab, isActive }: TabItemProps) => {
-  const { selectTab, closeTab, pinTab } = useTabsStore();
+export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
+  const { selectTab, pinTab } = useTabsStore();
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
-    closeTab(tab.id);
+    onRequestClose(tab.id);
   };
 
   const handleClick = () => {
@@ -74,8 +75,16 @@ export const TabItem = ({ tab, isActive }: TabItemProps) => {
               : null}
       </span>
 
-      <span className={cn("flex-1 truncate text-xs font-medium", !tab.isPinned ? "italic" : "")}>
+      <span
+        className={cn(
+          "flex-1 truncate text-xs font-medium flex items-center gap-1",
+          !tab.isPinned ? "italic" : "",
+        )}
+      >
         {tab.title}
+        {tab.isDirty && (
+          <span className="size-1.5 rounded-full bg-primary/80" aria-label="Несохраненные изменения" />
+        )}
       </span>
 
       <button

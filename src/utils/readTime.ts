@@ -8,6 +8,7 @@ export default function calculateReadingTime(
   markdown: string,
   wordsPerMinute: number = 200,
 ): { minutes: number; words: number } {
+  const safeWordsPerMinute = wordsPerMinute > 0 ? wordsPerMinute : 200;
   let text = markdown.replace(/```[\s\S]*?```/g, "");
   text = text.replace(/`[^`]+`/g, "");
   text = text.replace(/<[^>]*>/g, "");
@@ -27,7 +28,7 @@ export default function calculateReadingTime(
     .split(/\s+/)
     .filter((word) => word.length > 0).length;
 
-  const minutes = Math.ceil(words / wordsPerMinute);
+  const minutes = Math.ceil(words / safeWordsPerMinute);
 
   return {
     minutes,

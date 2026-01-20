@@ -12,6 +12,7 @@ export interface Tab {
   docPath?: string;
   isPinned: boolean;
   title: string;
+  isDirty: boolean;
 }
 
 interface TabsState {
@@ -24,11 +25,17 @@ interface TabsState {
   openDocumentationTab: () => void;
   openDocEntryTab: (docId: number, docPath: string, title: string, pin?: boolean) => void;
   closeTab: (tabId: string) => void;
+  requestCloseTab: (tabId: string) => void;
+  confirmCloseTab: () => void;
+  cancelCloseTab: () => void;
   selectTab: (tabId: string) => void;
   pinTab: (tabId: string) => void;
   updateTabTitle: (itemId: number, title: string) => void;
   updateTabTitleById: (tabId: string, title: string) => void;
   promoteDraftTab: (draftTabId: string, itemId: number, itemType: ItemType, title: string) => void;
+  setTabDirty: (tabId: string, isDirty: boolean) => void;
+
+  pendingCloseTabId: string | null;
 }
 
 const typeLabels: Record<ItemType, string> = {
@@ -42,6 +49,7 @@ const typeLabels: Record<ItemType, string> = {
 export const useTabsStore = create<TabsState>((set, get) => ({
   tabs: [],
   activeTabId: null,
+  pendingCloseTabId: null,
 
   openItemTab: (itemId, itemType, title, pin = false) => {
     const { tabs } = get();
@@ -70,6 +78,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         itemType,
         title,
         isPinned: false,
+        isDirty: false,
       };
       set({ tabs: newTabs, activeTabId: newTabId });
     } else {
@@ -81,6 +90,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         itemType,
         title,
         isPinned: pin,
+        isDirty: false,
       };
       set({
         tabs: [...tabs, newTab],
@@ -97,6 +107,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       type: "new",
       isPinned: true,
       title: "Новая вкладка",
+      isDirty: false,
     };
     set({
       tabs: [...tabs, newTab],
@@ -113,6 +124,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       itemType,
       isPinned: true,
       title: `Новый ${typeLabels[itemType] ?? "элемент"}`,
+      isDirty: false,
     };
 
     set({
@@ -137,6 +149,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       type: "documentation",
       isPinned: false,
       title: "Документация",
+      isDirty: false,
     };
     set({
       tabs: [...tabs, newTab],
@@ -173,6 +186,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       docPath,
       isPinned: pin,
       title,
+      isDirty: false,
     };
 
     if (previewTabIndex !== -1) {
@@ -204,6 +218,28 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     }
 
     set({ tabs: newTabs, activeTabId: nextActiveId });
+  },
+
+  requestCloseTab: (tabId) => {
+    const { tabs } = get();
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab?.isDirty) {
+      set({ pendingCloseTabId: tabId });
+      return;
+    }
+    get().closeTab(tabId);
+  },
+
+  confirmCloseTab: () => {
+    const { pendingCloseTabId } = get();
+    if (pendingCloseTabId) {
+      get().closeTab(pendingCloseTabId);
+    }
+    set({ pendingCloseTabId: null });
+  },
+
+  cancelCloseTab: () => {
+    set({ pendingCloseTabId: null });
   },
 
   selectTab: (tabId) => {
@@ -242,10 +278,17 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       itemType,
       title,
       isPinned: draftTab.isPinned,
+      isDirty: false,
     };
 
     const nextTabs = [...tabs];
     nextTabs[draftIndex] = nextTab;
     set({ tabs: nextTabs, activeTabId: nextTabId });
+  },
+
+  setTabDirty: (tabId, isDirty) => {
+    set((state) => ({
+      tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isDirty } : t)),
+    }));
   },
 }));

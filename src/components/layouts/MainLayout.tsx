@@ -28,7 +28,7 @@ export const MainLayout = () => {
   const filterByType = useItemsStore((state) => state.filterByType);
   const setSelectedType = useItemsStore((state) => state.setSelectedType);
 
-  const { tabs, activeTabId, closeTab, openNewTab, openDraftItemTab } = useTabsStore(
+  const { tabs, activeTabId, requestCloseTab, openNewTab, openDraftItemTab } = useTabsStore(
     (state) => state,
   );
   const { sidebarWidth, isSidebarVisible, toggleSidebar, setSidebarWidth } = useUIStore(
@@ -57,9 +57,9 @@ export const MainLayout = () => {
 
   const closeCurrentTab = useCallback(() => {
     if (activeTabId) {
-      closeTab(activeTabId);
+      requestCloseTab(activeTabId);
     }
-  }, [activeTabId, closeTab]);
+  }, [activeTabId, requestCloseTab]);
 
   useHotkey({ key: "w", mod: true }, closeCurrentTab);
 

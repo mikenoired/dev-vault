@@ -1,6 +1,11 @@
 import { toast } from "sonner";
 import { Input } from "@/components/ui";
-import { MAX_FONT_SIZE, MIN_FONT_SIZE } from "@/constants";
+import {
+  MAX_FONT_SIZE,
+  MAX_READING_SPEED_WPM,
+  MIN_FONT_SIZE,
+  MIN_READING_SPEED_WPM,
+} from "@/constants";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { UiConfig } from "@/types";
 
@@ -10,11 +15,20 @@ export const AppearanceSection = () => {
 
   const handleUpdate = (updater: (config: UiConfig) => UiConfig) => {
     if (!config) return;
-    if (config.ui.editor_font_size < MIN_FONT_SIZE || config.ui.editor_font_size > MAX_FONT_SIZE) {
+    const newConfig = updater(config.ui);
+    if (newConfig.editor_font_size < MIN_FONT_SIZE || newConfig.editor_font_size > MAX_FONT_SIZE) {
       toast.error(`Размер шрифта должен быть между ${MIN_FONT_SIZE} и ${MAX_FONT_SIZE}px`);
       return;
     }
-    const newConfig = updater(config.ui);
+    if (
+      newConfig.reading_speed_wpm < MIN_READING_SPEED_WPM ||
+      newConfig.reading_speed_wpm > MAX_READING_SPEED_WPM
+    ) {
+      toast.error(
+        `Скорость чтения должна быть между ${MIN_READING_SPEED_WPM} и ${MAX_READING_SPEED_WPM} слов/мин`,
+      );
+      return;
+    }
     updateUiConfig(newConfig);
   };
 
@@ -31,6 +45,17 @@ export const AppearanceSection = () => {
               handleUpdate((prev) => ({
                 ...prev,
                 editor_font_size: Number.parseInt(e.target.value, 10),
+              }))
+            }
+          />
+          <Input
+            label="Скорость чтения (слов/мин)"
+            type="number"
+            value={config?.ui.reading_speed_wpm ?? 0}
+            onChange={(e) =>
+              handleUpdate((prev) => ({
+                ...prev,
+                reading_speed_wpm: Number.parseInt(e.target.value, 10),
               }))
             }
           />

@@ -69,14 +69,12 @@ export const MainLayout = () => {
   const { selectedDoc } = useDocsStore();
   const selectedType = useItemsStore((state) => state.selectedType);
 
-  // При первом запуске без вкладок выбираем первый доступный фильтр
   useEffect(() => {
     if (tabs.length === 0 && selectedType === null) {
       filterByType("snippet");
     }
   }, []);
 
-  // Синхронизируем selectedDoc и selectedType в store при переключении вкладок
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
       return;
@@ -188,11 +186,12 @@ export const MainLayout = () => {
       >
         <div
           className={cn(
-            "h-full flex items-center border-r border-border pl-[72px] pr-2 overflow-hidden",
+            "h-full flex items-center border-r border-border pl-18 pr-2 overflow-hidden",
             !isResizingState ? "transition-all duration-300 ease-in-out" : "",
           )}
           style={{ width: isSidebarVisible ? sidebarWidth : 125 }}
         >
+          <div className="flex-1 h-full" data-tauri-drag-region />
           <button
             type="button"
             onClick={openSettings}

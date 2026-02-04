@@ -72,7 +72,7 @@ export default function BaseItems() {
             </div>
           </ContextMenu.Trigger>
           <ContextMenu.Portal>
-            <ContextMenu.Content className="min-w-[160px] rounded-md border border-border bg-popover p-1 text-sm shadow-md">
+            <ContextMenu.Content className="min-w-40 rounded-md border border-border bg-popover p-1 text-sm shadow-md">
               <ContextMenu.Item
                 className="cursor-pointer rounded-sm px-2 py-1.5 text-red-500 outline-none hover:bg-red-500/10"
                 onSelect={() => requestDelete(item)}

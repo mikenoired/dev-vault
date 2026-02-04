@@ -46,6 +46,10 @@ export const tauriService = {
     return invoke<Tag[]>("list_tags");
   },
 
+  async searchTags(query: string, limit = 8): Promise<Tag[]> {
+    return invoke<Tag[]>("search_tags", { query, limit });
+  },
+
   async listItemTypeCounts(): Promise<{ type: ItemType; count: number }[]> {
     return invoke<{ type: ItemType; count: number }[]>("list_item_type_counts");
   },

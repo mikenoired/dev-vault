@@ -99,6 +99,24 @@ pub async fn list_tags(state: State<'_, AppState>) -> Result<Vec<Tag>, String> {
 }
 
 #[tauri::command]
+pub async fn search_tags(
+    state: State<'_, AppState>,
+    query: String,
+    limit: Option<i64>,
+) -> Result<Vec<Tag>, String> {
+    let storage = state.storage.lock().await;
+    let trimmed = query.trim();
+    let limit = limit.unwrap_or(8).max(1);
+    if trimmed.is_empty() {
+        return Ok(Vec::new());
+    }
+    storage
+        .search_tags(trimmed, limit)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn list_item_type_counts(
     state: State<'_, AppState>,
 ) -> Result<Vec<ItemTypeCount>, String> {

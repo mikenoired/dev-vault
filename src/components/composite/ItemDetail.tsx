@@ -1,20 +1,21 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Check, Code2, Link2, Settings, StickyNote, X } from "lucide-react";
 import {
-  CalendarIcon,
-  ChevronDown,
-  ClockIcon,
-  Code2,
-  Link2,
-  Settings,
-  StickyNote,
-} from "lucide-react";
-import { type ElementType, useCallback, useEffect, useMemo, useRef, useState } from "react";
+  type ElementType,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import CodeEditor from "@/components/composite/CodeEditor";
-import { Badge, Input, Textarea } from "@/components/ui";
+import { Badge, cn, Textarea } from "@/components/ui";
+import { tauriService } from "@/services/tauri";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabsStore } from "@/stores/tabsStore";
-import type { ItemType } from "@/types";
+import type { ItemType, Tag } from "@/types";
 
 interface ItemDetailProps {
   itemId?: number;
@@ -46,11 +47,8 @@ const getLanguage = (type: ItemType): "javascript" | "python" | "rust" | "markdo
   }
 };
 
-const parseTags = (value: string) =>
-  value
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
+const normalizeTag = (value: string) => value.trim();
+const tagSignature = (tags: string[]) => tags.map((tag) => tag.trim()).join("|");
 
 export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: ItemDetailProps) => {
   const items = useItemsStore((state) => state.items);
@@ -63,9 +61,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const setTabDirty = useTabsStore((state) => state.setTabDirty);
   const activeTabId = useTabsStore((state) => state.activeTabId);
 
-  const autosaveEnabled = useSettingsStore(
-    (state) => state.config?.ui.autosave_enabled ?? true,
-  );
+  const autosaveEnabled = useSettingsStore((state) => state.config?.ui.autosave_enabled ?? true);
   const editorFontSize = useSettingsStore((state) => state.config?.ui.editor_font_size ?? 14);
 
   const selectedItem = useMemo(() => {
@@ -79,11 +75,16 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editContent, setEditContent] = useState("");
-  const [editTags, setEditTags] = useState("");
+  const [tagList, setTagList] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [tagSuggestions, setTagSuggestions] = useState<Tag[]>([]);
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+  const [focusedTagIndex, setFocusedTagIndex] = useState(0);
   const [currentType, setCurrentType] = useState<ItemType>(draftType ?? "snippet");
   const [titleError, setTitleError] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const titleBeforeEditRef = useRef("");
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const lastSavedRef = useRef({
     title: "",
     description: "",
@@ -99,7 +100,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       setEditTitle(selectedItem.title);
       setEditDescription(selectedItem.description || "");
       setEditContent(selectedItem.content);
-      setEditTags(selectedItem.tags.map((t) => t.name).join(", "));
+      setTagList(selectedItem.tags.map((t) => t.name));
+      setTagInput("");
+      setTagSuggestions([]);
+      setIsTagDropdownOpen(false);
       setCurrentType(selectedItem.type);
       setTitleError("");
       setIsDirty(false);
@@ -107,7 +111,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         title: selectedItem.title,
         description: selectedItem.description || "",
         content: selectedItem.content,
-        tags: selectedItem.tags.map((t) => t.name).join(", "),
+        tags: tagSignature(selectedItem.tags.map((t) => t.name)),
         type: selectedItem.type,
       };
       return;
@@ -117,7 +121,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       setEditTitle("");
       setEditDescription("");
       setEditContent("");
-      setEditTags("");
+      setTagList([]);
+      setTagInput("");
+      setTagSuggestions([]);
+      setIsTagDropdownOpen(false);
       setCurrentType(draftType);
       setTitleError("");
       setIsDirty(false);
@@ -149,7 +156,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   useEffect(() => {
     if (!isDraft || !isCreatingRef.current) return;
     hasPendingDraftChangesRef.current = true;
-  }, [editTitle, editDescription, editContent, editTags, currentType, isDraft]);
+  }, [editTitle, editDescription, editContent, tagList, currentType, isDraft]);
 
   useEffect(() => {
     if (!autosaveEnabled) return;
@@ -163,14 +170,14 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       lastSaved.title === trimmedTitle &&
       lastSaved.description === editDescription &&
       lastSaved.content === editContent &&
-      lastSaved.tags === editTags &&
+      lastSaved.tags === tagSignature(tagList) &&
       lastSaved.type === currentType
     ) {
       return;
     }
 
     const handler = window.setTimeout(async () => {
-      const tagNames = parseTags(editTags);
+      const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
       const shouldUpdateType = currentType !== lastSavedRef.current.type;
       await updateItem(selectedItem.id, {
         type: shouldUpdateType ? currentType : undefined,
@@ -187,7 +194,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         title: trimmedTitle,
         description: editDescription,
         content: editContent,
-        tags: editTags,
+        tags: tagSignature(tagList),
         type: currentType,
       };
     }, 500);
@@ -201,7 +208,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     editTitle,
     editDescription,
     editContent,
-    editTags,
+    tagList,
     currentType,
     titleError,
     updateItem,
@@ -216,10 +223,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       trimmedTitle !== lastSaved.title ||
       editDescription !== lastSaved.description ||
       editContent !== lastSaved.content ||
-      editTags !== lastSaved.tags ||
+      tagSignature(tagList) !== lastSaved.tags ||
       currentType !== lastSaved.type
     );
-  }, [currentType, editContent, editDescription, editTags, editTitle]);
+  }, [currentType, editContent, editDescription, editTitle, tagList]);
 
   useEffect(() => {
     if (autosaveEnabled) {
@@ -245,7 +252,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       return;
     }
 
-    const tagNames = parseTags(editTags);
+    const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
 
     if (isDraft && !itemId) {
       try {
@@ -264,7 +271,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
           title: trimmedTitle,
           description: editDescription,
           content: editContent,
-          tags: editTags,
+          tags: tagSignature(tagList),
           type: currentType,
         };
         setIsDirty(false);
@@ -292,7 +299,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         title: trimmedTitle,
         description: editDescription,
         content: editContent,
-        tags: editTags,
+        tags: tagSignature(tagList),
         type: currentType,
       };
       setIsDirty(false);
@@ -306,7 +313,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     draftTabId,
     editContent,
     editDescription,
-    editTags,
+    tagList,
     editTitle,
     isDraft,
     itemId,
@@ -333,15 +340,147 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     };
   }, [autosaveEnabled, saveChanges]);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleString("ru-RU");
-  };
-
   const handleInteraction = () => {
     if (onInteraction) {
       onInteraction();
     }
   };
+
+  const addTags = useCallback((nextTags: string[]) => {
+    setTagList((prev) => {
+      const existing = new Set(prev.map((tag) => tag.toLowerCase()));
+      const merged = [...prev];
+      for (const tag of nextTags) {
+        const normalized = normalizeTag(tag);
+        if (!normalized) continue;
+        const key = normalized.toLowerCase();
+        if (existing.has(key)) continue;
+        existing.add(key);
+        merged.push(normalized);
+      }
+      return merged;
+    });
+  }, []);
+
+  const applyTagInput = useCallback(
+    (value: string, finalize: boolean) => {
+      const hasTrailingSpace = /\s$/.test(value);
+      const parts = value.split(/\s+/).filter(Boolean);
+      if (parts.length === 0) {
+        setTagInput("");
+        return;
+      }
+
+      let pending = "";
+      let toAdd = parts;
+      if (!finalize && !hasTrailingSpace) {
+        pending = parts[parts.length - 1] ?? "";
+        toAdd = parts.slice(0, -1);
+      }
+
+      if (toAdd.length > 0) {
+        addTags(toAdd);
+      }
+
+      setTagInput(pending);
+    },
+    [addTags],
+  );
+
+  const handleTagInputChange = (value: string) => {
+    if (value.includes(" ")) {
+      applyTagInput(value, false);
+      return;
+    }
+    setTagInput(value);
+  };
+
+  const handleTagInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace" && tagInput.length === 0 && tagList.length > 0) {
+      event.preventDefault();
+      setTagList((prev) => prev.slice(0, -1));
+      return;
+    }
+
+    if (event.key === "Tab" && isTagDropdownOpen && tagSuggestions.length > 0) {
+      event.preventDefault();
+      const direction = event.shiftKey ? -1 : 1;
+      setFocusedTagIndex((prev) => {
+        const next = prev + direction;
+        if (next < 0) return tagSuggestions.length - 1;
+        if (next >= tagSuggestions.length) return 0;
+        return next;
+      });
+      return;
+    }
+
+    if (event.key === "Enter" && isTagDropdownOpen && tagSuggestions.length > 0) {
+      event.preventDefault();
+      const target = tagSuggestions[focusedTagIndex];
+      if (target) {
+        addTags([target.name]);
+        setTagInput("");
+        setIsTagDropdownOpen(false);
+        setFocusedTagIndex(0);
+      }
+      return;
+    }
+
+    if (event.key === " " || event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      applyTagInput(`${tagInput} `, false);
+    }
+  };
+
+  const handleTagInputBlur = () => {
+    if (tagInput.trim()) {
+      applyTagInput(tagInput, true);
+    }
+    setIsTagDropdownOpen(false);
+    setFocusedTagIndex(0);
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTagList((prev) => prev.filter((item) => item !== tag));
+  };
+
+  useEffect(() => {
+    const query = tagInput.trim();
+    if (query.length < 2) {
+      setTagSuggestions([]);
+      setIsTagDropdownOpen(false);
+      setFocusedTagIndex(0);
+      return;
+    }
+
+    let isActive = true;
+    const handler = window.setTimeout(async () => {
+      try {
+        const suggestions = await tauriService.searchTags(query, 8);
+        if (!isActive) return;
+        const existing = new Set(tagList.map((tag) => tag.toLowerCase()));
+        const filtered = suggestions.filter((tag) => !existing.has(tag.name.toLowerCase()));
+        setTagSuggestions(filtered);
+        setIsTagDropdownOpen(filtered.length > 0);
+        setFocusedTagIndex(0);
+      } catch (error) {
+        console.error("Failed to search tags:", error);
+      }
+    }, 200);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(handler);
+    };
+  }, [tagInput, tagList]);
+
+  useEffect(() => {
+    const element = descriptionRef.current;
+    if (!element) return;
+    element.style.height = "0px";
+    const next = Math.max(element.scrollHeight, 24);
+    element.style.height = `${next}px`;
+  }, [editDescription]);
 
   const handleTitleChange = (value: string) => {
     setEditTitle(value);
@@ -357,7 +496,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
     if (autosaveEnabled && !selectedItem && isDraft && trimmed && !isCreatingRef.current) {
       isCreatingRef.current = true;
-      const tagNames = parseTags(editTags);
+      const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
       createItem({
         type: currentType,
         title: trimmed,
@@ -373,7 +512,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               title: editTitle.trim() || created.title,
               description: editDescription,
               content: editContent,
-              tagNames: parseTags(editTags),
+              tagNames: tagList.map((tag) => normalizeTag(tag)).filter(Boolean),
             }).catch((error) => {
               console.error("Failed to sync draft changes:", error);
             });
@@ -386,9 +525,9 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         .catch((error) => {
           console.error("Failed to create item:", error);
         })
-          .finally(() => {
-            isCreatingRef.current = false;
-          });
+        .finally(() => {
+          isCreatingRef.current = false;
+        });
     }
   };
 
@@ -416,7 +555,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   if (selectedItem && isDocumentation) {
     return (
       <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
-        <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="p-6 border-b border-border/40 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 line-clamp-1">
@@ -436,26 +575,16 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex gap-1.5 flex-wrap">
               {selectedItem.tags.map((tag) => (
-                <Badge key={tag.id} variant="outline" className="bg-accent/30">
+                <Badge key={tag.id} variant="secondary" className="bg-accent/30">
                   {tag.name}
                 </Badge>
               ))}
-            </div>
-            <div className="ml-auto flex gap-3">
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="size-4" />
-                <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <ClockIcon className="size-4" />
-                <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
-              </div>
             </div>
           </div>
         </div>
 
         <div className="flex-1 p-6 overflow-y-auto">
-          <div className="rounded-xl border border-border bg-muted/30 overflow-hidden min-h-full">
+          <div className="rounded-xl bg-muted/30 overflow-hidden min-h-full">
             <CodeEditor
               value={selectedItem.content}
               readOnly={true}
@@ -475,103 +604,154 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   return (
     <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
-      <div className="p-6 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground">
-              <TypeIcon className="size-5" />
+      <div className="p-6 border-b border-border/40 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex flex-col gap-2">
+          <div className="relative pb-4">
+            <div className="flex items-center gap-3">
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Тип элемента"
+                    className="mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors hover:bg-accent/60 cursor-pointer"
+                  >
+                    <TypeIcon className="size-5" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    align="start"
+                    className="min-w-48 rounded-md border border-border bg-popover p-1 shadow-md z-20"
+                  >
+                    {itemTypeOptions.map((option) => (
+                      <DropdownMenu.Item
+                        key={option.value}
+                        className={cn(
+                          "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground outline-none transition-colors data-highlighted:bg-accent/40",
+                          option.value === activeType ? "cursor-not-allowed" : "cursor-pointer",
+                        )}
+                        onSelect={() => {
+                          if (option.value !== activeType) {
+                            setCurrentType(option.value);
+                          }
+                        }}
+                      >
+                        <option.icon className="size-4 text-muted-foreground" />
+                        <span className="pointer-events-none">{option.label}</span>
+                        <span className="ml-auto flex size-4 items-center justify-center">
+                          {option.value === activeType && (
+                            <Check className="size-4 text-emerald-500" />
+                          )}
+                        </span>
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+              <div className="flex-1">
+                <input
+                  value={editTitle}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onFocus={handleTitleFocus}
+                  onBlur={handleTitleBlur}
+                  placeholder="Введите заголовок..."
+                  className="border-none font-medium text-2xl w-full focus:outline-0"
+                />
+              </div>
             </div>
-            <div className="flex-1">
-              <Input
-                id="editTitle"
-                label="Заголовок"
-                value={editTitle}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                onFocus={handleTitleFocus}
-                onBlur={handleTitleBlur}
-                placeholder="Введите заголовок"
-                error={titleError}
-              />
-            </div>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent/40 transition-colors"
-                >
-                  {typeConfig.label}
-                  <ChevronDown className="size-4 text-muted-foreground" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  align="end"
-                  className="min-w-[180px] rounded-md border border-border bg-popover p-1 shadow-md"
-                >
-                  {itemTypeOptions.map((option) => (
-                    <DropdownMenu.Item
-                      key={option.value}
-                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground outline-none hover:bg-accent"
-                      onSelect={() => {
-                        setCurrentType(option.value);
-                      }}
-                    >
-                      <option.icon className="size-4 text-muted-foreground" />
-                      <span>{option.label}</span>
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            <span className="text-sm text-red-500 absolute left-0 -bottom-2.5">
+              {titleError ? titleError : " "}
+            </span>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="relative pb-2">
+            <div className="pointer-events-none absolute inset-y-0 left-0 pr-2">
+              <div className="flex flex-col gap-0 text-sm font-mono italic text-muted-foreground/40">
+                {editDescription.length === 0
+                  ? null
+                  : editDescription.split("\n").map((_, index) => (
+                      <span key={`slash-${index}`} className="leading-6">
+                        //
+                      </span>
+                    ))}
+              </div>
+            </div>
             <Textarea
+              ref={descriptionRef}
               id="editDescription"
-              label="Описание"
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Введите описание (необязательно)"
-              rows={2}
-            />
-            <Input
-              id="editTags"
-              label="Теги (через запятую)"
-              value={editTags}
-              onChange={(e) => setEditTags(e.target.value)}
-              placeholder="react, typescript, ui"
+              rows={1}
+              className="relative min-h-6 border-none bg-transparent pl-6 pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none"
             />
           </div>
 
-          {selectedItem && (
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="size-4" />
-                <span className="text-xs leading-none">{formatDate(selectedItem.createdAt)}</span>
+          <div className="flex flex-col gap-2 pb-2">
+            {tagList.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto">
+                {tagList.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="group inline-flex items-center gap-1 rounded-full bg-accent/40 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent/60"
+                    aria-label={`Удалить тег ${tag}`}
+                  >
+                    <span>{tag}</span>
+                    <X className="size-3 text-muted-foreground group-hover:text-foreground" />
+                  </button>
+                ))}
               </div>
-              <div className="flex items-center gap-1">
-                <ClockIcon className="size-4" />
-                <span className="text-xs leading-none">{formatDate(selectedItem.updatedAt)}</span>
-              </div>
+            )}
+
+            <div className="relative">
+              <input
+                id="editTags"
+                value={tagInput}
+                onChange={(e) => handleTagInputChange(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
+                onBlur={handleTagInputBlur}
+                placeholder="Введите теги через пробел"
+                className="w-full border-none bg-transparent px-0 text-sm text-foreground focus:outline-none"
+              />
+
+              {isTagDropdownOpen && (
+                <div className="absolute left-0 top-full z-20 mt-2 w-full rounded-md border border-border/50 bg-popover p-1 shadow-md">
+                  {tagSuggestions.map((tag, index) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        addTags([tag.name]);
+                        setTagInput("");
+                        setIsTagDropdownOpen(false);
+                        setFocusedTagIndex(0);
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors",
+                        focusedTagIndex === index ? "bg-accent/40" : "hover:bg-accent/40",
+                      )}
+                    >
+                      <span>{tag.name}</span>
+                      <span className="text-xs text-muted-foreground">Добавить</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="flex flex-col gap-2 h-full">
-          <label htmlFor="editContent" className="text-sm font-medium">
-            Контент
-          </label>
-          <div className="rounded-xl border border-border bg-muted/30 overflow-hidden min-h-full">
-            <CodeEditor
-              value={editContent}
-              onChange={setEditContent}
-              language={getLanguage(activeType)}
-              fontSize={editorFontSize}
-            />
-          </div>
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        <CodeEditor
+          value={editContent}
+          onChange={setEditContent}
+          language={getLanguage(activeType)}
+          fontSize={editorFontSize}
+        />
       </div>
     </div>
   );

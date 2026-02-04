@@ -68,6 +68,17 @@ impl Storage {
         Ok(())
     }
 
+    fn spawn_cleanup_unused_tags(&self) {
+        let pool = self.pool.clone();
+        tokio::spawn(async move {
+            let _ = sqlx::query(
+                "DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM item_tags)",
+            )
+            .execute(&pool)
+            .await;
+        });
+    }
+
     pub async fn create_item(&self, dto: CreateItemDto) -> Result<i64> {
         let now = chrono::Utc::now().timestamp();
         let metadata_json = serde_json::to_string(&dto.metadata.unwrap_or(serde_json::json!({})))?;
@@ -356,6 +367,8 @@ impl Storage {
                     .await
                     .context("Failed to link new tags")?;
             }
+
+            self.spawn_cleanup_unused_tags();
         }
 
         Ok(true)
@@ -367,6 +380,10 @@ impl Storage {
             .execute(&self.pool)
             .await
             .context("Failed to delete item")?;
+
+        if result.rows_affected() > 0 {
+            self.spawn_cleanup_unused_tags();
+        }
 
         Ok(result.rows_affected() > 0)
     }
@@ -476,6 +493,24 @@ impl Storage {
             .fetch_all(&self.pool)
             .await
             .context("Failed to list tags")?;
+
+        Ok(rows
+            .iter()
+            .map(|r| Tag {
+                id: r.get("id"),
+                name: r.get("name"),
+            })
+            .collect())
+    }
+
+    pub async fn search_tags(&self, query: &str, limit: i64) -> Result<Vec<Tag>> {
+        let pattern = format!("{}%", query);
+        let rows = sqlx::query("SELECT id, name FROM tags WHERE name LIKE ?1 ORDER BY name LIMIT ?2")
+            .bind(pattern)
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await
+            .context("Failed to search tags")?;
 
         Ok(rows
             .iter()

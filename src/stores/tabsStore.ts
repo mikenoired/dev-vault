@@ -247,9 +247,15 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   },
 
   pinTab: (tabId) => {
-    set((state) => ({
-      tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isPinned: true } : t)),
-    }));
+    set((state) => {
+      const current = state.tabs.find((t) => t.id === tabId);
+      if (!current || current.isPinned) {
+        return state;
+      }
+      return {
+        tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isPinned: true } : t)),
+      };
+    });
   },
 
   updateTabTitle: (itemId, title) => {

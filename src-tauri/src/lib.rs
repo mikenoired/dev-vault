@@ -202,6 +202,7 @@ pub fn run() {
             commands::create_tag,
             commands::get_or_create_tag,
             commands::list_tags,
+            commands::search_tags,
             commands::list_item_type_counts,
             commands::search,
             commands::get_config,

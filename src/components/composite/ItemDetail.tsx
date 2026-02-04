@@ -8,10 +8,11 @@ import {
   Settings,
   StickyNote,
 } from "lucide-react";
-import { type ElementType, useEffect, useMemo, useRef, useState } from "react";
+import { type ElementType, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CodeEditor from "@/components/composite/CodeEditor";
 import { Badge, Input, Textarea } from "@/components/ui";
 import { useItemsStore } from "@/stores/itemsStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabsStore } from "@/stores/tabsStore";
 import type { ItemType } from "@/types";
 
@@ -59,6 +60,13 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
   const updateTabTitleById = useTabsStore((state) => state.updateTabTitleById);
   const promoteDraftTab = useTabsStore((state) => state.promoteDraftTab);
+  const setTabDirty = useTabsStore((state) => state.setTabDirty);
+  const activeTabId = useTabsStore((state) => state.activeTabId);
+
+  const autosaveEnabled = useSettingsStore(
+    (state) => state.config?.ui.autosave_enabled ?? true,
+  );
+  const editorFontSize = useSettingsStore((state) => state.config?.ui.editor_font_size ?? 14);
 
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
@@ -74,6 +82,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const [editTags, setEditTags] = useState("");
   const [currentType, setCurrentType] = useState<ItemType>(draftType ?? "snippet");
   const [titleError, setTitleError] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
   const titleBeforeEditRef = useRef("");
   const lastSavedRef = useRef({
     title: "",
@@ -93,6 +102,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       setEditTags(selectedItem.tags.map((t) => t.name).join(", "));
       setCurrentType(selectedItem.type);
       setTitleError("");
+      setIsDirty(false);
       lastSavedRef.current = {
         title: selectedItem.title,
         description: selectedItem.description || "",
@@ -110,6 +120,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       setEditTags("");
       setCurrentType(draftType);
       setTitleError("");
+      setIsDirty(false);
       lastSavedRef.current = {
         title: "",
         description: "",
@@ -122,6 +133,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   const isDraft = !itemId && !!draftType;
   const isDocumentation = selectedItem?.type === "documentation";
+  const resolvedTabId = draftTabId ?? (itemId ? `item-${itemId}` : activeTabId);
 
   useEffect(() => {
     if (!isDraft || !draftTabId) return;
@@ -140,6 +152,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   }, [editTitle, editDescription, editContent, editTags, currentType, isDraft]);
 
   useEffect(() => {
+    if (!autosaveEnabled) return;
     if (!selectedItem || isDocumentation) return;
 
     const trimmedTitle = editTitle.trim();
@@ -183,6 +196,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       window.clearTimeout(handler);
     };
   }, [
+    autosaveEnabled,
     selectedItem,
     editTitle,
     editDescription,
@@ -194,6 +208,130 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     updateTabTitle,
     isDocumentation,
   ]);
+
+  const hasChanges = useCallback(() => {
+    const trimmedTitle = editTitle.trim();
+    const lastSaved = lastSavedRef.current;
+    return (
+      trimmedTitle !== lastSaved.title ||
+      editDescription !== lastSaved.description ||
+      editContent !== lastSaved.content ||
+      editTags !== lastSaved.tags ||
+      currentType !== lastSaved.type
+    );
+  }, [currentType, editContent, editDescription, editTags, editTitle]);
+
+  useEffect(() => {
+    if (autosaveEnabled) {
+      setIsDirty(false);
+      return;
+    }
+    setIsDirty(hasChanges());
+  }, [autosaveEnabled, hasChanges]);
+
+  useEffect(() => {
+    if (!resolvedTabId) return;
+    if (autosaveEnabled) {
+      setTabDirty(resolvedTabId, false);
+      return;
+    }
+    setTabDirty(resolvedTabId, isDirty);
+  }, [autosaveEnabled, isDirty, resolvedTabId, setTabDirty]);
+
+  const saveChanges = useCallback(async () => {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      setTitleError("Заголовок не может быть пустым.");
+      return;
+    }
+
+    const tagNames = parseTags(editTags);
+
+    if (isDraft && !itemId) {
+      try {
+        const created = await createItem({
+          type: currentType,
+          title: trimmedTitle,
+          description: editDescription || undefined,
+          content: editContent,
+          tagNames,
+        });
+        if (draftTabId) {
+          promoteDraftTab(draftTabId, created.id, currentType, trimmedTitle);
+          setTabDirty(draftTabId, false);
+        }
+        lastSavedRef.current = {
+          title: trimmedTitle,
+          description: editDescription,
+          content: editContent,
+          tags: editTags,
+          type: currentType,
+        };
+        setIsDirty(false);
+        setTitleError("");
+      } catch (error) {
+        console.error("Failed to create item:", error);
+      }
+      return;
+    }
+
+    if (!selectedItem) return;
+
+    try {
+      const lastSaved = lastSavedRef.current;
+      const shouldUpdateType = currentType !== lastSaved.type;
+      await updateItem(selectedItem.id, {
+        type: shouldUpdateType ? currentType : undefined,
+        title: trimmedTitle,
+        description: editDescription,
+        content: editContent,
+        tagNames,
+      });
+      updateTabTitle(selectedItem.id, trimmedTitle);
+      lastSavedRef.current = {
+        title: trimmedTitle,
+        description: editDescription,
+        content: editContent,
+        tags: editTags,
+        type: currentType,
+      };
+      setIsDirty(false);
+      setTitleError("");
+    } catch (error) {
+      console.error("Failed to update item:", error);
+    }
+  }, [
+    createItem,
+    currentType,
+    draftTabId,
+    editContent,
+    editDescription,
+    editTags,
+    editTitle,
+    isDraft,
+    itemId,
+    promoteDraftTab,
+    selectedItem,
+    setTabDirty,
+    updateItem,
+    updateTabTitle,
+  ]);
+
+  useEffect(() => {
+    if (autosaveEnabled) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void saveChanges();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [autosaveEnabled, saveChanges]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleString("ru-RU");
@@ -217,7 +355,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       }
     }
 
-    if (!selectedItem && isDraft && trimmed && !isCreatingRef.current) {
+    if (autosaveEnabled && !selectedItem && isDraft && trimmed && !isCreatingRef.current) {
       isCreatingRef.current = true;
       const tagNames = parseTags(editTags);
       createItem({
@@ -248,9 +386,9 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         .catch((error) => {
           console.error("Failed to create item:", error);
         })
-        .finally(() => {
-          isCreatingRef.current = false;
-        });
+          .finally(() => {
+            isCreatingRef.current = false;
+          });
     }
   };
 
@@ -322,6 +460,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               value={selectedItem.content}
               readOnly={true}
               language={getLanguage(selectedItem.type)}
+              fontSize={editorFontSize}
             />
           </div>
         </div>
@@ -429,6 +568,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               value={editContent}
               onChange={setEditContent}
               language={getLanguage(activeType)}
+              fontSize={editorFontSize}
             />
           </div>
         </div>

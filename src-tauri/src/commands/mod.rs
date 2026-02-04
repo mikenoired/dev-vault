@@ -6,6 +6,9 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::{mpsc, Mutex};
 
+mod mcp;
+pub use mcp::*;
+
 pub struct AppState {
     pub storage: Arc<Mutex<Storage>>,
     pub config_manager: Arc<ConfigManager>,

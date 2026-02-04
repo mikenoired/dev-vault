@@ -112,6 +112,23 @@ export interface AppConfig {
   ui: UiConfig;
 }
 
+export interface McpServerConfig {
+  name: string;
+  command: string;
+  args: string[];
+  commandExists: boolean;
+}
+
+export interface AiToolStatus {
+  id: string;
+  name: string;
+  detected: boolean;
+  configPath?: string;
+  mcpInstalled: boolean;
+  supportsAutoConnect: boolean;
+  statusMessage?: string;
+}
+
 export type ScrapeStatus = "starting" | "scraping" | "processing" | "completed" | "failed";
 
 export interface ScrapeProgress {

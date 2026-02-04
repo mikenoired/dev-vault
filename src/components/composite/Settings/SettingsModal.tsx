@@ -7,6 +7,7 @@ import {
   AppearanceSection,
   DocumentationSection,
   GeneralSection,
+  McpSection,
   SearchSection,
 } from "@/components/composite/Settings/sections";
 import { Modal } from "@/components/ui/Modal";
@@ -27,6 +28,8 @@ export const SettingsModal = () => {
         return <SearchSection />;
       case "documentation":
         return <DocumentationSection />;
+      case "mcp":
+        return <McpSection />;
       default:
         return null;
     }

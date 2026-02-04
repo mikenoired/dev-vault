@@ -1,8 +1,8 @@
-import { Book, Palette, Search, Settings } from "lucide-react";
+import { Book, Palette, Plug, Search, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/components/ui";
 
-export type SettingsSection = "general" | "appearance" | "search" | "documentation";
+export type SettingsSection = "general" | "appearance" | "search" | "documentation" | "mcp";
 
 interface SidebarItemProps {
   id: SettingsSection;
@@ -19,6 +19,7 @@ const sidebarItems: SidebarItem[] = [
   { id: "appearance", label: "Внешний вид", icon: <Palette size={16} /> },
   { id: "search", label: "Поиск", icon: <Search size={16} /> },
   { id: "documentation", label: "Документация", icon: <Book size={16} /> },
+  { id: "mcp", label: "MCP", icon: <Plug size={16} /> },
 ];
 
 const SidebarItem = ({ id, label, icon, isActive, onClick }: SidebarItemProps) => (

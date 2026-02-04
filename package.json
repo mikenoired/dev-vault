@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mcp": "node scripts/ensure-mcp-bin.mjs && cargo build --bin dev-vault-mcp --manifest-path src-tauri/Cargo.toml && node scripts/copy-mcp-bin.mjs",
+    "build:mcp": "node scripts/ensure-mcp-bin.mjs && cargo build --release --bin dev-vault-mcp --manifest-path src-tauri/Cargo.toml && node scripts/copy-mcp-bin.mjs --release",
+    "dev:tauri": "bun run dev:mcp && bun run dev",
+    "build:tauri": "bun run build:mcp && bun run build",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",

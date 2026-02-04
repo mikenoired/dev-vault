@@ -1,6 +1,7 @@
 mod commands;
-mod domain;
-mod models;
+pub mod domain;
+pub mod mcp;
+pub mod models;
 
 use commands::AppState;
 use domain::{DocumentationManager, Storage};
@@ -213,6 +214,10 @@ pub fn run() {
             commands::get_doc_entries,
             commands::get_doc_entry_by_path,
             commands::get_doc_tree,
+            commands::get_mcp_server_config,
+            commands::list_ai_tools,
+            commands::connect_mcp_server,
+            commands::mcp_health,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

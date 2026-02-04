@@ -1,5 +1,13 @@
-import * as Tooltip from "@radix-ui/react-tooltip";
-import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import {
+  Book,
+  ChevronDown,
+  Code,
+  Link as LinkIcon,
+  type LucideIcon,
+  Settings,
+  StickyNote,
+} from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
@@ -38,46 +46,59 @@ export const TypeFilter = () => {
     return typeCounts[type] ?? 0;
   };
 
-  return (
-    <Tooltip.Provider delayDuration={300}>
-      <div className="flex p-1.5 gap-1 border-b border-border">
-        {(Object.keys(typeConfig) as ItemType[]).map((type) => {
-          const { icon: Icon, label } = typeConfig[type];
-          const count = getCountByType(type);
-          const isDisabled = count === 0;
+  const activeType = selectedType ?? "snippet";
+  const activeLabel = typeConfig[activeType]?.label ?? "Тип контента";
+  const activeCount = getCountByType(activeType);
 
-          return (
-            <Tooltip.Root key={type}>
-              <Tooltip.Trigger asChild>
-                <button
-                  type="button"
-                  onClick={() => !isDisabled && filterByType(type)}
+  return (
+    <div className="flex items-center gap-2 border-b border-border w-full">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center justify-between flex-1 gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
+          >
+            <div className="gap-2 inline-flex">
+              <span className="text-muted-foreground">Тип:</span>
+              <span className="font-medium">{activeLabel}</span>
+              <span className="text-muted-foreground/70">({activeCount})</span>
+            </div>
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            align="start"
+            className="min-w-52 m-1 rounded-md border border-border bg-popover p-1 shadow-md"
+          >
+            {(Object.keys(typeConfig) as ItemType[]).map((type) => {
+              const { icon: Icon, label } = typeConfig[type];
+              const count = getCountByType(type);
+              const isDisabled = count === 0;
+              const isActive = activeType === type;
+
+              return (
+                <DropdownMenu.Item
+                  key={type}
                   disabled={isDisabled}
+                  onSelect={() => !isDisabled && filterByType(type)}
                   className={cn(
-                    "p-2 rounded-md transition-colors cursor-pointer",
-                    selectedType === type
-                      ? "bg-primary text-primary-foreground"
-                      : isDisabled
-                        ? "text-muted-foreground/30 cursor-not-allowed"
-                        : "hover:bg-accent text-muted-foreground",
+                    "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+                    isActive ? "bg-accent/60 text-foreground" : "text-foreground",
+                    isDisabled
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:bg-accent/50 cursor-pointer",
                   )}
                 >
-                  <Icon className="size-4" />
-                </button>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  className="bg-card border border-border px-3 py-2 rounded-md shadow-lg text-sm text-foreground"
-                  sideOffset={5}
-                >
-                  {label} ({count})
-                  <Tooltip.Arrow className="fill-border" />
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
-          );
-        })}
-      </div>
-    </Tooltip.Provider>
+                  <Icon className="size-4 text-muted-foreground" />
+                  <span className="flex-1">{label}</span>
+                  <span className="text-xs text-muted-foreground">{count}</span>
+                </DropdownMenu.Item>
+              );
+            })}
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </div>
   );
 };

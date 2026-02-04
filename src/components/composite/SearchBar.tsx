@@ -40,13 +40,40 @@ export const SearchBar = () => {
   }, [query, searchItems]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape" || e.key === "Enter") {
+    if (e.key === "Escape") {
       e.preventDefault();
       if (activeTabId) {
         pinTab(activeTabId);
       }
       setQuery("");
       searchItems("");
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (items.length === 0) return;
+
+      const activeTab = tabs.find((t) => t.id === activeTabId);
+      const selectedItemId = activeTab?.itemId;
+      const currentIndex = items.findIndex((item) => item.id === selectedItemId);
+      const targetItem = currentIndex >= 0 ? items[currentIndex] : items[0];
+
+      if (!targetItem) return;
+
+      if (targetItem.type === "documentation") {
+        const metadata = targetItem.metadata as { docId?: number; path?: string } | null;
+        if (metadata?.docId && metadata.path) {
+          openDocEntryTab(metadata.docId, metadata.path, targetItem.title, true);
+          searchItems("");
+          setQuery("");
+          return;
+        }
+      }
+
+      openItemTab(targetItem.id, targetItem.type, targetItem.title, true);
+      searchItems("");
+      setQuery("");
       return;
     }
 
@@ -92,7 +119,7 @@ export const SearchBar = () => {
       value={query}
       onChange={(e) => setQuery(e.target.value)}
       onKeyDown={handleKeyDown}
-      className="text-base w-full rounded-none border-x-0 border-t-0 border-b border-b-border"
+      className="text-base w-full rounded-none border-x-0 border-t-0 border-b border-b-border focus:outline-0 focus-visible:ring-0 focus:bg-muted"
     />
   );
 };

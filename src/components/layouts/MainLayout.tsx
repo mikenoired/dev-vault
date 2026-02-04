@@ -62,6 +62,7 @@ export const MainLayout = () => {
   }, [activeTabId, requestCloseTab]);
 
   useHotkey({ key: "w", mod: true }, closeCurrentTab);
+  useHotkey({ key: "b", mod: true }, toggleSidebar);
 
   const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -186,10 +187,10 @@ export const MainLayout = () => {
       >
         <div
           className={cn(
-            "h-full flex items-center border-r border-border pl-18 pr-2 overflow-hidden",
+            "h-full flex items-center border-r border-border pl-22 pr-2 overflow-hidden",
             !isResizingState ? "transition-all duration-300 ease-in-out" : "",
           )}
-          style={{ width: isSidebarVisible ? sidebarWidth : 125 }}
+          style={{ width: isSidebarVisible ? sidebarWidth : 165 }}
         >
           <div className="flex-1 h-full" data-tauri-drag-region />
           <button

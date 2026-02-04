@@ -59,7 +59,7 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
         }
       }}
       className={cn(
-        "group relative flex items-center gap-2 px-3 h-full min-w-[120px] max-w-[240px] border-r border-border cursor-default select-none transition-colors",
+        "group relative flex items-center gap-2 px-3 h-full min-w-30 max-w-60 border-r border-border cursor-default select-none transition-colors",
         isActive
           ? "bg-background text-foreground"
           : "bg-card text-muted-foreground hover:bg-accent/50",
@@ -82,20 +82,18 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
         )}
       >
         {tab.title}
-        {tab.isDirty && (
-          <span className="size-1.5 rounded-full bg-primary/80" aria-label="Несохраненные изменения" />
-        )}
+        {tab.isDirty && <span className="size-1.5 rounded-full bg-primary/80" />}
       </span>
 
       <button
         type="button"
         onClick={handleClose}
         className={cn(
-          "p-0.5 rounded-sm hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity",
+          "size-6 flex items-center justify-center rounded-sm hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity",
           isActive ? "opacity-100" : "",
         )}
       >
-        <X className="size-3" />
+        <X className="size-3.5" />
       </button>
 
       {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}

@@ -2,9 +2,9 @@ import { Code2, Link2, Settings, StickyNote } from "lucide-react";
 import { useEffect } from "react";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useTabsStore } from "@/stores/tabsStore";
+import type { ItemType } from "@/types";
 import BaseItems from "./BaseItems";
 import DocItems from "./DocItems";
-import type { ItemType } from "@/types";
 
 const quickActions: Array<{ type: ItemType; label: string; icon: React.ElementType }> = [
   { type: "snippet", label: "Сниппет", icon: Code2 },

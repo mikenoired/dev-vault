@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import type { AiToolStatus, McpServerConfig } from "@/types";
 
@@ -71,8 +71,8 @@ export const McpSection = () => {
             <div className="space-y-3">
               {!serverConfig.commandExists ? (
                 <div className="rounded-md border border-red-500/40 bg-red-500/10 text-red-200 px-3 py-2 text-xs">
-                  MCP-бинарь не найден. В dev-режиме запусти `bun run dev:mcp` или
-                  перезапусти `tauri dev`.
+                  MCP-бинарь не найден. В dev-режиме запусти `bun run dev:mcp` или перезапусти
+                  `tauri dev`.
                 </div>
               ) : null}
               <div className="text-sm">

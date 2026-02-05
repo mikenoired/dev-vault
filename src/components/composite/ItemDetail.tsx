@@ -669,9 +669,9 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               <div className="flex flex-col gap-0 text-sm font-mono italic text-muted-foreground/40">
                 {editDescription.length === 0
                   ? null
-                  : editDescription.split("\n").map((_, index) => (
-                      <span key={`slash-${index}`} className="leading-6">
-                        //
+                  : editDescription.split("\n").map((_) => (
+                      <span key={`slash-${_}`} className="leading-6">
+                        &#47;&#47;
                       </span>
                     ))}
               </div>

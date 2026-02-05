@@ -29,7 +29,12 @@ export const TabManager = () => {
             />
           ))}
           <div className="px-2 border-r border-border h-full flex items-center bg-card shrink-0">
-            <Button onClick={openNewTab} variant="ghost" size="iconSmall" className="hover:bg-accent">
+            <Button
+              onClick={openNewTab}
+              variant="ghost"
+              size="iconSmall"
+              className="hover:bg-accent"
+            >
               <Plus className="size-4" />
             </Button>
           </div>

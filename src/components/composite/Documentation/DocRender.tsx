@@ -1,4 +1,7 @@
+import type { ReactNode } from "react";
 import remarkDirective from "remark-directive";
+import type { Plugin, Transformer } from "unified";
+import type { Node } from "unist";
 import { visit } from "unist-util-visit";
 import MarkdownRender from "@/components/composite/MarkdownRender";
 import AdmonitionBlock from "../AdmonitionBlock";
@@ -8,15 +11,32 @@ const processContent = (content: string) => {
   return result;
 };
 
-function reactMarkdownRemarkDirective() {
-  return (tree) => {
-    visit(tree, ["textDirective", "leafDirective", "containerDirective"], (node) => {
-      const data = node.data || (node.data = {});
+type DirectiveNode = {
+  data?: { hName?: string; hProperties?: Record<string, unknown> };
+  name?: string;
+};
+
+type AdmonitionProps = {
+  children?: ReactNode;
+  type?: string;
+} & Record<string, unknown>;
+
+const reactMarkdownRemarkDirective: Plugin = () => {
+  const transformer: Transformer = (tree: Node) => {
+    visit(tree, ["textDirective", "leafDirective", "containerDirective"], (node: unknown) => {
+      const directiveNode = node as DirectiveNode;
+      const setDirectiveNodeData = () => {
+        if (!directiveNode.data) directiveNode.data = {};
+        return directiveNode.data;
+      };
+      const data = setDirectiveNodeData();
       data.hName = "admonition";
-      data.hProperties = { type: node.name || "note" };
+      data.hProperties = { type: directiveNode.name || "note" };
     });
   };
-}
+
+  return transformer;
+};
 
 export default function DocRender({ content }: { content: string }) {
   const processedContent = processContent(content);
@@ -24,9 +44,9 @@ export default function DocRender({ content }: { content: string }) {
     <div className="prose prose-invert prose-neutral max-w-[65ch] mx-auto text-neutral-300 leading-relaxed whitespace-pre-wrap">
       <MarkdownRender
         components={{
-          admonition: ({ node, children, ...props }) => {
-            const type = (props as any).type ?? "note";
-            return <AdmonitionBlock type={type}>{children}</AdmonitionBlock>;
+          admonition: ({ children, ...props }: AdmonitionProps) => {
+            const type = props.type ?? "note";
+            return <AdmonitionBlock type={type}>{children as ReactNode}</AdmonitionBlock>;
           },
         }}
         copyToClipboard={true}

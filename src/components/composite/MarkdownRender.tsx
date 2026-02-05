@@ -1,3 +1,4 @@
+import type { ElementType } from "react";
 import type { Components, Options } from "react-markdown";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -6,11 +7,13 @@ import type { Plugin } from "unified";
 import type { SupportedLanguages } from "@/types";
 import CodeEditor from "./CodeEditor";
 
+type ExtendedComponents = Components & Record<string, ElementType>;
+
 interface MarkdownRenderProps {
   content: string;
   remarkPlugins?: Plugin[];
   rehypePlugins?: Plugin[];
-  components?: Partial<Components>;
+  components?: Partial<ExtendedComponents>;
   copyToClipboard?: boolean;
 }
 
@@ -25,7 +28,7 @@ export default function MarkdownRender({
   const allRemarkPlugins = [remarkGfm, ...remarkPlugins];
   const allRehypePlugins = [rehypeRaw, ...rehypePlugins];
 
-  const allComponents: Components = {
+  const allComponents: ExtendedComponents = {
     a: ({ ...props }) => (
       <a
         {...props}
@@ -99,7 +102,7 @@ export default function MarkdownRender({
     <Markdown
       remarkPlugins={allRemarkPlugins}
       rehypePlugins={allRehypePlugins}
-      components={allComponents as Components}
+      components={allComponents}
       {...props}
     >
       {content}

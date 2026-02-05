@@ -79,17 +79,17 @@ export const ItemCard = ({
 
       {isSearchMode && item.highlights && item.highlights.length > 0 && (
         <div className="mb-2 space-y-1">
-          {item.highlights.map((highlight, idx) => {
+          {item.highlights.map((highlight) => {
             const parts = highlight.split(/\*\*(.*?)\*\*/g);
             return (
-              <div key={idx} className="text-xs text-muted-foreground font-mono">
+              <div key={highlight} className="text-xs text-muted-foreground font-mono">
                 {parts.map((part, i) =>
                   i % 2 === 1 ? (
-                    <span key={i} className="bg-warning/30 text-warning-foreground px-0.5">
+                    <span key={part} className="bg-warning/30 text-warning-foreground px-0.5">
                       {part}
                     </span>
                   ) : (
-                    <span key={i}>{part}</span>
+                    <span key={part}>{part}</span>
                   ),
                 )}
               </div>

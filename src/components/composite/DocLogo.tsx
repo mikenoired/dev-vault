@@ -27,7 +27,8 @@ const logos = {
   nuxtjs: Nuxtjs,
 } as const;
 
-export default function DocLogo({ name }: { name: SupportedLanguages }) {
+// FIXME: Make types sizable without this strange hook
+export default function DocLogo({ name }: { name: SupportedLanguages | string }) {
   const Logo = logos[name as keyof typeof logos];
   return <Logo className="size-5 text-muted-foreground shrink-0" />;
 }

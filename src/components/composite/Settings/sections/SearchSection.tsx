@@ -49,7 +49,9 @@ export const SearchSection = () => {
             label="Лимит результатов"
             type="number"
             value={config.search.results_limit}
-            onChange={(e) => updateSearchConfig({ results_limit: Number.parseInt(e.target.value) })}
+            onChange={(e) =>
+              updateSearchConfig({ results_limit: Number.parseInt(e.target.value, 10) })
+            }
           />
         </div>
       </div>

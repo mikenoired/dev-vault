@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
-import type { DocName } from "@/types";
 import DocLogo from "../DocLogo";
 import { DocBrowser } from "../Documentation/DocBrowser";
 
@@ -27,13 +26,11 @@ export default function DocItems() {
     );
   }
 
-  // Если выбрана документация, показываем компактную строку и DocBrowser
   if (selectedDoc) {
     return (
       <div className="flex flex-col h-full">
-        {/* Компактная строка с выбранной документацией */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-accent/30 shrink-0">
-          <DocLogo name={selectedDoc.name as DocName} />
+          <DocLogo name={selectedDoc.name} />
           <span className="flex-1 text-sm font-medium line-clamp-1">{selectedDoc.displayName}</span>
           <button
             type="button"
@@ -71,7 +68,7 @@ export default function DocItems() {
           }}
         >
           <div className="flex items-start gap-3 mb-2">
-            <DocLogo name={doc.name as DocName} />
+            <DocLogo name={doc.name} />
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-base line-clamp-1">{doc.displayName}</h3>
             </div>

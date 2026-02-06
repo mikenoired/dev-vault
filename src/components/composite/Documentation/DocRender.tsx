@@ -3,8 +3,8 @@ import remarkDirective from "remark-directive";
 import type { Plugin, Transformer } from "unified";
 import type { Node } from "unist";
 import { visit } from "unist-util-visit";
+import AdmonitionBlock from "@/components/composite/AdmonitionBlock";
 import MarkdownRender from "@/components/composite/MarkdownRender";
-import AdmonitionBlock from "../AdmonitionBlock";
 
 const processContent = (content: string) => {
   const result = content.replace(/^\s*# .*(\r?\n)?/, ""); // Remove title

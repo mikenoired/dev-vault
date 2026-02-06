@@ -1,4 +1,4 @@
-import type { SupportedLanguages } from "@/types";
+import type { SVGProps } from "react";
 import {
   Bun,
   ElysiaJS,
@@ -11,7 +11,8 @@ import {
   React,
   Rust,
   Typescript,
-} from "../../assets/doc-logos";
+} from "@/assets/doc-logos";
+import type { SupportedLanguages } from "@/types";
 
 const logos = {
   python: Python,
@@ -28,7 +29,17 @@ const logos = {
 } as const;
 
 // FIXME: Make types sizable without this strange hook
-export default function DocLogo({ name }: { name: SupportedLanguages | string }) {
+export default function DocLogo({
+  name,
+  sizeClass = "size-5",
+  className,
+  ...props
+}: { name: SupportedLanguages | string; sizeClass?: string } & SVGProps<SVGSVGElement>) {
   const Logo = logos[name as keyof typeof logos];
-  return <Logo className="size-5 text-muted-foreground shrink-0" />;
+  return (
+    <Logo
+      {...props}
+      className={`${sizeClass} text-muted-foreground shrink-0${className ? ` ${className}` : ""}`}
+    />
+  );
 }

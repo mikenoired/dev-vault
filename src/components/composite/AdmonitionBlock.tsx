@@ -7,7 +7,7 @@ import {
   XIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "../ui";
+import { cn } from "@/components/ui";
 
 interface AdmonitionBlockProps {
   type: string;

@@ -1,8 +1,8 @@
 import { X } from "lucide-react";
+import DocLogo from "@/components/composite/DocLogo";
+import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
-import DocLogo from "../DocLogo";
-import { DocBrowser } from "../Documentation/DocBrowser";
 
 export default function DocItems() {
   const { installedDocs, selectedDoc, selectDoc, isLoading: isDocsLoading } = useDocsStore();

@@ -1,10 +1,10 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useRef } from "react";
+import { ItemCard } from "@/components/composite/ItemCard";
 import { useItemActions } from "@/contexts/ItemActionsContext";
 import { useItemsStore } from "@/stores/itemsStore";
 import { useTabsStore } from "@/stores/tabsStore";
 import type { ItemWithTags } from "@/types";
-import { ItemCard } from "../ItemCard";
 
 export default function BaseItems() {
   const items = useItemsStore((state) => state.items);
@@ -72,7 +72,7 @@ export default function BaseItems() {
             </div>
           </ContextMenu.Trigger>
           <ContextMenu.Portal>
-            <ContextMenu.Content className="min-w-40 rounded-md border border-border bg-popover p-1 text-sm shadow-md">
+            <ContextMenu.Content className="min-w-40 rounded-md border border-border bg-primary-foreground p-1 text-sm shadow-md z-20">
               <ContextMenu.Item
                 className="cursor-pointer rounded-sm px-2 py-1.5 text-red-500 outline-none hover:bg-red-500/10"
                 onSelect={() => requestDelete(item)}

@@ -1,7 +1,9 @@
+import { Delete, DownloadIcon, Loader, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
+import DocLogo from "../../DocLogo";
 
 export const DocumentationSection = () => {
   const {
@@ -20,6 +22,7 @@ export const DocumentationSection = () => {
   } = useDocsStore();
 
   const [updatingDocId, setUpdatingDocId] = useState<number | null>(null);
+  const [installingDocName, setInstallingDocName] = useState<string | null>(null);
 
   useEffect(() => {
     loadAvailableDocs();
@@ -27,11 +30,14 @@ export const DocumentationSection = () => {
   }, [loadAvailableDocs, loadInstalledDocs]);
 
   const handleInstall = async (name: string) => {
+    setInstallingDocName(name);
     try {
       await installDoc(name);
       await loadInstalledDocs();
     } catch {
       toast.error("Failed to install documentation");
+    } finally {
+      setInstallingDocName(null);
     }
   };
 
@@ -119,7 +125,6 @@ export const DocumentationSection = () => {
                       <h4 className="font-medium text-foreground">{doc.displayName}</h4>
                       <span className="text-xs text-muted-foreground">v{doc.version}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{doc.sourceUrl}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Обновлено: {new Date(doc.updatedAt * 1000).toLocaleDateString()}
                     </p>
@@ -133,8 +138,8 @@ export const DocumentationSection = () => {
                     >
                       {updatingDocId === doc.id ? "Обновление..." : "Обновить"}
                     </Button>
-                    <Button size="sm" variant="danger" onClick={() => handleDelete(doc.id)}>
-                      Удалить
+                    <Button size="icon" variant="danger" onClick={() => handleDelete(doc.id)}>
+                      <Trash className="size-4" />
                     </Button>
                   </div>
                 </div>
@@ -149,25 +154,32 @@ export const DocumentationSection = () => {
         {isLoading && availableDocs.length === 0 ? (
           <p className="text-sm text-muted-foreground">Загрузка...</p>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-3">
             {availableDocs
               .filter((doc) => !installedNames.has(doc.name))
               .map((doc) => (
-                <Card key={doc.name} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-foreground">{doc.displayName}</h4>
-                        <span className="text-xs text-muted-foreground">v{doc.version}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{doc.description}</p>
+                <Card key={doc.name} className="group relative p-4 h-24">
+                  <div className="flex flex-col items-center gap-2">
+                    <DocLogo sizeClass="size-8" name={doc.name} />
+                    <div className="min-w-0 flex gap-1">
+                      <h4 className="font-medium text-foreground truncate">{doc.displayName}</h4>
+                      <span className="text-xs text-muted-foreground">v{doc.version}</span>
                     </div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/80 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       size="sm"
                       onClick={() => handleInstall(doc.name)}
                       disabled={isInstalling}
                     >
-                      {isInstalling ? "Установка..." : "Установить"}
+                      {installingDocName === doc.name ? (
+                        <Loader className="size-4 animate-spin" />
+                      ) : (
+                        <DownloadIcon className="size-4" />
+                      )}
+                      <span className="ml-2">
+                        {installingDocName === doc.name ? "Установка..." : "Установить"}
+                      </span>
                     </Button>
                   </div>
                 </Card>

@@ -28,14 +28,6 @@ export const ItemCard = ({
     }
   }, [isSelected]);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString("ru-RU", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       snippet: "Сниппет",

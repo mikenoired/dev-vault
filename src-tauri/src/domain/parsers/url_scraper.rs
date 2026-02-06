@@ -394,38 +394,6 @@ impl UrlScraper {
         "Untitled".to_string()
     }
 
-    fn process_node_to_markdown(node: NodeRef<'_, Node>, selectors: &ContentSelectors) -> String {
-        if let Some(element) = ElementRef::wrap(node) {
-            if element.value().name() == "dl" {
-                let mut md_string = String::new();
-                let dt_selector = Selector::parse("dt").unwrap();
-                let dd_selector = Selector::parse("dd").unwrap();
-
-                for child_node in element.children() {
-                    if let Some(child_element) = ElementRef::wrap(child_node) {
-                        if child_element.select(&dt_selector).next().is_some() {
-                            let term = child_element.text().collect::<String>();
-                            md_string.push_str(&format!("\n**{}**\n", term.trim()));
-                        } else if child_element.select(&dd_selector).next().is_some() {
-                            let description_html = child_element.inner_html();
-                            let description_md = html2md::parse_html(&description_html);
-                            md_string.push_str(&format!(": {}\n", description_md.trim()));
-                        }
-                    }
-                }
-                return md_string;
-            }
-        }
-
-        if let Some(element) = ElementRef::wrap(node) {
-            return html2md::parse_html(&element.inner_html());
-        } else if let Node::Text(text) = node.value() {
-            return text.text.to_string();
-        }
-
-        String::new()
-    }
-
     fn extract_language(element: &ElementRef) -> Option<String> {
         // Log: Checking language in element
         tracing::debug!(

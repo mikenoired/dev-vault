@@ -1,4 +1,4 @@
-import { Delete, DownloadIcon, Loader, Trash } from "lucide-react";
+import { DownloadIcon, Loader, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button, Card } from "@/components/ui";

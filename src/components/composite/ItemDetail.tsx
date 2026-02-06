@@ -555,7 +555,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   if (selectedItem && isDocumentation) {
     return (
       <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
-        <div className="p-6 border-b border-border/40 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="p-6 border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2 line-clamp-1">
@@ -604,7 +604,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   return (
     <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
-      <div className="p-6 border-b border-border/40 bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="p-6 border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex flex-col gap-2">
           <div className="relative pb-4">
             <div className="flex items-center gap-3">

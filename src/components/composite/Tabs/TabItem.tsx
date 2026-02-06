@@ -58,45 +58,53 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
           handleClick();
         }
       }}
-      className={cn(
-        "group relative flex items-center gap-2 px-3 h-full min-w-30 max-w-60 border-r border-border cursor-default select-none transition-colors",
-        isActive
-          ? "bg-background text-foreground"
-          : "bg-card text-muted-foreground hover:bg-accent/50",
-      )}
+      className="group min-w-30 max-w-60 h-full px-0.5 flex items-center justify-center rounded cursor-pointer"
     >
-      <span className="shrink-0 opacity-70">
-        {tab.type === "new"
-          ? getIcon("new")
-          : tab.type === "documentation" || tab.type === "docEntry"
-            ? getIcon(tab.type)
-            : tab.itemType
-              ? getIcon(tab.itemType)
-              : null}
-      </span>
-
-      <span
+      <div
         className={cn(
-          "flex-1 truncate text-xs font-medium flex items-center gap-1",
-          !tab.isPinned ? "italic" : "",
+          "w-full h-full rounded-[5px] pb-0.75",
+          isActive && "tab-roundings bg-primary-foreground",
         )}
       >
-        {tab.title}
-        {tab.isDirty && <span className="size-1.5 rounded-full bg-primary/80" />}
-      </span>
-
-      <button
-        type="button"
-        onClick={handleClose}
-        className={cn(
-          "size-6 flex items-center justify-center rounded-sm hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity",
-          isActive ? "opacity-100" : "",
-        )}
-      >
-        <X className="size-3.5" />
-      </button>
-
-      {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+        <div
+          className={cn(
+            !isActive && "group-hover:bg-primary-foreground/50 transition-colors",
+            "rounded-[5px] h-full",
+            "flex items-center justify-center pl-2 pr-1.5 gap-4",
+          )}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <span className="shrink-0 opacity-70">
+              {tab.type === "new"
+                ? getIcon("new")
+                : tab.type === "documentation" || tab.type === "docEntry"
+                  ? getIcon(tab.type)
+                  : tab.itemType
+                    ? getIcon(tab.itemType)
+                    : null}
+            </span>
+            <span
+              className={cn(
+                "flex-1 truncate text-xs font-medium flex items-center gap-1",
+                !tab.isPinned ? "italic" : "",
+              )}
+            >
+              {tab.title}
+              {tab.isDirty && <span className="size-1.5 rounded-full bg-primary/80" />}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className={cn(
+              "size-5 flex items-center justify-center rounded-sm hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer",
+              isActive && "opacity-100",
+            )}
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

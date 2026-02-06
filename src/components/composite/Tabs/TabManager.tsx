@@ -18,8 +18,8 @@ export const TabManager = () => {
 
   return (
     <>
-      <div className="flex items-center h-full w-full overflow-hidden bg-card">
-        <div className="flex items-center h-full overflow-x-auto no-scrollbar">
+      <div className="flex items-center h-full w-full overflow-hidden bg-accent">
+        <div className="flex items-center h-full overflow-x-auto no-scrollbar px-2 pt-1.5">
           {tabs.map((tab) => (
             <TabItem
               key={tab.id}
@@ -28,15 +28,18 @@ export const TabManager = () => {
               onRequestClose={requestCloseTab}
             />
           ))}
-          <div className="px-2 border-r border-border h-full flex items-center bg-card shrink-0">
-            <Button
+          <div className="px-0.5 h-full pb-0.75">
+            <button
+              className="relative px-2 h-full flex items-center bg-transparent hover:bg-primary-foreground/50 rounded-[5px] shrink-0 transition-colors cursor-pointer"
+              type="button"
               onClick={openNewTab}
-              variant="ghost"
-              size="iconSmall"
-              className="hover:bg-accent"
             >
+              <span
+                aria-hidden
+                className="absolute right-0 top-1/2 h-3/5 w-px -translate-y-1/2 bg-accent/60"
+              />
               <Plus className="size-4" />
-            </Button>
+            </button>
           </div>
         </div>
         <div data-tauri-drag-region className="flex-1 shrink-0 h-full" />

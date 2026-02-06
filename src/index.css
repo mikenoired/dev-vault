@@ -116,7 +116,40 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-primary-foreground text-foreground;
+  }
+}
+
+@layer utilities {
+  .tab-roundings {
+    position: relative;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .tab-roundings::before,
+  .tab-roundings::after {
+    position: absolute;
+    bottom: 0;
+    content: "";
+    width: 16px;
+    height: 16px;
+    box-shadow:
+      var(--accent) 0 0 0 1px inset,
+      var(--primary-foreground) 0 0 0 24px;
+    border-radius: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .tab-roundings::before {
+    left: -16px;
+    clip-path: inset(50% -8px 0 50%);
+  }
+
+  .tab-roundings::after {
+    right: -16px;
+    clip-path: inset(50% 50% 0 -8px);
   }
 }

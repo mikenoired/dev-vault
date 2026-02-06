@@ -181,13 +181,10 @@ export const MainLayout = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col">
-      <header
-        data-tauri-drag-region
-        className="border-b border-border bg-card h-10 flex items-center shrink-0 select-none"
-      >
+      <header data-tauri-drag-region className="h-10 flex items-center shrink-0 select-none">
         <div
           className={cn(
-            "h-full flex items-center border-r border-border pl-22 pr-2 overflow-hidden",
+            "h-full flex items-center border-r border-border pl-22 pr-2 overflow-hidden bg-accent",
             !isResizingState ? "transition-all duration-300 ease-in-out" : "",
           )}
           style={{ width: isSidebarVisible ? sidebarWidth : 165 }}

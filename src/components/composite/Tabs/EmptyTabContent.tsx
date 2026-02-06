@@ -23,7 +23,7 @@ export const EmptyTabContent = ({ onCreateClick }: EmptyTabContentProps) => {
   const openDocumentationTab = useTabsStore((state) => state.openDocumentationTab);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8 bg-background gap-6">
+    <div className="h-full flex flex-col items-center justify-center p-8 gap-6">
       <span className="text-center text-muted-foreground">
         <span className="font-medium">Создайте новый элемент в хранилище</span>
         <br />

@@ -15,7 +15,7 @@ interface ItemsState {
   typeCounts: Record<ItemType, number>;
   error: string | null;
 
-  loadItems: () => Promise<void>;
+  loadItems: (options?: { keepItems?: boolean }) => Promise<void>;
   loadNextPage: () => Promise<void>;
   loadTags: () => Promise<void>;
   loadTypeCounts: () => Promise<void>;
@@ -66,8 +66,15 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   typeCounts: { ...emptyTypeCounts },
   error: null,
 
-  loadItems: async () => {
-    set({ isLoading: true, error: null, items: [], offset: 0, hasMore: true });
+  loadItems: async (options) => {
+    const keepItems = options?.keepItems ?? false;
+    set({
+      isLoading: true,
+      error: null,
+      ...(keepItems ? {} : { items: [] }),
+      offset: 0,
+      hasMore: true,
+    });
     const { selectedType } = get();
     const searchQuery = get().searchQuery.trim();
     try {
@@ -148,8 +155,13 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   },
 
   filterByType: async (type: ItemType | null) => {
+    const { selectedType, searchQuery } = get();
+    const trimmedQuery = searchQuery.trim();
+    if (type === selectedType && trimmedQuery === "") {
+      return;
+    }
     set({ selectedType: type, searchQuery: "" });
-    await get().loadItems();
+    await get().loadItems({ keepItems: true });
   },
 
   setSelectedType: (type: ItemType | null) => {

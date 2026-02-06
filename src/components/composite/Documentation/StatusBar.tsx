@@ -24,7 +24,7 @@ export default function StatusBar({ content }: StatusBarProps) {
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <div className="w-full p-0.5 bg-background border-t border-border flex items-center justify-between min-h-[32px]">
+      <div className="w-full p-0.5 bg-primary-foreground border-t border-border flex items-center justify-between min-h-8">
         <div>
           <Tooltip.Root>
             <Tooltip.Trigger

@@ -683,11 +683,11 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Введите описание (необязательно)"
               rows={1}
-              className="relative min-h-6 border-none bg-transparent pl-6 pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none"
+              className="relative min-h-6 border-none bg-transparent pl-6 pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none focus:outline-0"
             />
           </div>
 
-          <div className="flex flex-col gap-2 pb-2">
+          <div className="flex flex-col gap-1 pb-2">
             {tagList.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto">
                 {tagList.map((tag) => (

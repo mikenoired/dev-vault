@@ -53,7 +53,7 @@ export const ItemCard = ({
       role="button"
       tabIndex={0}
       className={cn(
-        "p-4 border-b border-border cursor-pointer transition-colors hover:bg-accent/50",
+        "px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-accent/50",
         isSelected ? "bg-accent" : "",
       )}
       onClick={onClick}
@@ -64,17 +64,19 @@ export const ItemCard = ({
         }
       }}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-base line-clamp-1">{item.title}</h3>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="font-semibold text-base line-clamp-1 select-none">{item.title}</h3>
         {isSearchMode && (
-          <Badge variant="secondary" className="shrink-0 text-xs">
+          <Badge variant="secondary" className="shrink-0 text-xs select-none">
             {getTypeLabel(item.type)}
           </Badge>
         )}
       </div>
 
       {!isSearchMode && item.description && (
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
+        <p className="text-sm text-muted-foreground mb-2 select-none truncate text-ellipsis whitespace-nowrap overflow-hidden">
+          {item.description}
+        </p>
       )}
 
       {isSearchMode && item.highlights && item.highlights.length > 0 && (
@@ -99,23 +101,19 @@ export const ItemCard = ({
       )}
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground">{formatDate(item.updatedAt)}</span>
         {item.tags.length > 0 && (
-          <>
-            <span className="text-muted-foreground">·</span>
-            <div className="flex gap-1 flex-wrap">
-              {item.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag.id} variant="outline" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-              {item.tags.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{item.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          </>
+          <div className="flex gap-1 flex-wrap">
+            {item.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag.id} variant="outline" className="text-xs">
+                {tag.name}
+              </Badge>
+            ))}
+            {item.tags.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{item.tags.length - 3}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
     </div>

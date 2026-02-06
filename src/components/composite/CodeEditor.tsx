@@ -5,7 +5,7 @@ import { rust } from "@codemirror/lang-rust";
 import { StreamLanguage } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { materialDark } from "@fsegurai/codemirror-theme-material-dark";
 import { basicSetup, EditorView } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -81,7 +81,7 @@ export default function CodeEditor({
       basicSetup,
       getLangExtension(language),
       theme,
-      oneDark,
+      materialDark,
       EditorView.lineWrapping,
       EditorState.readOnly.of(readOnly),
     ];

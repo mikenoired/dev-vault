@@ -36,13 +36,13 @@ export const DocViewer = ({ entry, onInteraction }: DocViewerProps) => {
         <div className="p-8 pb-16">
           <div className="max-w-[65ch] mx-auto">
             <div className="mb-6">
-              <h1 className="text-3xl font-bold text-neutral-100 mb-2">{entry.title}</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">{entry.title}</h1>
               <div className="flex items-center gap-3 text-sm text-neutral-500">
                 <span>{entry.path}</span>
                 {entry.entryType && (
                   <>
                     <span>•</span>
-                    <span className="px-2 py-0.5 bg-neutral-800 rounded text-neutral-400">
+                    <span className="px-2 py-0.5 bg-foreground/20 rounded text-neutral-500">
                       {entry.entryType}
                     </span>
                   </>

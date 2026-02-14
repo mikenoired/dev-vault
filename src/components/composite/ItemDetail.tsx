@@ -53,6 +53,7 @@ const tagSignature = (tags: string[]) => tags.map((tag) => tag.trim()).join("|")
 export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: ItemDetailProps) => {
   const items = useItemsStore((state) => state.items);
   const storeSelectedItem = useItemsStore((state) => state.selectedItem);
+  const selectItem = useItemsStore((state) => state.selectItem);
   const { updateItem, createItem } = useItemsStore((state) => state);
 
   const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
@@ -67,10 +68,33 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
     const fromList = items.find((i) => i.id === itemId);
-    if (fromList) return fromList;
+    if (fromList && fromList.content !== "") return fromList;
     if (storeSelectedItem?.id === itemId) return storeSelectedItem;
-    return null;
+    return fromList ?? null;
   }, [items, itemId, storeSelectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    if (selectedItem.type === "documentation") return;
+    if (selectedItem.content !== "") return;
+
+    let cancelled = false;
+    const hydrateItem = async () => {
+      try {
+        const fullItem = await tauriService.getItem(selectedItem.id);
+        if (!cancelled && fullItem) {
+          selectItem(fullItem);
+        }
+      } catch (error) {
+        console.error("Failed to load full item:", error);
+      }
+    };
+
+    hydrateItem();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedItem?.id, selectedItem?.type, selectedItem?.content, selectItem]);
 
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");

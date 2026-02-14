@@ -69,15 +69,16 @@ export default function MarkdownRender({
           value={String(children).replace(/\n$/, "")}
           language={language}
           copyToClipboard={copyToClipboard}
+          allowFolding={false}
         />
       );
     },
 
-    h2: ({ ...props }) => <h2 {...props} className="text-2xl font-bold" />,
-    h3: ({ ...props }) => <h3 {...props} className="text-xl font-bold" />,
-    h4: ({ ...props }) => <h4 {...props} className="text-lg font-bold" />,
-    h5: ({ ...props }) => <h5 {...props} className="text-base font-bold" />,
-    h6: ({ ...props }) => <h6 {...props} className="text-sm font-bold" />,
+    h2: ({ ...props }) => <h2 {...props} className="text-2xl font-bold text-foreground/80" />,
+    h3: ({ ...props }) => <h3 {...props} className="text-xl font-bold text-foreground/80" />,
+    h4: ({ ...props }) => <h4 {...props} className="text-lg font-bold text-foreground/80" />,
+    h5: ({ ...props }) => <h5 {...props} className="text-base font-bold text-foreground/80" />,
+    h6: ({ ...props }) => <h6 {...props} className="text-sm font-bold text-foreground/80" />,
 
     table: ({ ...props }) => (
       <table
@@ -95,6 +96,7 @@ export default function MarkdownRender({
     tr: ({ ...props }) => <tr {...props} className="border border-neutral-800 p-2" />,
     td: ({ ...props }) => <td {...props} className="border-r border-neutral-800 p-2" />,
     th: ({ ...props }) => <th {...props} className="border-r border-neutral-800 p-2" />,
+    p: ({ ...props }) => <p {...props} className="text-foreground/80" />,
     ...components,
   };
 

@@ -6,7 +6,7 @@ import { StreamLanguage } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState } from "@codemirror/state";
 import { materialDark } from "@fsegurai/codemirror-theme-material-dark";
-import { basicSetup, EditorView } from "codemirror";
+import { basicSetup, EditorView, minimalSetup } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui";
@@ -20,6 +20,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   copyToClipboard?: boolean;
   fontSize?: number;
+  allowFolding?: boolean;
 }
 
 const bashLang = StreamLanguage.define(shell);
@@ -63,6 +64,7 @@ export default function CodeEditor({
   readOnly = false,
   copyToClipboard = false,
   fontSize = 14,
+  allowFolding = true,
 }: CodeEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -78,7 +80,7 @@ export default function CodeEditor({
     });
 
     const extensions = [
-      basicSetup,
+      allowFolding ? basicSetup : minimalSetup,
       getLangExtension(language),
       theme,
       materialDark,
@@ -112,7 +114,7 @@ export default function CodeEditor({
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontSize, language, readOnly]);
+  }, [allowFolding, fontSize, language, readOnly]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

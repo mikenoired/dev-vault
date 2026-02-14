@@ -33,8 +33,10 @@ export const ItemsList = () => {
 
   if (isLoading && items.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Загрузка...</p>
+      <div className="flex-1 overflow-hidden">
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Загрузка...</p>
+        </div>
       </div>
     );
   }
@@ -45,34 +47,44 @@ export const ItemsList = () => {
       (selectedType === null && activeTab?.type === "documentation"));
 
   if (shouldShowDocItems) {
-    return <DocItems />;
+    return (
+      <div className="flex-1 overflow-hidden">
+        <DocItems />
+      </div>
+    );
   }
 
   if (!isLoading && items.length === 0) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <div>
-          <p className="text-sm text-muted-foreground">Пока нет элементов</p>
-          <p className="text-xs text-muted-foreground/70">
-            Создайте первый элемент, чтобы начать работу
-          </p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          {quickActions.map((action) => (
-            <button
-              key={action.type}
-              type="button"
-              onClick={() => openDraftItemTab(action.type)}
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/50 transition-colors"
-            >
-              <action.icon className="size-4 text-muted-foreground" />
-              {action.label}
-            </button>
-          ))}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
+          <div>
+            <p className="text-sm text-muted-foreground">Пока нет элементов</p>
+            <p className="text-xs text-muted-foreground/70">
+              Создайте первый элемент, чтобы начать работу
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {quickActions.map((action) => (
+              <button
+                key={action.type}
+                type="button"
+                onClick={() => openDraftItemTab(action.type)}
+                className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/50 transition-colors"
+              >
+                <action.icon className="size-4 text-muted-foreground" />
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  return <BaseItems />;
+  return (
+    <div className="flex-1 overflow-hidden">
+      <BaseItems />
+    </div>
+  );
 };

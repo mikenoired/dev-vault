@@ -8,7 +8,6 @@ import {
   DocumentationSection,
   GeneralSection,
   McpSection,
-  SearchSection,
 } from "@/components/composite/Settings/sections";
 import { Modal } from "@/components/ui/Modal";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -24,8 +23,8 @@ export const SettingsModal = () => {
         return <GeneralSection />;
       case "appearance":
         return <AppearanceSection />;
-      case "search":
-        return <SearchSection />;
+      // case "search":
+      //   return <SearchSection />;
       case "documentation":
         return <DocumentationSection />;
       case "mcp":
@@ -37,7 +36,7 @@ export const SettingsModal = () => {
 
   return (
     <Modal isOpen={isOpen} onClose={closeSettings} title="Настройки">
-      <div className="flex gap-6 min-h-[400px]">
+      <div className="flex gap-6 min-h-100">
         <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
         <div className="flex-1 overflow-y-auto pr-2">{renderSection()}</div>
       </div>

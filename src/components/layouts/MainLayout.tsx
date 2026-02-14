@@ -231,9 +231,7 @@ export const MainLayout = () => {
             >
               <SearchBar />
               {showTypeFilter && <TypeFilter />}
-              <div className="flex-1 overflow-hidden">
-                <ItemsList />
-              </div>
+              <ItemsList />
             </div>
 
             {isSidebarVisible && (

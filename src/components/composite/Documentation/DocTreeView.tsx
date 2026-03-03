@@ -59,7 +59,7 @@ const TreeNode = ({ node, docId, level, expandedPaths, onToggleExpand }: TreeNod
         style={{ paddingLeft: `${indent + 12}px`, paddingRight: "12px" }}
       >
         {hasChildren ? (
-          <span className="text-muted-foreground text-[10px] w-3 flex-shrink-0">
+          <span className="text-muted-foreground text-[10px] w-3 shrink-0">
             {isLoadingChildren ? "⋯" : isExpanded ? "▼" : "▶"}
           </span>
         ) : (

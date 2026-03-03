@@ -12,11 +12,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui";
 import { Button } from "@/components/ui/Button";
 import type { SupportedLanguages } from "@/types";
+import { markdownLivePreview } from "./editor/markdownLivePreview";
 
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   language?: SupportedLanguages;
+  markdownViewMode?: "source" | "live";
+  noteMode?: boolean;
   readOnly?: boolean;
   copyToClipboard?: boolean;
   fontSize?: number;
@@ -61,6 +64,8 @@ export default function CodeEditor({
   value,
   onChange,
   language = "javascript",
+  markdownViewMode = "source",
+  noteMode = false,
   readOnly = false,
   copyToClipboard = false,
   fontSize = 14,
@@ -73,20 +78,60 @@ export default function CodeEditor({
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const theme = EditorView.theme({
+    const themeConfig: Record<string, Record<string, string>> = {
       ".cm-content, .cm-gutterElement": {
         fontSize: `${fontSize}px`,
       },
-    });
+    };
+
+    if (noteMode) {
+      themeConfig["&, &.cm-focused"] = {
+        background: "transparent !important",
+        outline: "none !important",
+        boxShadow: "none !important",
+      };
+      themeConfig[".cm-gutters"] = {
+        display: "none",
+      };
+      themeConfig[".cm-scroller"] = {
+        background: "transparent !important",
+        outline: "none !important",
+        boxShadow: "none !important",
+        maxHeight: "none !important",
+        overflowX: "auto",
+        overflowY: "visible !important",
+      };
+      themeConfig[".cm-activeLine, .cm-activeLineGutter"] = {
+        background: "transparent !important",
+      };
+      themeConfig[".cm-content"] = {
+        color: "var(--foreground)",
+        padding: "0",
+      };
+      themeConfig[".cm-content, .cm-line"] = {
+        background: "transparent !important",
+      };
+      themeConfig[".cm-content span"] = {
+        color: "inherit !important",
+      };
+    }
+
+    const theme = EditorView.theme(themeConfig);
 
     const extensions = [
       allowFolding ? basicSetup : minimalSetup,
       getLangExtension(language),
-      theme,
       materialDark,
+      theme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(readOnly),
     ];
+
+    const normalizedLanguage = language?.toLowerCase();
+    const isMarkdown = normalizedLanguage === "md" || normalizedLanguage === "markdown";
+    if (isMarkdown && markdownViewMode === "live" && !readOnly) {
+      extensions.push(markdownLivePreview());
+    }
 
     if (onChange && !readOnly) {
       extensions.push(
@@ -114,7 +159,7 @@ export default function CodeEditor({
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowFolding, fontSize, language, readOnly]);
+  }, [allowFolding, fontSize, language, markdownViewMode, noteMode, readOnly]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {
@@ -138,7 +183,7 @@ export default function CodeEditor({
   }, [value]);
 
   return (
-    <div ref={editorRef} className="w-full h-full relative group">
+    <div ref={editorRef} className={cn("w-full relative group", noteMode ? "h-auto" : "h-full")}>
       {copyToClipboard && (
         <Button
           className={cn(

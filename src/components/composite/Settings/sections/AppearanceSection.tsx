@@ -73,6 +73,20 @@ export const AppearanceSection = () => {
               Компактный режим списков
             </label>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="markdown-live-preview"
+              checked={config?.ui.markdown_live_preview ?? true}
+              onChange={(e) =>
+                handleUpdate((prev) => ({ ...prev, markdown_live_preview: e.target.checked }))
+              }
+              className="size-4 rounded border-input bg-background"
+            />
+            <label htmlFor="markdown-live-preview" className="text-sm font-medium leading-none">
+              Live Preview Markdown для заметок
+            </label>
+          </div>
         </div>
       </div>
     </div>

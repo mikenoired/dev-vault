@@ -64,6 +64,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   const autosaveEnabled = useSettingsStore((state) => state.config?.ui.autosave_enabled ?? true);
   const editorFontSize = useSettingsStore((state) => state.config?.ui.editor_font_size ?? 14);
+  const markdownLivePreviewEnabled = useSettingsStore(
+    (state) => state.config?.ui.markdown_live_preview ?? true,
+  );
+  const updateUiConfig = useSettingsStore((state) => state.updateUiConfig);
 
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
@@ -105,6 +109,9 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [focusedTagIndex, setFocusedTagIndex] = useState(0);
   const [currentType, setCurrentType] = useState<ItemType>(draftType ?? "snippet");
+  const [markdownViewMode, setMarkdownViewMode] = useState<"source" | "live">(
+    markdownLivePreviewEnabled ? "live" : "source",
+  );
   const [titleError, setTitleError] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const titleBeforeEditRef = useRef("");
@@ -568,6 +575,20 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     }
   };
 
+  useEffect(() => {
+    setMarkdownViewMode(markdownLivePreviewEnabled ? "live" : "source");
+  }, [markdownLivePreviewEnabled]);
+
+  const handleMarkdownModeChange = useCallback(
+    (mode: "source" | "live") => {
+      const nextEnabled = mode === "live";
+      setMarkdownViewMode(mode);
+      if (nextEnabled === markdownLivePreviewEnabled) return;
+      void updateUiConfig({ markdown_live_preview: nextEnabled });
+    },
+    [markdownLivePreviewEnabled, updateUiConfig],
+  );
+
   if (!selectedItem && !isDraft) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -578,7 +599,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   if (selectedItem && isDocumentation) {
     return (
-      <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
+      <div className="h-full flex flex-col overflow-y-auto" onPointerDown={handleInteraction}>
         <div className="p-6 border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="space-y-1">
@@ -625,11 +646,16 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const typeConfig =
     itemTypeOptions.find((option) => option.value === activeType) ?? itemTypeOptions[0];
   const TypeIcon = typeConfig.icon;
+  const resolvedMarkdownViewMode = activeType === "note" ? markdownViewMode : "source";
+  const isNoteEditor = activeType === "note";
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" onPointerDown={handleInteraction}>
-      <div className="p-6 border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex flex-col gap-2">
+    <div
+      className={cn("h-full flex flex-col", isNoteEditor ? "overflow-y-auto" : "overflow-hidden")}
+      onPointerDown={handleInteraction}
+    >
+      <div className="p-6 border-b border-border/40">
+        <div className={cn("flex w-full flex-col gap-2", isNoteEditor && "mx-auto max-w-[70ch]")}>
           <div className="relative pb-4">
             <div className="flex items-center gap-3">
               <DropdownMenu.Root>
@@ -769,14 +795,49 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <CodeEditor
-          value={editContent}
-          onChange={setEditContent}
-          language={getLanguage(activeType)}
-          fontSize={editorFontSize}
-        />
+      <div className={cn(isNoteEditor ? "px-6 py-4" : "flex-1")}>
+        <div className={cn(isNoteEditor ? "mx-auto w-full max-w-[70ch]" : "h-full w-full")}>
+          <CodeEditor
+            value={editContent}
+            onChange={setEditContent}
+            language={getLanguage(activeType)}
+            markdownViewMode={resolvedMarkdownViewMode}
+            noteMode={isNoteEditor}
+            fontSize={editorFontSize}
+          />
+        </div>
       </div>
+
+      {isNoteEditor && (
+        <div className="sticky bottom-0 z-10 w-full min-h-8 border-t border-border bg-primary-foreground/95 p-0.5 backdrop-blur-sm">
+          <div className="mx-auto flex w-full max-w-[70ch] items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={() => handleMarkdownModeChange("source")}
+              className={cn(
+                "rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+                resolvedMarkdownViewMode === "source"
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Source
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMarkdownModeChange("live")}
+              className={cn(
+                "rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+                resolvedMarkdownViewMode === "live"
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Live
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

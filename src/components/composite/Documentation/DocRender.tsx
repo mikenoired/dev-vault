@@ -41,7 +41,7 @@ const reactMarkdownRemarkDirective: Plugin = () => {
 export default function DocRender({ content }: { content: string }) {
   const processedContent = processContent(content);
   return (
-    <div className="prose prose-invert prose-neutral max-w-[65ch] mx-auto text-neutral-300 leading-relaxed whitespace-pre-wrap">
+    <div className="prose prose-invert prose-neutral max-w-[70ch] mx-auto text-neutral-300 leading-relaxed whitespace-pre-wrap">
       <MarkdownRender
         components={{
           admonition: ({ children, ...props }: AdmonitionProps) => {

@@ -28,6 +28,10 @@ pub const MIN_FONT_SIZE: u16 = 4;
 pub const MAX_READING_SPEED_WPM: u16 = 1000;
 pub const MIN_READING_SPEED_WPM: u16 = 50;
 
+fn default_markdown_live_preview() -> bool {
+    true
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct UiConfig {
@@ -36,6 +40,8 @@ pub struct UiConfig {
     pub compact_mode: bool,
     pub reading_speed_wpm: u16,
     pub autosave_enabled: bool,
+    #[serde(default = "default_markdown_live_preview")]
+    pub markdown_live_preview: bool,
 }
 
 impl Default for SearchConfig {
@@ -56,6 +62,7 @@ impl Default for UiConfig {
             compact_mode: false,
             reading_speed_wpm: 200,
             autosave_enabled: true,
+            markdown_live_preview: true,
         }
     }
 }

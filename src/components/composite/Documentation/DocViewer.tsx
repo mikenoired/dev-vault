@@ -34,7 +34,7 @@ export const DocViewer = ({ entry, onInteraction }: DocViewerProps) => {
     <div className="mx-auto h-full w-full flex flex-col relative" onPointerDown={onInteraction}>
       <div className="flex-1 overflow-y-auto">
         <div className="p-8 pb-16">
-          <div className="max-w-[65ch] mx-auto">
+          <div className="max-w-[70ch] mx-auto">
             <div className="mb-6">
               <h1 className="text-3xl font-bold text-foreground mb-2">{entry.title}</h1>
               <div className="flex items-center gap-3 text-sm text-neutral-500">

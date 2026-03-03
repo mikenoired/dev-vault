@@ -107,6 +107,7 @@ export interface UiConfig {
   compact_mode: boolean;
   reading_speed_wpm: number;
   autosave_enabled: boolean;
+  markdown_live_preview: boolean;
 }
 
 export interface AppConfig {

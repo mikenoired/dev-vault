@@ -8,7 +8,7 @@ import {
   Settings,
   StickyNote,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
 import { useItemsStore } from "@/stores/itemsStore";
@@ -38,17 +38,16 @@ export const TypeFilter = () => {
     loadTypeCounts();
   }, [loadTypeCounts]);
 
-  const getCountByType = (type: ItemType) => {
-    if (type === "documentation") {
-      return installedDocs.length;
-    }
-
-    return typeCounts[type] ?? 0;
-  };
+  const getCountByType = useCallback(
+    (type: ItemType) => {
+      if (type === "documentation") return installedDocs.length;
+      return typeCounts[type] ?? 0;
+    },
+    [installedDocs, typeCounts],
+  );
 
   const activeType = selectedType ?? "snippet";
   const activeLabel = typeConfig[activeType]?.label ?? "Тип контента";
-  const activeCount = getCountByType(activeType);
 
   return (
     <div className="flex items-center gap-2 border-b border-border w-full">
@@ -58,11 +57,7 @@ export const TypeFilter = () => {
             type="button"
             className="inline-flex items-center justify-between flex-1 gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
           >
-            <div className="gap-2 inline-flex">
-              <span className="text-muted-foreground">Тип:</span>
-              <span className="font-medium">{activeLabel}</span>
-              <span className="text-muted-foreground/70">({activeCount})</span>
-            </div>
+            <span className="font-medium">{activeLabel}</span>
             <ChevronDown className="size-4 text-muted-foreground" />
           </button>
         </DropdownMenu.Trigger>
@@ -92,7 +87,6 @@ export const TypeFilter = () => {
                 >
                   <Icon className="size-4 text-muted-foreground" />
                   <span className="flex-1">{label}</span>
-                  <span className="text-xs text-muted-foreground">{count}</span>
                 </DropdownMenu.Item>
               );
             })}

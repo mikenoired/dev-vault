@@ -34,6 +34,8 @@ pub struct Item {
 pub struct Tag {
     pub id: i64,
     pub name: String,
+    #[serde(rename = "colorCode")]
+    pub color_code: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -20,7 +20,8 @@ CREATE INDEX IF NOT EXISTS idx_items_updated_at ON items(updated_at DESC);
 -- Tags table
 CREATE TABLE IF NOT EXISTS tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
+    name TEXT UNIQUE NOT NULL,
+    color_code INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);

@@ -17,6 +17,7 @@ export interface Item {
 export interface Tag {
   id: number;
   name: string;
+  colorCode: number;
 }
 
 export interface Documentation {

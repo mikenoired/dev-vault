@@ -16,6 +16,7 @@ import { useItemsStore } from "@/stores/itemsStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabsStore } from "@/stores/tabsStore";
 import type { ItemType, Tag } from "@/types";
+import { getTagColorClass } from "@/utils/tagColors";
 
 interface ItemDetailProps {
   itemId?: number;
@@ -52,6 +53,7 @@ const tagSignature = (tags: string[]) => tags.map((tag) => tag.trim()).join("|")
 
 export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: ItemDetailProps) => {
   const items = useItemsStore((state) => state.items);
+  const knownTags = useItemsStore((state) => state.tags);
   const storeSelectedItem = useItemsStore((state) => state.selectedItem);
   const selectItem = useItemsStore((state) => state.selectItem);
   const { updateItem, createItem } = useItemsStore((state) => state);
@@ -125,6 +127,19 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   });
   const isCreatingRef = useRef(false);
   const hasPendingDraftChangesRef = useRef(false);
+
+  const tagColorByName = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const tag of knownTags) {
+      map.set(tag.name.toLowerCase(), tag.colorCode);
+    }
+    if (selectedItem) {
+      for (const tag of selectedItem.tags) {
+        map.set(tag.name.toLowerCase(), tag.colorCode);
+      }
+    }
+    return map;
+  }, [knownTags, selectedItem]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -620,7 +635,11 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex gap-1.5 flex-wrap">
               {selectedItem.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="bg-accent/30">
+                <Badge
+                  key={tag.id}
+                  variant="outline"
+                  className={cn(getTagColorClass(tag.colorCode), "border")}
+                >
                   {tag.name}
                 </Badge>
               ))}
@@ -756,7 +775,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
                     key={tag}
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="group inline-flex items-center gap-1 rounded-full bg-accent/40 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent/60"
+                    className={cn(
+                      "group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors hover:brightness-110",
+                      getTagColorClass(tagColorByName.get(tag.toLowerCase()) ?? 0),
+                    )}
                     aria-label={`Удалить тег ${tag}`}
                   >
                     <span>{tag}</span>
@@ -795,7 +817,15 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
                         focusedTagIndex === index ? "bg-accent/40" : "hover:bg-accent/40",
                       )}
                     >
-                      <span>{tag.name}</span>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "inline-block size-2 rounded-full border",
+                            getTagColorClass(tag.colorCode),
+                          )}
+                        />
+                        <span>{tag.name}</span>
+                      </span>
                       <span className="text-xs text-muted-foreground">Добавить</span>
                     </button>
                   ))}

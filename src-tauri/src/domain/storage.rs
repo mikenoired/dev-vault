@@ -7,6 +7,8 @@ pub struct Storage {
     pub pool: Pool<Sqlite>,
 }
 
+const TAG_COLOR_CODE_COUNT: i64 = 12;
+
 impl Storage {
     fn item_type_to_str(item_type: ItemType) -> &'static str {
         match item_type {
@@ -64,7 +66,39 @@ impl Storage {
             .await
             .context("Failed to run migration 004")?;
 
+        Self::run_migration_005_tag_colors(pool).await?;
+
         tracing::info!("✅ All migrations completed successfully");
+        Ok(())
+    }
+
+    async fn run_migration_005_tag_colors(pool: &Pool<Sqlite>) -> Result<()> {
+        let has_color_code_column = sqlx::query(
+            "SELECT 1 FROM pragma_table_info('tags') WHERE name = 'color_code' LIMIT 1",
+        )
+        .fetch_optional(pool)
+        .await
+        .context("Failed to inspect tags schema")?
+        .is_some();
+
+        if has_color_code_column {
+            return Ok(());
+        }
+
+        sqlx::query("ALTER TABLE tags ADD COLUMN color_code INTEGER NOT NULL DEFAULT 0")
+            .execute(pool)
+            .await
+            .context("Failed to add tags.color_code column")?;
+
+        sqlx::query(
+            "UPDATE tags
+             SET color_code = CAST((random() & 9223372036854775807) % ?1 AS INTEGER)",
+        )
+        .bind(TAG_COLOR_CODE_COUNT)
+        .execute(pool)
+        .await
+        .context("Failed to assign random tag colors for existing tags")?;
+
         Ok(())
     }
 
@@ -466,8 +500,12 @@ impl Storage {
     }
 
     pub async fn create_tag(&self, name: String) -> Result<i64> {
-        let result = sqlx::query("INSERT INTO tags (name) VALUES (?1)")
+        let result = sqlx::query(
+            "INSERT INTO tags (name, color_code)
+             VALUES (?1, CAST((random() & 9223372036854775807) % ?2 AS INTEGER))",
+        )
             .bind(name)
+            .bind(TAG_COLOR_CODE_COUNT)
             .execute(&self.pool)
             .await
             .context("Failed to create tag")?;
@@ -476,7 +514,7 @@ impl Storage {
     }
 
     pub async fn get_tag_by_name(&self, name: &str) -> Result<Option<Tag>> {
-        let row = sqlx::query("SELECT id, name FROM tags WHERE name = ?1")
+        let row = sqlx::query("SELECT id, name, color_code FROM tags WHERE name = ?1")
             .bind(name)
             .fetch_optional(&self.pool)
             .await
@@ -485,11 +523,12 @@ impl Storage {
         Ok(row.map(|r| Tag {
             id: r.get("id"),
             name: r.get("name"),
+            color_code: r.get("color_code"),
         }))
     }
 
     pub async fn list_tags(&self) -> Result<Vec<Tag>> {
-        let rows = sqlx::query("SELECT id, name FROM tags ORDER BY name")
+        let rows = sqlx::query("SELECT id, name, color_code FROM tags ORDER BY name")
             .fetch_all(&self.pool)
             .await
             .context("Failed to list tags")?;
@@ -499,13 +538,16 @@ impl Storage {
             .map(|r| Tag {
                 id: r.get("id"),
                 name: r.get("name"),
+                color_code: r.get("color_code"),
             })
             .collect())
     }
 
     pub async fn search_tags(&self, query: &str, limit: i64) -> Result<Vec<Tag>> {
         let pattern = format!("{}%", query);
-        let rows = sqlx::query("SELECT id, name FROM tags WHERE name LIKE ?1 ORDER BY name LIMIT ?2")
+        let rows = sqlx::query(
+            "SELECT id, name, color_code FROM tags WHERE name LIKE ?1 ORDER BY name LIMIT ?2",
+        )
             .bind(pattern)
             .bind(limit)
             .fetch_all(&self.pool)
@@ -517,13 +559,14 @@ impl Storage {
             .map(|r| Tag {
                 id: r.get("id"),
                 name: r.get("name"),
+                color_code: r.get("color_code"),
             })
             .collect())
     }
 
     async fn get_item_tags(&self, item_id: i64) -> Result<Vec<Tag>> {
         let rows = sqlx::query(
-            "SELECT t.id, t.name
+            "SELECT t.id, t.name, t.color_code
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
              WHERE it.item_id = ?1
@@ -539,6 +582,7 @@ impl Storage {
             .map(|r| Tag {
                 id: r.get("id"),
                 name: r.get("name"),
+                color_code: r.get("color_code"),
             })
             .collect())
     }

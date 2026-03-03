@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Badge, cn } from "@/components/ui";
 import type { ItemWithTags } from "@/types";
+import { getTagColorClass } from "@/utils/tagColors";
 
 interface ItemCardProps {
   item: ItemWithTags;
@@ -96,7 +97,11 @@ export const ItemCard = ({
         {item.tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {item.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag.id} variant="outline" className="text-xs">
+              <Badge
+                key={tag.id}
+                variant="outline"
+                className={cn("text-xs", getTagColorClass(tag.colorCode))}
+              >
                 {tag.name}
               </Badge>
             ))}

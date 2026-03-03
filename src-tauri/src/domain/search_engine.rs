@@ -267,6 +267,7 @@ impl SearchEngine {
             let tags = vec![Tag {
                 id: -doc_id,
                 name: doc_name,
+                color_code: 11,
             }];
 
             map.insert(entry_id, (item, tags));
@@ -299,7 +300,7 @@ impl SearchEngine {
         }
 
         let mut builder = QueryBuilder::<Sqlite>::new(
-            "SELECT it.item_id, t.id, t.name
+            "SELECT it.item_id, t.id, t.name, t.color_code
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
              WHERE it.item_id IN (",
@@ -317,6 +318,7 @@ impl SearchEngine {
             let tag = Tag {
                 id: row.get("id"),
                 name: row.get("name"),
+                color_code: row.get("color_code"),
             };
             map.entry(item_id).or_default().push(tag);
         }

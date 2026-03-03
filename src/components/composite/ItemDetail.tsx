@@ -659,11 +659,14 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
           <div className="relative pb-4">
             <div className="flex items-center gap-3">
               <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
+                <DropdownMenu.Trigger asChild disabled={isNoteEditor}>
                   <button
                     type="button"
                     aria-label="Тип элемента"
-                    className="mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors hover:bg-accent/60 cursor-pointer"
+                    className={cn(
+                      "mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors",
+                      !isNoteEditor && "hover:bg-accent/60 cursor-pointer",
+                    )}
                   >
                     <TypeIcon className="size-5" />
                   </button>
@@ -715,7 +718,12 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
           </div>
 
           <div className="relative pb-2">
-            <div className="pointer-events-none absolute inset-y-0 left-0 pr-2">
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-y-0 pr-2",
+                isNoteEditor ? "-left-6" : "left-0",
+              )}
+            >
               <div className="flex flex-col gap-0 text-sm font-mono italic text-muted-foreground/40">
                 {editDescription.length === 0
                   ? null
@@ -733,7 +741,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Введите описание (необязательно)"
               rows={1}
-              className="relative min-h-6 border-none bg-transparent pl-6 pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none focus:outline-0"
+              className={cn(
+                "relative min-h-6 border-none bg-transparent pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none focus:outline-0 placeholder:text-muted-foreground/50",
+                isNoteEditor ? "pl-0" : "pl-6",
+              )}
             />
           </div>
 
@@ -749,7 +760,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
                     aria-label={`Удалить тег ${tag}`}
                   >
                     <span>{tag}</span>
-                    <X className="size-3 text-muted-foreground group-hover:text-foreground" />
+                    <X className="size-3 text-muted-foreground group-hover:text-foreground cursor-pointer" />
                   </button>
                 ))}
               </div>

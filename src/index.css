@@ -182,11 +182,31 @@
     padding-left: 0.75rem;
   }
 
+  .cm-editor .cm-line.cm-md-divider {
+    border-top: 1px solid color-mix(in oklab, var(--border) 80%, var(--foreground) 20%);
+    height: 0;
+    margin: 0.8rem 0;
+    padding-left: 0;
+  }
+
   .cm-editor .cm-line.cm-md-codeblock {
     background: color-mix(in oklab, var(--muted) 80%, transparent 20%);
     border-left: 2px solid color-mix(in oklab, var(--border) 85%, transparent 15%);
     font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
     padding-left: 0.75rem;
+  }
+
+  .cm-editor .cm-line.cm-md-codefence {
+    color: color-mix(in oklab, var(--foreground) 55%, var(--muted-foreground) 45%);
+    font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .cm-editor .cm-md-codefence-hidden {
+    opacity: 0;
+  }
+
+  .cm-editor .cm-md-codefence-hidden * {
+    opacity: 0;
   }
 
   .cm-editor .cm-md-link-text {

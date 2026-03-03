@@ -85,10 +85,14 @@ export default function CodeEditor({
     };
 
     if (noteMode) {
+      const noteFontFamily =
+        'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif';
+
       themeConfig["&, &.cm-focused"] = {
         background: "transparent !important",
         outline: "none !important",
         boxShadow: "none !important",
+        fontFamily: noteFontFamily,
       };
       themeConfig[".cm-gutters"] = {
         display: "none",
@@ -100,16 +104,19 @@ export default function CodeEditor({
         maxHeight: "none !important",
         overflowX: "auto",
         overflowY: "visible !important",
+        fontFamily: noteFontFamily,
       };
       themeConfig[".cm-activeLine, .cm-activeLineGutter"] = {
         background: "transparent !important",
       };
       themeConfig[".cm-content"] = {
         color: "var(--foreground)",
+        fontFamily: noteFontFamily,
         padding: "0",
       };
       themeConfig[".cm-content, .cm-line"] = {
         background: "transparent !important",
+        fontFamily: noteFontFamily,
       };
       themeConfig[".cm-content span"] = {
         color: "inherit !important",

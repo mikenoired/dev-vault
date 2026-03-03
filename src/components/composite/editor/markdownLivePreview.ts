@@ -28,6 +28,11 @@ type PendingDecoration = {
   decoration: Decoration;
 };
 
+type FenceBlockRange = {
+  startLine: number;
+  endLine: number;
+};
+
 const hiddenMarkdownMarker = Decoration.replace({});
 const headingLineDecorations = [
   Decoration.line({ class: "cm-md-heading cm-md-heading-1" }),
@@ -39,6 +44,9 @@ const headingLineDecorations = [
 ] as const;
 const blockquoteLineDecoration = Decoration.line({ class: "cm-md-blockquote" });
 const codeBlockLineDecoration = Decoration.line({ class: "cm-md-codeblock" });
+const dividerLineDecoration = Decoration.line({ class: "cm-md-divider" });
+const codeFenceLineDecoration = Decoration.line({ class: "cm-md-codefence" });
+const hiddenCodeFenceDecoration = Decoration.mark({ class: "cm-md-codefence-hidden" });
 const linkTextDecoration = Decoration.mark({ class: "cm-md-link-text" });
 const inlineCodeDecoration = Decoration.mark({ class: "cm-md-inline-code" });
 const strongTextDecoration = Decoration.mark({ class: "cm-md-strong" });
@@ -50,6 +58,7 @@ const headingPattern = /^(\s{0,3})(#{1,6})(\s+)/;
 const blockquotePattern = /^(\s*>+\s*)/;
 const taskPattern = /^(\s*[-*+]\s+)\[( |x|X)\](\s+)/;
 const fencePattern = /^\s*(`{3,})(.*)$/;
+const dividerPattern = /^\s{0,3}(?:-\s*){3,}$/;
 const markdownLinkPattern = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const inlineCodePattern = /`([^`\n]+)`/g;
 const strongEmphasisStarPattern = /\*\*\*([^\n*]+)\*\*\*/g;
@@ -144,6 +153,54 @@ function getFenceMarkerLength(lineText: string): number | null {
   const match = fencePattern.exec(lineText);
   if (!match) return null;
   return match[1]?.length ?? null;
+}
+
+function collectFenceBlocks(view: EditorView): FenceBlockRange[] {
+  const blocks: FenceBlockRange[] = [];
+  const { doc } = view.state;
+  let currentStartLine: number | null = null;
+  let currentFenceLength: number | null = null;
+
+  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+    const line = doc.line(lineNumber);
+    const fenceLength = getFenceMarkerLength(line.text);
+    if (fenceLength === null) continue;
+
+    if (currentFenceLength === null) {
+      currentStartLine = lineNumber;
+      currentFenceLength = fenceLength;
+      continue;
+    }
+
+    if (fenceLength >= currentFenceLength) {
+      blocks.push({
+        startLine: currentStartLine ?? lineNumber,
+        endLine: lineNumber,
+      });
+      currentStartLine = null;
+      currentFenceLength = null;
+    }
+  }
+
+  if (currentStartLine !== null) {
+    blocks.push({
+      startLine: currentStartLine,
+      endLine: doc.lines,
+    });
+  }
+
+  return blocks;
+}
+
+function getActiveFenceBlock(
+  fenceBlocks: FenceBlockRange[],
+  activeLineNumber: number,
+): FenceBlockRange | null {
+  return (
+    fenceBlocks.find(
+      (block) => activeLineNumber >= block.startLine && activeLineNumber <= block.endLine,
+    ) ?? null
+  );
 }
 
 function toggleTaskOnLine(view: EditorView, line: DocLine): boolean {
@@ -269,6 +326,20 @@ function addBlockquoteDecoration(decorations: PendingDecoration[], line: DocLine
 
   addHiddenMarker(decorations, line.from, line.from + match[0].length);
   pushDecoration(decorations, line.from, line.from, blockquoteLineDecoration);
+}
+
+function addDividerDecoration(
+  decorations: PendingDecoration[],
+  line: DocLine,
+  hideMarkers: boolean,
+): boolean {
+  if (!dividerPattern.test(line.text)) return false;
+
+  if (hideMarkers) {
+    addHiddenMarker(decorations, line.from, line.to);
+  }
+  pushDecoration(decorations, line.from, line.from, dividerLineDecoration);
+  return true;
 }
 
 function addInlineCodeDecorations(
@@ -420,22 +491,31 @@ function addEmphasisDecorations(
 
 function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const decorations: PendingDecoration[] = [];
-  const activeLineNumbers = collectActiveLineNumbers(view);
   const cursorPos = view.state.selection.main.head;
+  const activeLineNumber = view.state.doc.lineAt(cursorPos).number;
+  const activeLineNumbers = collectActiveLineNumbers(view);
+  const fenceBlocks = collectFenceBlocks(view);
+  const activeFenceBlock = getActiveFenceBlock(fenceBlocks, activeLineNumber);
   const { doc } = view.state;
   let currentFenceLength: number | null = null;
 
   for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
     const line = doc.line(lineNumber);
     const isActiveLine = activeLineNumbers.has(line.number);
+    const isInsideActiveFenceBlock =
+      activeFenceBlock !== null &&
+      line.number >= activeFenceBlock.startLine &&
+      line.number <= activeFenceBlock.endLine;
 
     const fenceLength = getFenceMarkerLength(line.text);
     if (fenceLength !== null) {
       const isClosingFence = currentFenceLength !== null && fenceLength >= currentFenceLength;
       const isOpeningFence = currentFenceLength === null;
 
-      if (!isActiveLine) {
-        addHiddenMarker(decorations, line.from, line.to);
+      if (!isActiveLine && !isInsideActiveFenceBlock) {
+        pushDecoration(decorations, line.from, line.to, hiddenCodeFenceDecoration);
+      } else {
+        pushDecoration(decorations, line.from, line.from, codeFenceLineDecoration);
       }
 
       if (isOpeningFence) {
@@ -448,9 +528,15 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     }
 
     if (currentFenceLength !== null) {
-      if (!isActiveLine) {
+      if (isInsideActiveFenceBlock) {
+        pushDecoration(decorations, line.from, line.from, codeBlockLineDecoration);
+      } else if (!isActiveLine) {
         pushDecoration(decorations, line.from, line.from, codeBlockLineDecoration);
       }
+      continue;
+    }
+
+    if (isInsideActiveFenceBlock) {
       continue;
     }
 
@@ -459,6 +545,9 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     addHeadingDecoration(decorations, line, !isActiveLine);
     if (!isActiveLine) {
       addBlockquoteDecoration(decorations, line);
+    }
+    if (addDividerDecoration(decorations, line, !isActiveLine)) {
+      continue;
     }
 
     if (!isActiveLine) {

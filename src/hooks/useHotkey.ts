@@ -13,6 +13,8 @@ type HotkeyConfig = {
 export const useHotkey = (config: HotkeyConfig, handler: () => void) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+
       const isMac = navigator.userAgent.toLowerCase().includes("mac");
       const { key, ctrl, meta, mod, shift, alt, preventDefault = true } = config;
 

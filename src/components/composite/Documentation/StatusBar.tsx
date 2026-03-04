@@ -7,9 +7,15 @@ import calculateReadingTime from "@/utils/readTime";
 
 interface StatusBarProps {
   content: string;
+  markdownViewMode?: "source" | "live";
+  onMarkdownViewModeChange?: (mode: "source" | "live") => void;
 }
 
-export default function StatusBar({ content }: StatusBarProps) {
+export default function StatusBar({
+  content,
+  markdownViewMode,
+  onMarkdownViewModeChange,
+}: StatusBarProps) {
   const readingSpeed = useSettingsStore((state) => state.config?.ui.reading_speed_wpm ?? 200);
   const { words, minutes } = calculateReadingTime(content, readingSpeed);
   const [isCopied, setIsCopied] = useState(false);
@@ -25,7 +31,7 @@ export default function StatusBar({ content }: StatusBarProps) {
   return (
     <Tooltip.Provider delayDuration={300}>
       <div className="w-full p-0.5 bg-primary-foreground border-t border-border flex items-center justify-between min-h-8">
-        <div>
+        <div className="flex items-center gap-2">
           <Tooltip.Root>
             <Tooltip.Trigger
               onClick={(event) => event.preventDefault()}
@@ -43,13 +49,13 @@ export default function StatusBar({ content }: StatusBarProps) {
                   event.preventDefault();
                 }}
               >
-                {isCopied ? "Copied to clipboard" : "Copy to clipboard"}
+                {isCopied ? "Скопировано" : "Скопировать"}
                 <Tooltip.Arrow className="fill-border" />
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
         </div>
-        <div className="flex items-center gap-4 pr-4">
+        <div className="flex items-center gap-4 pr-2">
           <span className="flex items-center gap-1 text-sm text-neutral-500">
             <ClockIcon className="w-4 h-4 text-neutral-400" />
             {minutes} мин.
@@ -58,6 +64,32 @@ export default function StatusBar({ content }: StatusBarProps) {
             <BookOpenIcon className="w-4 h-4 text-neutral-400" />
             {words} слов
           </span>
+          {onMarkdownViewModeChange && markdownViewMode && (
+            <div className="flex items-center gap-1 pl-2">
+              <button
+                type="button"
+                onClick={() => onMarkdownViewModeChange("source")}
+                className={
+                  markdownViewMode === "source"
+                    ? "rounded px-2.5 py-1 text-xs font-medium bg-accent text-foreground"
+                    : "rounded px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                }
+              >
+                Source
+              </button>
+              <button
+                type="button"
+                onClick={() => onMarkdownViewModeChange("live")}
+                className={
+                  markdownViewMode === "live"
+                    ? "rounded px-2.5 py-1 text-xs font-medium bg-accent text-foreground"
+                    : "rounded px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                }
+              >
+                Live
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Tooltip.Provider>

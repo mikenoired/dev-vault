@@ -1,4 +1,4 @@
-import { BookOpen, Code2, Link2, Plus, Settings, StickyNote, X } from "lucide-react";
+import { BookOpen, Code2, Link2, LoaderCircle, Plus, Settings, StickyNote, X } from "lucide-react";
 import { cn } from "@/components/ui";
 import { type Tab, useTabsStore } from "@/stores/tabsStore";
 import type { ItemType } from "@/types";
@@ -31,6 +31,9 @@ interface TabItemProps {
 
 export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
   const { selectTab, pinTab } = useTabsStore();
+  const isAutosaveClosePending = useTabsStore((state) =>
+    state.pendingAutosaveCloseTabIds.includes(tab.id),
+  );
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,6 +94,9 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
             >
               {tab.title}
               {tab.isDirty && <span className="size-1.5 rounded-full bg-primary/80" />}
+              {isAutosaveClosePending && (
+                <LoaderCircle className="size-3 text-muted-foreground animate-spin" />
+              )}
             </span>
           </div>
           <button

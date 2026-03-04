@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import CodeEditor from "@/components/composite/CodeEditor";
+import StatusBar from "@/components/composite/Documentation/StatusBar";
 import { Badge, cn, Textarea } from "@/components/ui";
 import { tauriService } from "@/services/tauri";
 import { useItemsStore } from "@/stores/itemsStore";
@@ -62,6 +63,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const updateTabTitleById = useTabsStore((state) => state.updateTabTitleById);
   const promoteDraftTab = useTabsStore((state) => state.promoteDraftTab);
   const setTabDirty = useTabsStore((state) => state.setTabDirty);
+  const failAutosaveClose = useTabsStore((state) => state.failAutosaveClose);
   const activeTabId = useTabsStore((state) => state.activeTabId);
 
   const autosaveEnabled = useSettingsStore((state) => state.config?.ui.autosave_enabled ?? true);
@@ -69,7 +71,6 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   const markdownLivePreviewEnabled = useSettingsStore(
     (state) => state.config?.ui.markdown_live_preview ?? true,
   );
-  const updateUiConfig = useSettingsStore((state) => state.updateUiConfig);
 
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
@@ -225,15 +226,23 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     const handler = window.setTimeout(async () => {
       const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
       const shouldUpdateType = currentType !== lastSavedRef.current.type;
-      await updateItem(selectedItem.id, {
+      const updated = await updateItem(selectedItem.id, {
         type: shouldUpdateType ? currentType : undefined,
         title: trimmedTitle,
         description: editDescription,
         content: editContent,
         tagNames,
-      }).catch((error) => {
-        console.error("Failed to update item:", error);
-      });
+      })
+        .then(() => true)
+        .catch((error) => {
+          console.error("Failed to update item:", error);
+          if (resolvedTabId) {
+            failAutosaveClose(resolvedTabId);
+          }
+          return false;
+        });
+
+      if (!updated) return;
 
       updateTabTitle(selectedItem.id, trimmedTitle);
       lastSavedRef.current = {
@@ -243,6 +252,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         tags: tagSignature(tagList),
         type: currentType,
       };
+      setIsDirty(false);
     }, 500);
 
     return () => {
@@ -260,6 +270,8 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     updateItem,
     updateTabTitle,
     isDocumentation,
+    resolvedTabId,
+    failAutosaveClose,
   ]);
 
   const hasChanges = useCallback(() => {
@@ -275,21 +287,13 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
   }, [currentType, editContent, editDescription, editTitle, tagList]);
 
   useEffect(() => {
-    if (autosaveEnabled) {
-      setIsDirty(false);
-      return;
-    }
     setIsDirty(hasChanges());
-  }, [autosaveEnabled, hasChanges]);
+  }, [hasChanges]);
 
   useEffect(() => {
     if (!resolvedTabId) return;
-    if (autosaveEnabled) {
-      setTabDirty(resolvedTabId, false);
-      return;
-    }
     setTabDirty(resolvedTabId, isDirty);
-  }, [autosaveEnabled, isDirty, resolvedTabId, setTabDirty]);
+  }, [isDirty, resolvedTabId, setTabDirty]);
 
   const saveChanges = useCallback(async () => {
     const trimmedTitle = editTitle.trim();
@@ -594,15 +598,9 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
     setMarkdownViewMode(markdownLivePreviewEnabled ? "live" : "source");
   }, [markdownLivePreviewEnabled]);
 
-  const handleMarkdownModeChange = useCallback(
-    (mode: "source" | "live") => {
-      const nextEnabled = mode === "live";
-      setMarkdownViewMode(mode);
-      if (nextEnabled === markdownLivePreviewEnabled) return;
-      void updateUiConfig({ markdown_live_preview: nextEnabled });
-    },
-    [markdownLivePreviewEnabled, updateUiConfig],
-  );
+  const handleMarkdownModeChange = useCallback((mode: "source" | "live") => {
+    setMarkdownViewMode(mode);
+  }, []);
 
   if (!selectedItem && !isDraft) {
     return (
@@ -850,33 +848,12 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       </div>
 
       {isNoteEditor && (
-        <div className="sticky bottom-0 z-10 w-full min-h-8 border-t border-border bg-primary-foreground/95 p-0.5 backdrop-blur-sm">
-          <div className="mx-auto flex w-full max-w-[70ch] items-center justify-end gap-1">
-            <button
-              type="button"
-              onClick={() => handleMarkdownModeChange("source")}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
-                resolvedMarkdownViewMode === "source"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Source
-            </button>
-            <button
-              type="button"
-              onClick={() => handleMarkdownModeChange("live")}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
-                resolvedMarkdownViewMode === "live"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Live
-            </button>
-          </div>
+        <div className="sticky bottom-0 z-10 w-full border-t border-border bg-primary-foreground/95 backdrop-blur-sm">
+          <StatusBar
+            content={editContent}
+            markdownViewMode={resolvedMarkdownViewMode}
+            onMarkdownViewModeChange={handleMarkdownModeChange}
+          />
         </div>
       )}
     </div>

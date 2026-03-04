@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useSettingsStore } from "@/stores/settingsStore";
 import type { ItemType } from "@/types";
 
 export type TabType = "item" | "new" | "draft" | "documentation" | "docEntry";
@@ -36,6 +37,8 @@ interface TabsState {
   setTabDirty: (tabId: string, isDirty: boolean) => void;
 
   pendingCloseTabId: string | null;
+  pendingAutosaveCloseTabIds: string[];
+  failAutosaveClose: (tabId: string) => void;
 }
 
 const typeLabels: Record<ItemType, string> = {
@@ -50,6 +53,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   tabs: [],
   activeTabId: null,
   pendingCloseTabId: null,
+  pendingAutosaveCloseTabIds: [],
 
   openItemTab: (itemId, itemType, title, pin = false) => {
     const { tabs } = get();
@@ -202,7 +206,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   },
 
   closeTab: (tabId) => {
-    const { tabs } = get();
+    const { tabs, pendingAutosaveCloseTabIds } = get();
     const { activeTabId } = get();
     const newTabs = tabs.filter((t) => t.id !== tabId);
 
@@ -217,13 +221,26 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       }
     }
 
-    set({ tabs: newTabs, activeTabId: nextActiveId });
+    set({
+      tabs: newTabs,
+      activeTabId: nextActiveId,
+      pendingAutosaveCloseTabIds: pendingAutosaveCloseTabIds.filter((id) => id !== tabId),
+    });
   },
 
   requestCloseTab: (tabId) => {
-    const { tabs } = get();
+    const { tabs, pendingAutosaveCloseTabIds } = get();
     const tab = tabs.find((t) => t.id === tabId);
     if (tab?.isDirty) {
+      const autosaveEnabled = useSettingsStore.getState().config?.ui.autosave_enabled ?? true;
+      if (autosaveEnabled && tab.type === "item") {
+        if (!pendingAutosaveCloseTabIds.includes(tabId)) {
+          set({
+            pendingAutosaveCloseTabIds: [...pendingAutosaveCloseTabIds, tabId],
+          });
+        }
+        return;
+      }
       set({ pendingCloseTabId: tabId });
       return;
     }
@@ -293,8 +310,25 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   },
 
   setTabDirty: (tabId, isDirty) => {
+    const { pendingAutosaveCloseTabIds } = get();
+
     set((state) => ({
       tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isDirty } : t)),
     }));
+
+    if (!isDirty && pendingAutosaveCloseTabIds.includes(tabId)) {
+      set({
+        pendingAutosaveCloseTabIds: pendingAutosaveCloseTabIds.filter((id) => id !== tabId),
+      });
+      get().closeTab(tabId);
+    }
+  },
+  failAutosaveClose: (tabId) => {
+    const { pendingAutosaveCloseTabIds } = get();
+    if (!pendingAutosaveCloseTabIds.includes(tabId)) return;
+    set({
+      pendingAutosaveCloseTabIds: pendingAutosaveCloseTabIds.filter((id) => id !== tabId),
+      pendingCloseTabId: tabId,
+    });
   },
 }));

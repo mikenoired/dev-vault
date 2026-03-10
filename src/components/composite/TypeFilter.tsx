@@ -1,13 +1,5 @@
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import {
-  Book,
-  ChevronDown,
-  Code,
-  Link as LinkIcon,
-  type LucideIcon,
-  Settings,
-  StickyNote,
-} from "lucide-react";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { cn } from "@/components/ui";
 import { useDocsStore } from "@/stores/docsStore";
@@ -40,59 +32,63 @@ export const TypeFilter = () => {
 
   const getCountByType = useCallback(
     (type: ItemType) => {
-      if (type === "documentation") return installedDocs.length;
+      if (type === "documentation") {
+        return installedDocs.length;
+      }
       return typeCounts[type] ?? 0;
     },
     [installedDocs, typeCounts],
   );
 
   const activeType = selectedType ?? "snippet";
-  const activeLabel = typeConfig[activeType]?.label ?? "Тип контента";
 
   return (
-    <div className="flex items-center gap-2 bg-accent rounded-md w-full">
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            className="inline-flex items-center justify-between flex-1 gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-foreground/10 transition-colors cursor-pointer"
-          >
-            <span className="font-medium">{activeLabel}</span>
-            <ChevronDown className="size-4 text-muted-foreground" />
-          </button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            align="start"
-            className="min-w-52 m-1 rounded-md border border-border bg-popover p-1 shadow-md"
-          >
-            {(Object.keys(typeConfig) as ItemType[]).map((type) => {
-              const { icon: Icon, label } = typeConfig[type];
-              const count = getCountByType(type);
-              const isDisabled = count === 0;
-              const isActive = activeType === type;
+    <Tooltip.Provider delayDuration={200}>
+      <div className="flex w-full items-center gap-1 rounded-md bg-accent p-1">
+        {(Object.keys(typeConfig) as ItemType[]).map((type) => {
+          const { icon: Icon, label } = typeConfig[type];
+          const count = getCountByType(type);
+          const isActive = activeType === type;
+          const isEmpty = count === 0;
+          const isDisabled = isActive || isEmpty;
 
-              return (
-                <DropdownMenu.Item
-                  key={type}
-                  disabled={isDisabled}
-                  onSelect={() => !isDisabled && filterByType(type)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-                    isActive ? "bg-accent/60 text-foreground" : "text-foreground",
-                    isDisabled
-                      ? "opacity-40 cursor-not-allowed"
-                      : "hover:bg-accent/50 cursor-pointer",
-                  )}
+          return (
+            <Tooltip.Root key={type}>
+              <Tooltip.Trigger asChild>
+                <span className="inline-flex">
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    aria-label={label}
+                    onClick={() => filterByType(type)}
+                    className={cn(
+                      "inline-flex size-8 items-center justify-center rounded-md border transition-colors",
+                      isActive
+                        ? "cursor-not-allowed border-border bg-card text-foreground"
+                        : "border-transparent text-muted-foreground",
+                      isEmpty
+                        ? "cursor-not-allowed opacity-35"
+                        : "hover:bg-foreground/10 hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </button>
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  side="top"
+                  sideOffset={6}
+                  className="rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground shadow-lg"
                 >
-                  <Icon className="size-4 text-muted-foreground" />
-                  <span className="flex-1">{label}</span>
-                </DropdownMenu.Item>
-              );
-            })}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-    </div>
+                  {label}
+                  <Tooltip.Arrow className="fill-border" />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          );
+        })}
+      </div>
+    </Tooltip.Provider>
   );
 };

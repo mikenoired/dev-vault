@@ -82,9 +82,5 @@ export const ItemsList = () => {
     );
   }
 
-  return (
-    <div className="flex-1 overflow-hidden">
-      <BaseItems />
-    </div>
-  );
+  return <BaseItems />;
 };

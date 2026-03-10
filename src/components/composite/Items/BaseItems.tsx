@@ -57,19 +57,17 @@ export default function BaseItems() {
   };
 
   return (
-    <div ref={listRef} className="overflow-y-auto h-full">
+    <div ref={listRef} className="overflow-y-auto rounded-md flex flex-col overflow-hidden">
       {items.map((item) => (
         <ContextMenu.Root key={item.id}>
           <ContextMenu.Trigger asChild>
-            <div>
-              <ItemCard
-                item={item}
-                isSelected={activeTabId === `item-${item.id}`}
-                onClick={() => handleOpenItem(item, false)}
-                onDoubleClick={() => handleOpenItem(item, true)}
-                isSearchMode={isSearchMode}
-              />
-            </div>
+            <ItemCard
+              item={item}
+              isSelected={activeTabId === `item-${item.id}`}
+              onClick={() => handleOpenItem(item, false)}
+              onDoubleClick={() => handleOpenItem(item, true)}
+              isSearchMode={isSearchMode}
+            />
           </ContextMenu.Trigger>
           <ContextMenu.Portal>
             <ContextMenu.Content className="min-w-40 rounded-md border border-border bg-primary-foreground p-1 text-sm shadow-md z-20">
@@ -83,7 +81,7 @@ export default function BaseItems() {
           </ContextMenu.Portal>
         </ContextMenu.Root>
       ))}
-      <div ref={sentinelRef} className="h-8" />
+      <div ref={sentinelRef} className="h-0" />
       {isLoadingMore && (
         <div className="py-3 text-center text-xs text-muted-foreground">Загрузка...</div>
       )}

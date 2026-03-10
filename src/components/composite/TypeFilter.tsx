@@ -50,12 +50,12 @@ export const TypeFilter = () => {
   const activeLabel = typeConfig[activeType]?.label ?? "Тип контента";
 
   return (
-    <div className="flex items-center gap-2 border-b border-border w-full">
+    <div className="flex items-center gap-2 bg-accent rounded-md w-full">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
-            className="inline-flex items-center justify-between flex-1 gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent/50 transition-colors"
+            className="inline-flex items-center justify-between flex-1 gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-foreground/10 transition-colors cursor-pointer"
           >
             <span className="font-medium">{activeLabel}</span>
             <ChevronDown className="size-4 text-muted-foreground" />

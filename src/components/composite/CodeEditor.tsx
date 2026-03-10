@@ -81,7 +81,10 @@ function applyWrap(view: EditorView, left: string, right = left): boolean {
   if (selectionContainsLink(selected)) {
     return true;
   }
-  if (isCursorInsideMarkdownLink(view, selection.from) || isCursorInsideMarkdownLink(view, selection.to)) {
+  if (
+    isCursorInsideMarkdownLink(view, selection.from) ||
+    isCursorInsideMarkdownLink(view, selection.to)
+  ) {
     return true;
   }
   if (selected.includes("*") || selected.includes("_") || selected.includes("`")) {
@@ -244,13 +247,14 @@ export default function CodeEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const effectiveFontSize = noteMode ? 16 : fontSize;
 
   useEffect(() => {
     if (!editorRef.current) return;
 
     const themeConfig: Record<string, Record<string, string>> = {
       ".cm-content, .cm-gutterElement": {
-        fontSize: `${fontSize}px`,
+        fontSize: `${effectiveFontSize}px`,
       },
     };
 
@@ -352,7 +356,7 @@ export default function CodeEditor({
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowFolding, fontSize, language, markdownViewMode, noteMode, readOnly]);
+  }, [allowFolding, effectiveFontSize, language, markdownViewMode, noteMode, readOnly]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

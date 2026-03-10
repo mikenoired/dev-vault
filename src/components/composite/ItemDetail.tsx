@@ -612,7 +612,10 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   if (selectedItem && isDocumentation) {
     return (
-      <div className="h-full flex flex-col overflow-y-auto" onPointerDown={handleInteraction}>
+      <div
+        className="h-full flex flex-col overflow-y-auto w-full"
+        onPointerDown={handleInteraction}
+      >
         <div className="p-6 border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="space-y-1">
@@ -668,12 +671,12 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
 
   return (
     <div
-      className={cn("h-full flex flex-col", isNoteEditor ? "overflow-y-auto" : "overflow-hidden")}
+      className={cn("h-full flex flex-col w-full relative", "overflow-hidden")}
       onPointerDown={handleInteraction}
     >
-      <div className="p-6 border-b border-border/40">
+      <div className="p-6 border-b border-border/40 w-full">
         <div className={cn("flex w-full flex-col gap-2", isNoteEditor && "mx-auto max-w-[70ch]")}>
-          <div className="relative pb-4">
+          <div className="relative pb-2">
             <div className="flex items-center gap-3">
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild disabled={isNoteEditor}>
@@ -725,7 +728,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
                   onFocus={handleTitleFocus}
                   onBlur={handleTitleBlur}
                   placeholder="Введите заголовок..."
-                  className="border-none font-medium text-2xl w-full focus:outline-0"
+                  className="border-none font-bold text-2xl w-full focus:outline-0"
                 />
               </div>
             </div>
@@ -834,8 +837,12 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
         </div>
       </div>
 
-      <div className={cn(isNoteEditor ? "px-6 py-4" : "flex-1")}>
-        <div className={cn(isNoteEditor ? "mx-auto w-full max-w-[70ch]" : "h-full w-full")}>
+      <div
+        className={cn(isNoteEditor ? "flex-1 min-h-0 overflow-y-auto px-6 py-4" : "flex-1 min-h-0")}
+      >
+        <div
+          className={cn(isNoteEditor ? "mx-auto min-h-full w-full max-w-[70ch]" : "h-full w-full")}
+        >
           <CodeEditor
             value={editContent}
             onChange={setEditContent}
@@ -848,7 +855,7 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       </div>
 
       {isNoteEditor && (
-        <div className="sticky bottom-0 z-10 w-full border-t border-border bg-primary-foreground/95 backdrop-blur-sm">
+        <div className="z-10 w-full shrink-0">
           <StatusBar
             content={editContent}
             markdownViewMode={resolvedMarkdownViewMode}

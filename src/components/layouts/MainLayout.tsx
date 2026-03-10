@@ -4,12 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
 import { ItemDetail } from "@/components/composite/ItemDetail";
-import { ItemsList } from "@/components/composite/Items";
-import { SearchBar } from "@/components/composite/SearchBar";
 import { SettingsModal } from "@/components/composite/Settings/SettingsModal";
 import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
 import { TabManager } from "@/components/composite/Tabs/TabManager";
-import { TypeFilter } from "@/components/composite/TypeFilter";
 import { cn } from "@/components/ui";
 import { ItemActionsProvider } from "@/contexts/ItemActionsContext";
 import { useHotkey } from "@/hooks/useHotkey";
@@ -19,6 +16,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabsStore } from "@/stores/tabsStore";
 import { useUIStore } from "@/stores/uiStore";
 import type { ItemType } from "@/types";
+import Sidebar from "./Sidebar";
 
 export const MainLayout = () => {
   const [isResizingState, setIsResizingState] = useState(false);
@@ -63,8 +61,6 @@ export const MainLayout = () => {
 
   useHotkey({ key: "w", mod: true }, closeCurrentTab);
   useHotkey({ key: "b", mod: true }, toggleSidebar);
-
-  const showTypeFilter = searchQuery.trim().length === 0;
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   const { selectedDoc } = useDocsStore();
@@ -138,15 +134,6 @@ export const MainLayout = () => {
     };
   }, [openNewTab, handleCreateClick, openSettings]);
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    setIsResizingState(true);
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", stopResizing);
-    document.body.style.cursor = "col-resize";
-  }, []);
-
   const stopResizing = useCallback(() => {
     isResizing.current = false;
     setIsResizingState(false);
@@ -214,36 +201,14 @@ export const MainLayout = () => {
 
       <ItemActionsProvider>
         <div className="flex-1 flex overflow-hidden relative">
-          <aside
-            className={cn(
-              "border-r border-border flex flex-col shrink-0 relative overflow-hidden",
-              !isResizingState ? "transition-all duration-300 ease-in-out" : "",
-            )}
-            style={{
-              width: isSidebarVisible ? sidebarWidth : 0,
-              opacity: isSidebarVisible ? 1 : 0,
-              visibility: isSidebarVisible ? "visible" : "hidden",
-            }}
-          >
-            <div
-              className="flex flex-col h-full"
-              style={{ width: sidebarWidth, minWidth: isSidebarVisible ? undefined : sidebarWidth }}
-            >
-              <SearchBar />
-              {showTypeFilter && <TypeFilter />}
-              <ItemsList />
-            </div>
-
-            {isSidebarVisible && (
-              <div
-                role="button"
-                tabIndex={0}
-                onMouseDown={startResizing}
-                className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-10"
-              />
-            )}
-          </aside>
-
+          <Sidebar
+            searchQuery={searchQuery}
+            isResizing={isResizing}
+            stopResizing={stopResizing}
+            isResizingState={isResizingState}
+            setIsResizingState={setIsResizingState}
+            handleMouseMove={handleMouseMove}
+          />
           <main className="flex-1 overflow-hidden relative">
             {activeTab ? (
               activeTab.type === "new" ? (

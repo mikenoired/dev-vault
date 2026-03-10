@@ -119,7 +119,7 @@ export const SearchBar = () => {
       value={query}
       onChange={(e) => setQuery(e.target.value)}
       onKeyDown={handleKeyDown}
-      className="text-base w-full rounded-none border-x-0 border-t-0 border-b border-b-border focus:outline-0 focus-visible:ring-0 bg-background/50 focus:bg-transparent transition-colors"
+      className="text-base w-full rounded-md border-none focus:outline-0 focus-visible:ring-0 bg-accent focus:bg-transparent transition-colors"
     />
   );
 };

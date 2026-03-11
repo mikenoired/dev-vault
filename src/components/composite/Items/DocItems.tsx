@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import DocLogo from "@/components/composite/DocLogo";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { cn } from "@/components/ui";
@@ -29,21 +28,8 @@ export default function DocItems() {
   if (selectedDoc) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-accent/30 shrink-0">
-          <DocLogo name={selectedDoc.name} />
-          <span className="flex-1 text-sm font-medium line-clamp-1">{selectedDoc.displayName}</span>
-          <button
-            type="button"
-            onClick={() => selectDoc(null)}
-            className="p-1 hover:bg-accent rounded transition-colors text-muted-foreground hover:text-foreground shrink-0"
-            title="Отменить выбор"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        {/* DocBrowser под строкой */}
         <div className="flex-1 overflow-hidden">
-          <DocBrowser />
+          <DocBrowser onClearSelection={() => selectDoc(null)} />
         </div>
       </div>
     );

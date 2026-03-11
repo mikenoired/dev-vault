@@ -347,3 +347,16 @@ pub async fn get_doc_tree(
         .await
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn get_doc_graph(
+    state: State<'_, AppState>,
+    doc_id: i64,
+) -> Result<DocumentationGraph, String> {
+    let doc_manager = state.doc_manager.lock().await;
+
+    doc_manager
+        .get_doc_graph(doc_id)
+        .await
+        .map_err(|e| e.to_string())
+}

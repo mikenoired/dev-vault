@@ -59,6 +59,26 @@ export interface DocTreeNode {
   hasChildren: boolean;
 }
 
+export interface DocumentationGraphNode {
+  path: string;
+  title: string;
+  entryType?: string;
+  parentPath?: string;
+  hasContent: boolean;
+  hasChildren: boolean;
+}
+
+export interface DocumentationGraphEdge {
+  source: string;
+  target: string;
+}
+
+export interface DocumentationGraph {
+  docId: number;
+  nodes: DocumentationGraphNode[];
+  edges: DocumentationGraphEdge[];
+}
+
 export interface ItemWithTags extends Item {
   tags: Tag[];
   highlights?: string[];

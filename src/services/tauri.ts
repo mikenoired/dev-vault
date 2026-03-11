@@ -5,6 +5,7 @@ import type {
   DocEntry,
   DocTreeNode,
   Documentation,
+  DocumentationGraph,
   ItemType,
   ItemWithTags,
   SearchQuery,
@@ -88,5 +89,9 @@ export const tauriService = {
 
   async getDocTree(docId: number, parentPath?: string): Promise<DocTreeNode[]> {
     return invoke<DocTreeNode[]>("get_doc_tree", { docId, parentPath });
+  },
+
+  async getDocGraph(docId: number): Promise<DocumentationGraph> {
+    return invoke<DocumentationGraph>("get_doc_graph", { docId });
   },
 };

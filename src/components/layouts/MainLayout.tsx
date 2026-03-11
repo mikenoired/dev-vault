@@ -3,6 +3,7 @@ import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
+import { DocGraphTab } from "@/components/composite/Documentation/DocGraphTab";
 import { ItemDetail } from "@/components/composite/ItemDetail";
 import { SettingsModal } from "@/components/composite/Settings/SettingsModal";
 import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
@@ -77,7 +78,7 @@ export const MainLayout = () => {
       return;
     }
 
-    if (activeTab?.type === "docEntry" && activeTab.docId) {
+    if ((activeTab?.type === "docEntry" || activeTab?.type === "docGraph") && activeTab.docId) {
       const doc = installedDocs.find((d) => d.id === activeTab.docId);
       if (doc && selectedDoc?.id !== doc.id) {
         selectDoc(doc);
@@ -215,6 +216,8 @@ export const MainLayout = () => {
                 <EmptyTabContent onCreateClick={handleCreateClick} />
               ) : activeTab.type === "documentation" ? (
                 <DocBrowser />
+              ) : activeTab.type === "docGraph" && activeTab.docId ? (
+                <DocGraphTab docId={activeTab.docId} />
               ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
                 <DocEntryViewer
                   docId={activeTab.docId}

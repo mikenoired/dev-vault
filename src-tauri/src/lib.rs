@@ -215,6 +215,7 @@ pub fn run() {
             commands::get_doc_entries,
             commands::get_doc_entry_by_path,
             commands::get_doc_tree,
+            commands::get_doc_graph,
             commands::get_mcp_server_config,
             commands::list_ai_tools,
             commands::connect_mcp_server,

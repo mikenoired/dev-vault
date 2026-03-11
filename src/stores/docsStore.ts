@@ -6,6 +6,7 @@ import type {
   DocEntry,
   DocTreeNode,
   Documentation,
+  DocumentationGraph,
   ScrapeProgress,
 } from "@/types";
 
@@ -14,6 +15,7 @@ interface DocsState {
   installedDocs: Documentation[];
   selectedDoc: Documentation | null;
   docTree: DocTreeNode[];
+  docGraphs: Record<number, DocumentationGraph>;
   selectedEntry: DocEntry | null;
   isLoading: boolean;
   isInstalling: boolean;
@@ -30,6 +32,7 @@ interface DocsState {
   loadDocTree: (docId: number) => Promise<void>;
   loadDocChildren: (docId: number, parentPath: string) => Promise<void>;
   loadDocEntry: (docId: number, path: string) => Promise<void>;
+  loadDocGraph: (docId: number, force?: boolean) => Promise<DocumentationGraph>;
   clearSelectedEntry: () => void;
 }
 
@@ -90,6 +93,7 @@ export const useDocsStore = create<DocsState>((set, get) => {
     installedDocs: [],
     selectedDoc: null,
     docTree: [],
+    docGraphs: {},
     selectedEntry: null,
     isLoading: false,
     isInstalling: false,
@@ -186,6 +190,9 @@ export const useDocsStore = create<DocsState>((set, get) => {
           installedDocs: newDocs,
           selectedDoc: null,
           docTree: [],
+          docGraphs: Object.fromEntries(
+            Object.entries(get().docGraphs).filter(([id]) => Number(id) !== docId),
+          ),
         });
         console.log(`[DocsStore] ✓ State updated, now ${newDocs.length} docs installed`);
       } catch (error) {
@@ -252,6 +259,30 @@ export const useDocsStore = create<DocsState>((set, get) => {
         set({ error: (error as Error).message });
       } finally {
         set({ isLoading: false });
+      }
+    },
+
+    loadDocGraph: async (docId: number, force = false) => {
+      const cachedGraph = get().docGraphs[docId];
+      if (cachedGraph && !force) {
+        return cachedGraph;
+      }
+
+      set({ error: null });
+
+      try {
+        const graph = await tauriService.getDocGraph(docId);
+        set((state) => ({
+          docGraphs: {
+            ...state.docGraphs,
+            [docId]: graph,
+          },
+        }));
+        return graph;
+      } catch (error) {
+        const message = (error as Error).message;
+        set({ error: message });
+        throw error;
       }
     },
 

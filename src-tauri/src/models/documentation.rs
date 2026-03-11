@@ -61,6 +61,34 @@ pub struct DocTreeNode {
     pub has_children: bool,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentationGraphNode {
+    pub path: String,
+    pub title: String,
+    #[serde(rename = "entryType")]
+    pub entry_type: Option<String>,
+    #[serde(rename = "parentPath")]
+    pub parent_path: Option<String>,
+    #[serde(rename = "hasContent")]
+    pub has_content: bool,
+    #[serde(rename = "hasChildren")]
+    pub has_children: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentationGraphEdge {
+    pub source: String,
+    pub target: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentationGraph {
+    #[serde(rename = "docId")]
+    pub doc_id: i64,
+    pub nodes: Vec<DocumentationGraphNode>,
+    pub edges: Vec<DocumentationGraphEdge>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ParsedDocEntry {
     pub path: String,

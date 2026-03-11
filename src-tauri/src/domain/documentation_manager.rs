@@ -1,4 +1,7 @@
-use crate::models::{AvailableDocumentation, DocEntry, DocTreeNode, Documentation, ParsedDocEntry};
+use crate::models::{
+    AvailableDocumentation, DocEntry, DocTreeNode, Documentation, DocumentationGraph,
+    DocumentationGraphEdge, DocumentationGraphNode, ParsedDocEntry,
+};
 use anyhow::{Context, Result};
 use sqlx::{Pool, Row, Sqlite};
 
@@ -32,7 +35,7 @@ impl DocumentationManager {
         tracing::info!("Listing installed documentations from database");
 
         let rows = sqlx::query(
-            "SELECT id, name, display_name, version, source_url, 
+            "SELECT id, name, display_name, version, source_url,
                     installed_at, updated_at, metadata
              FROM documentations
              ORDER BY display_name",
@@ -258,7 +261,7 @@ impl DocumentationManager {
 
     async fn get_documentation(&self, doc_id: i64) -> Result<Documentation> {
         let row = sqlx::query(
-            "SELECT id, name, display_name, version, source_url, 
+            "SELECT id, name, display_name, version, source_url,
                     installed_at, updated_at, metadata
              FROM documentations WHERE id = ?1",
         )
@@ -289,12 +292,12 @@ impl DocumentationManager {
     ) -> Result<Vec<DocEntry>> {
         let query = if parent_path.is_some() {
             "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
-             FROM doc_entries 
+             FROM doc_entries
              WHERE doc_id = ?1 AND parent_path = ?2
              ORDER BY title"
         } else {
             "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
-             FROM doc_entries 
+             FROM doc_entries
              WHERE doc_id = ?1 AND parent_path IS NULL
              ORDER BY title"
         };
@@ -330,7 +333,7 @@ impl DocumentationManager {
     pub async fn get_doc_entry_by_path(&self, doc_id: i64, path: &str) -> Result<DocEntry> {
         let row = sqlx::query(
             "SELECT id, doc_id, path, title, content, entry_type, parent_path, created_at
-             FROM doc_entries 
+             FROM doc_entries
              WHERE doc_id = ?1 AND path = ?2",
         )
         .bind(doc_id)
@@ -360,7 +363,7 @@ impl DocumentationManager {
             sqlx::query(
                 "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
                         EXISTS(SELECT 1 FROM doc_entries de2 WHERE de2.parent_path = doc_entries.path) as has_children
-                 FROM doc_entries 
+                 FROM doc_entries
                  WHERE doc_id = ?1 AND parent_path = ?2
                  ORDER BY title"
             )
@@ -372,7 +375,7 @@ impl DocumentationManager {
             sqlx::query(
                 "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
                         EXISTS(SELECT 1 FROM doc_entries de2 WHERE de2.parent_path = doc_entries.path) as has_children
-                 FROM doc_entries 
+                 FROM doc_entries
                  WHERE doc_id = ?1 AND parent_path IS NULL
                  ORDER BY title"
             )
@@ -394,5 +397,49 @@ impl DocumentationManager {
         }
 
         Ok(nodes)
+    }
+
+    pub async fn get_doc_graph(&self, doc_id: i64) -> Result<DocumentationGraph> {
+        let rows = sqlx::query(
+            "SELECT path, title, entry_type, parent_path, (content != '') as has_content,
+                    EXISTS(SELECT 1 FROM doc_entries de2 WHERE de2.parent_path = doc_entries.path) as has_children
+             FROM doc_entries
+             WHERE doc_id = ?1
+             ORDER BY title",
+        )
+        .bind(doc_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to get documentation graph")?;
+
+        let mut nodes = Vec::with_capacity(rows.len());
+        let mut edges = Vec::new();
+
+        for row in rows {
+            let path: String = row.get("path");
+            let parent_path: Option<String> = row.get("parent_path");
+
+            if let Some(parent) = parent_path.as_ref() {
+                edges.push(DocumentationGraphEdge {
+                    source: parent.clone(),
+                    target: path.clone(),
+                });
+            }
+
+            nodes.push(DocumentationGraphNode {
+                path,
+                title: row.get("title"),
+                entry_type: row.get("entry_type"),
+                parent_path,
+                has_content: row.get("has_content"),
+                has_children: row.get("has_children"),
+            });
+        }
+
+        Ok(DocumentationGraph {
+            doc_id,
+            nodes,
+            edges,
+        })
     }
 }

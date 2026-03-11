@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { ItemType } from "@/types";
 
-export type TabType = "item" | "new" | "draft" | "documentation" | "docEntry";
+export type TabType = "item" | "new" | "draft" | "documentation" | "docEntry" | "docGraph";
 
 export interface Tab {
   id: string;
@@ -25,6 +25,7 @@ interface TabsState {
   openDraftItemTab: (itemType: ItemType) => void;
   openDocumentationTab: () => void;
   openDocEntryTab: (docId: number, docPath: string, title: string, pin?: boolean) => void;
+  openDocGraphTab: (docId: number, title: string, pin?: boolean) => void;
   closeTab: (tabId: string) => void;
   requestCloseTab: (tabId: string) => void;
   confirmCloseTab: () => void;
@@ -203,6 +204,37 @@ export const useTabsStore = create<TabsState>((set, get) => ({
         activeTabId: newTabId,
       });
     }
+  },
+
+  openDocGraphTab: (docId, title, pin = true) => {
+    const { tabs } = get();
+
+    const existingTabIndex = tabs.findIndex((t) => t.type === "docGraph" && t.docId === docId);
+    if (existingTabIndex !== -1) {
+      const existingTab = tabs[existingTabIndex];
+      set({ activeTabId: existingTab.id });
+      if (pin && !existingTab.isPinned) {
+        const newTabs = [...tabs];
+        newTabs[existingTabIndex] = { ...existingTab, isPinned: true };
+        set({ tabs: newTabs });
+      }
+      return;
+    }
+
+    const newTabId = `docGraph-${docId}`;
+    const newTab: Tab = {
+      id: newTabId,
+      type: "docGraph",
+      docId,
+      isPinned: pin,
+      title: `${title} Граф`,
+      isDirty: false,
+    };
+
+    set({
+      tabs: [...tabs, newTab],
+      activeTabId: newTabId,
+    });
   },
 
   closeTab: (tabId) => {

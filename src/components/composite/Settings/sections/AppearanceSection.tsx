@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
-import { Input } from "@/components/ui";
+import { Checkbox, Input } from "@/components/ui";
 import {
   MAX_FONT_SIZE,
   MAX_READING_SPEED_WPM,
@@ -62,28 +62,24 @@ export const AppearanceSection = () => {
             }
           />
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="compact-mode"
               checked={config?.ui.compact_mode ?? false}
-              onChange={(e) =>
-                handleUpdate((prev) => ({ ...prev, compact_mode: e.target.checked }))
+              onCheckedChange={(checked) =>
+                handleUpdate((prev) => ({ ...prev, compact_mode: checked === true }))
               }
-              className="size-4 rounded border-input bg-background"
             />
             <label htmlFor="compact-mode" className="text-sm font-medium leading-none">
               Компактный режим списков
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="markdown-live-preview"
               checked={config?.ui.markdown_live_preview ?? true}
-              onChange={(e) =>
-                handleUpdate((prev) => ({ ...prev, markdown_live_preview: e.target.checked }))
+              onCheckedChange={(checked) =>
+                handleUpdate((prev) => ({ ...prev, markdown_live_preview: checked === true }))
               }
-              className="size-4 rounded border-input bg-background"
             />
             <label htmlFor="markdown-live-preview" className="text-sm font-medium leading-none">
               Live Preview Markdown для заметок

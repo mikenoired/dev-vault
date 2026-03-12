@@ -9,6 +9,9 @@ import {
   WidgetType,
 } from "@codemirror/view";
 import { open } from "@tauri-apps/plugin-shell";
+import { createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { Checkbox } from "@/components/ui";
 
 type DocLine = {
   from: number;
@@ -53,6 +56,7 @@ const strongTextDecoration = Decoration.mark({ class: "cm-md-strong" });
 const emphasisTextDecoration = Decoration.mark({ class: "cm-md-emphasis" });
 const strongEmphasisTextDecoration = Decoration.mark({ class: "cm-md-strong cm-md-emphasis" });
 const taskDoneDecoration = Decoration.mark({ class: "cm-md-task-done" });
+const taskCheckboxRoots = new WeakMap<HTMLElement, Root>();
 
 const headingPattern = /^(\s{0,3})(#{1,6})(\s+)/;
 const blockquotePattern = /^(\s*>+\s*)/;
@@ -82,14 +86,25 @@ class TaskCheckboxWidget extends WidgetType {
   }
 
   toDOM() {
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = this.checked;
-    checkbox.className = "cm-md-task-checkbox";
-    checkbox.tabIndex = -1;
-    checkbox.dataset.markerCharPos = String(this.markerCharPos);
-    checkbox.setAttribute("aria-label", this.checked ? "Снять задачу" : "Отметить задачу");
-    return checkbox;
+    const container = document.createElement("span");
+    container.className = "cm-md-task-checkbox-host";
+    container.dataset.markerCharPos = String(this.markerCharPos);
+    const root = createRoot(container);
+    taskCheckboxRoots.set(container, root);
+    root.render(
+      createElement(Checkbox, {
+        "aria-label": this.checked ? "Снять задачу" : "Отметить задачу",
+        checked: this.checked,
+        className: "cm-md-task-checkbox mr-[0.45rem] translate-y-[2px] align-middle",
+        tabIndex: -1,
+      }),
+    );
+    return container;
+  }
+
+  destroy(dom: HTMLElement) {
+    taskCheckboxRoots.get(dom)?.unmount();
+    taskCheckboxRoots.delete(dom);
   }
 
   ignoreEvent() {
@@ -634,10 +649,10 @@ const markdownLivePreviewPlugin = ViewPlugin.fromClass(
     eventHandlers: {
       mousedown(event, view) {
         const target = event.target as HTMLElement | null;
-        const checkbox = target?.closest(".cm-md-task-checkbox") as HTMLInputElement | null;
-        if (!checkbox) return false;
+        const checkboxHost = target?.closest(".cm-md-task-checkbox-host") as HTMLElement | null;
+        if (!checkboxHost) return false;
 
-        const markerCharPosRaw = checkbox.dataset.markerCharPos;
+        const markerCharPosRaw = checkboxHost.dataset.markerCharPos;
         if (!markerCharPosRaw) return false;
         const markerCharPos = Number.parseInt(markerCharPosRaw, 10);
         if (Number.isNaN(markerCharPos)) return false;

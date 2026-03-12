@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
 import CodeEditor from "@/components/composite/CodeEditor";
+import { Checkbox, cn } from "@/components/ui";
 import type { SupportedLanguages } from "@/types";
 
 type ExtendedComponents = Components & Record<string, ElementType>;
@@ -79,6 +80,21 @@ export default function MarkdownRender({
     h4: ({ ...props }) => <h4 {...props} className="text-lg font-bold text-foreground/80" />,
     h5: ({ ...props }) => <h5 {...props} className="text-base font-bold text-foreground/80" />,
     h6: ({ ...props }) => <h6 {...props} className="text-sm font-bold text-foreground/80" />,
+    input: ({ className, checked, disabled, type, ...props }) => {
+      if (type !== "checkbox") {
+        return <input className={className} type={type} disabled={disabled} {...props} />;
+      }
+
+      return (
+        <Checkbox
+          aria-label={checked ? "Снять задачу" : "Отметить задачу"}
+          checked={checked === true}
+          className={cn("mr-2 translate-y-[2px] align-middle", className)}
+          disabled={disabled ?? true}
+          tabIndex={-1}
+        />
+      );
+    },
 
     table: ({ ...props }) => (
       <table

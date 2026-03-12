@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { Select } from "@/components/ui";
+import { Checkbox, Select } from "@/components/ui";
 import { useSettingsStore } from "@/stores";
 import type { Theme } from "@/types";
 
@@ -26,12 +26,10 @@ export const GeneralSection = () => {
             ]}
           />
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="autosave-enabled"
               checked={config.ui.autosave_enabled}
-              onChange={(e) => updateUiConfig({ autosave_enabled: e.target.checked })}
-              className="size-4 rounded border-input bg-background"
+              onCheckedChange={(checked) => updateUiConfig({ autosave_enabled: checked === true })}
             />
             <label htmlFor="autosave-enabled" className="text-sm font-medium leading-none">
               Автосохранение изменений

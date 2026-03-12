@@ -63,6 +63,7 @@ export const MainLayout = () => {
   useHotkey({ key: "w", mod: true }, closeCurrentTab);
   useHotkey({ key: "b", mod: true }, toggleSidebar);
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const docGraphTabs = tabs.filter((tab) => tab.type === "docGraph" && tab.docId);
 
   const { selectedDoc } = useDocsStore();
   const selectedType = useItemsStore((state) => state.selectedType);
@@ -212,12 +213,10 @@ export const MainLayout = () => {
           />
           <main className="flex-1 overflow-hidden relative">
             {activeTab ? (
-              activeTab.type === "new" ? (
+              activeTab.type === "docGraph" ? null : activeTab.type === "new" ? (
                 <EmptyTabContent onCreateClick={handleCreateClick} />
               ) : activeTab.type === "documentation" ? (
                 <DocBrowser />
-              ) : activeTab.type === "docGraph" && activeTab.docId ? (
-                <DocGraphTab docId={activeTab.docId} />
               ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
                 <DocEntryViewer
                   docId={activeTab.docId}
@@ -241,6 +240,17 @@ export const MainLayout = () => {
                 Выберите элемент или создайте новую вкладку
               </div>
             )}
+            {docGraphTabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={cn(
+                  "absolute inset-0",
+                  activeTabId === tab.id ? "block" : "hidden pointer-events-none",
+                )}
+              >
+                <DocGraphTab docId={tab.docId!} />
+              </div>
+            ))}
           </main>
         </div>
       </ItemActionsProvider>

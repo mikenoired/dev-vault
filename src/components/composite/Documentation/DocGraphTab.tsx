@@ -1,5 +1,5 @@
 import { RefreshCcw, Workflow } from "lucide-react";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { DocGraphCanvas } from "@/components/composite/Documentation/doc-graph/DocGraphCanvas";
 import { useDocsStore } from "@/stores/docsStore";
 import { useTabsStore } from "@/stores/tabsStore";
@@ -9,7 +9,7 @@ interface DocGraphTabProps {
   docId: number;
 }
 
-export const DocGraphTab = ({ docId }: DocGraphTabProps) => {
+export const DocGraphTab = memo(({ docId }: DocGraphTabProps) => {
   const installedDocs = useDocsStore((state) => state.installedDocs);
   const docGraphs = useDocsStore((state) => state.docGraphs);
   const loadDocGraph = useDocsStore((state) => state.loadDocGraph);
@@ -60,7 +60,7 @@ export const DocGraphTab = ({ docId }: DocGraphTabProps) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="shrink-0 flex items-center gap-3 border-b border-border bg-accent/20 px-4 py-3">
+      <div className="shrink-0 flex items-center gap-3 border-b border-border bg-primary-foreground px-4 py-3">
         <div className="flex size-9 items-center justify-center rounded-full bg-orange-500/12 text-orange-400">
           <Workflow className="size-4" />
         </div>
@@ -95,4 +95,4 @@ export const DocGraphTab = ({ docId }: DocGraphTabProps) => {
       </div>
     </div>
   );
-};
+});

@@ -8,16 +8,12 @@ import { ItemDetail } from "@/components/composite/ItemDetail";
 import { SettingsModal } from "@/components/composite/Settings/SettingsModal";
 import { EmptyTabContent } from "@/components/composite/Tabs/EmptyTabContent";
 import { TabManager } from "@/components/composite/Tabs/TabManager";
+import Sidebar from "@/components/layouts/Sidebar";
 import { cn } from "@/components/ui";
 import { ItemActionsProvider } from "@/contexts/ItemActionsContext";
 import { useHotkey } from "@/hooks/useHotkey";
-import { useDocsStore } from "@/stores/docsStore";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useSettingsStore } from "@/stores/settingsStore";
-import { useTabsStore } from "@/stores/tabsStore";
-import { useUIStore } from "@/stores/uiStore";
+import { useDocsStore, useItemsStore, useSettingsStore, useTabsStore, useUIStore } from "@/stores";
 import type { ItemType } from "@/types";
-import Sidebar from "./Sidebar";
 
 export const MainLayout = () => {
   const [isResizingState, setIsResizingState] = useState(false);
@@ -202,7 +198,7 @@ export const MainLayout = () => {
       </header>
 
       <ItemActionsProvider>
-        <div className="flex-1 flex overflow-hidden relative">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <Sidebar
             searchQuery={searchQuery}
             isResizing={isResizing}
@@ -211,7 +207,7 @@ export const MainLayout = () => {
             setIsResizingState={setIsResizingState}
             handleMouseMove={handleMouseMove}
           />
-          <main className="flex-1 overflow-hidden relative">
+          <main className="relative flex-1 overflow-hidden">
             {activeTab ? (
               activeTab.type === "docGraph" ? null : activeTab.type === "new" ? (
                 <EmptyTabContent onCreateClick={handleCreateClick} />

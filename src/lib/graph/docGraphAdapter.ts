@@ -1,5 +1,10 @@
-import type { DocumentationGraph, DocumentationGraphNode } from "@/types";
-import type { GraphColor, GraphData, GraphNodeInput } from "./types";
+import type {
+  DocumentationGraph,
+  DocumentationGraphNode,
+  GraphColor,
+  GraphData,
+  GraphNodeInput,
+} from "@/types";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 

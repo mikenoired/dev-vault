@@ -3,7 +3,7 @@ import { ItemsList } from "@/components/composite/Items";
 import { SearchBar } from "@/components/composite/SearchBar";
 import { TypeFilter } from "@/components/composite/TypeFilter";
 import { cn } from "@/components/ui";
-import { useUIStore } from "@/stores/uiStore";
+import { useUIStore } from "@/stores";
 
 interface SidebarProps {
   searchQuery: string;
@@ -36,7 +36,7 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        "flex flex-col shrink-0 relative overflow-hidden",
+        "relative flex min-h-0 shrink-0 flex-col overflow-hidden",
         !isResizingState ? "transition-all duration-300 ease-in-out" : "",
       )}
       style={{
@@ -45,9 +45,9 @@ export default function Sidebar({
         visibility: isSidebarVisible ? "visible" : "hidden",
       }}
     >
-      <div className="p-2 flex-1">
+      <div className="flex-1 min-h-0 p-2">
         <div
-          className="flex flex-col gap-2 h-full overflow-hidden"
+          className="flex h-full min-h-0 flex-col gap-2 overflow-hidden"
           style={{ width: sidebarWidth, minWidth: isSidebarVisible ? undefined : sidebarWidth }}
         >
           <SearchBar />

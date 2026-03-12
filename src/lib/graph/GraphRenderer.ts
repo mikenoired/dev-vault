@@ -8,7 +8,7 @@ import type {
   GraphTheme,
   SimulationMessage,
   SimulationResultMessage,
-} from "./types";
+} from "@/types";
 
 interface InternalNode {
   id: string;

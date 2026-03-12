@@ -1,7 +1,7 @@
 import DocLogo from "@/components/composite/DocLogo";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { cn } from "@/components/ui";
-import { useDocsStore } from "@/stores/docsStore";
+import { useDocsStore } from "@/stores";
 
 export default function DocItems() {
   const { installedDocs, selectedDoc, selectDoc, isLoading: isDocsLoading } = useDocsStore();

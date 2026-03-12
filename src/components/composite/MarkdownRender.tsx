@@ -4,8 +4,8 @@ import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
+import CodeEditor from "@/components/composite/CodeEditor";
 import type { SupportedLanguages } from "@/types";
-import CodeEditor from "./CodeEditor";
 
 type ExtendedComponents = Components & Record<string, ElementType>;
 

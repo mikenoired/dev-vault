@@ -10,7 +10,7 @@ import {
   McpSection,
 } from "@/components/composite/Settings/sections";
 import { Modal } from "@/components/ui/Modal";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 
 export const SettingsModal = () => {
   const isOpen = useSettingsStore((state) => state.isSettingsOpen);

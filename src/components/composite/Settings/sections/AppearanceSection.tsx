@@ -6,7 +6,7 @@ import {
   MIN_FONT_SIZE,
   MIN_READING_SPEED_WPM,
 } from "@/constants";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 import type { UiConfig } from "@/types";
 
 export const AppearanceSection = () => {

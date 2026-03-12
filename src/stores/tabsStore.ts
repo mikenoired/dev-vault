@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 import type { ItemType } from "@/types";
 
 export type TabType = "item" | "new" | "draft" | "documentation" | "docEntry" | "docGraph";

@@ -2,8 +2,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { cn } from "@/components/ui";
-import { useDocsStore } from "@/stores/docsStore";
-import { useItemsStore } from "@/stores/itemsStore";
+import { useDocsStore, useItemsStore } from "@/stores";
 import type { ItemType } from "@/types";
 
 interface TypeItem {

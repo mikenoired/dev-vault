@@ -1,9 +1,9 @@
 import { DownloadIcon, Loader, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import DocLogo from "@/components/composite/DocLogo";
 import { Button, Card } from "@/components/ui";
-import { useDocsStore } from "@/stores/docsStore";
-import DocLogo from "../../DocLogo";
+import { useDocsStore } from "@/stores";
 
 export const DocumentationSection = () => {
   const {

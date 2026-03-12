@@ -1,7 +1,6 @@
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { Button, Modal } from "@/components/ui";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useItemsStore, useTabsStore } from "@/stores";
 import type { ItemWithTags } from "@/types";
 
 interface ItemActionsContextValue {

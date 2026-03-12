@@ -1,6 +1,6 @@
+import DocRender from "@/components/composite/Documentation/DocRender";
+import StatusBar from "@/components/composite/Documentation/StatusBar";
 import type { DocEntry } from "@/types";
-import DocRender from "./DocRender";
-import StatusBar from "./StatusBar";
 
 interface DocViewerProps {
   entry: DocEntry;

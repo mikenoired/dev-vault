@@ -1,5 +1,5 @@
 import { Select } from "@/components/ui";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 import type { Theme } from "@/types";
 
 export const GeneralSection = () => {

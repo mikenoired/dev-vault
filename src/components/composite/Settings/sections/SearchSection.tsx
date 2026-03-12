@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 
 export const SearchSection = () => {
   const config = useSettingsStore((state) => state.config);

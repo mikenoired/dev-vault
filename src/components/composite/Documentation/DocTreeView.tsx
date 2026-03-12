@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui";
-import { useDocsStore } from "@/stores/docsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useDocsStore, useTabsStore } from "@/stores";
 import type { DocTreeNode } from "@/types";
 
 interface DocTreeViewProps {

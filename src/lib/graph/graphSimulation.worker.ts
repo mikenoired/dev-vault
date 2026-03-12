@@ -3,7 +3,7 @@ import type {
   SimulationMessage,
   SimulationResultMessage,
   SimulationSeedNode,
-} from "./types";
+} from "@/types";
 
 interface SimNode {
   id: string;

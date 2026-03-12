@@ -1,9 +1,9 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useRef } from "react";
 import { ItemCard } from "@/components/composite/ItemCard";
+import { cn } from "@/components/ui";
 import { useItemActions } from "@/contexts/ItemActionsContext";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useItemsStore, useTabsStore } from "@/stores";
 import type { ItemWithTags } from "@/types";
 
 export default function BaseItems() {
@@ -57,8 +57,11 @@ export default function BaseItems() {
   };
 
   return (
-    <div ref={listRef} className="overflow-y-auto rounded-md flex flex-col overflow-hidden">
-      {items.map((item) => (
+    <div
+      ref={listRef}
+      className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-md"
+    >
+      {items.map((item, i) => (
         <ContextMenu.Root key={item.id}>
           <ContextMenu.Trigger asChild>
             <ItemCard
@@ -67,6 +70,7 @@ export default function BaseItems() {
               onClick={() => handleOpenItem(item, false)}
               onDoubleClick={() => handleOpenItem(item, true)}
               isSearchMode={isSearchMode}
+              className={cn(i === items.length - 1 && "rounded-b-md", i === 0 && "rounded-t-md")}
             />
           </ContextMenu.Trigger>
           <ContextMenu.Portal>

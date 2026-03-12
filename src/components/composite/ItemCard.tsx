@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { type HTMLAttributes, useEffect, useRef } from "react";
 import { Badge, cn } from "@/components/ui";
 import type { ItemWithTags } from "@/types";
 import { getTagColorClass } from "@/utils/tagColors";
 
-interface ItemCardProps {
+interface ItemCardProps extends HTMLAttributes<HTMLDivElement> {
   item: ItemWithTags;
   isSelected: boolean;
   onClick: () => void;
@@ -17,6 +17,8 @@ export const ItemCard = ({
   onClick,
   onDoubleClick,
   isSearchMode = false,
+  className,
+  ...props
 }: ItemCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -46,8 +48,9 @@ export const ItemCard = ({
       role="button"
       tabIndex={0}
       className={cn(
-        "px-3 py-3 cursor-pointer bg-accent transition-colors hover:bg-foreground/10",
-        isSelected ? "bg-foreground/20" : "",
+        "cursor-pointer bg-accent px-3 py-3 transition-colors hover:bg-foreground/10",
+        isSelected && "bg-foreground/20",
+        className,
       )}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
@@ -56,6 +59,7 @@ export const ItemCard = ({
           onClick();
         }
       }}
+      {...props}
     >
       <div className="flex items-center gap-2">
         <div className="flex items-start justify-between gap-2">

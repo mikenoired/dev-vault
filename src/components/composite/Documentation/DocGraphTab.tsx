@@ -1,8 +1,7 @@
 import { RefreshCcw, Workflow } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { DocGraphCanvas } from "@/components/composite/Documentation/doc-graph/DocGraphCanvas";
-import { useDocsStore } from "@/stores/docsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useDocsStore, useTabsStore } from "@/stores";
 import type { DocumentationGraph } from "@/types";
 
 interface DocGraphTabProps {

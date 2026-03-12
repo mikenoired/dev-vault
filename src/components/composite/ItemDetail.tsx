@@ -13,9 +13,7 @@ import CodeEditor from "@/components/composite/CodeEditor";
 import StatusBar from "@/components/composite/Documentation/StatusBar";
 import { Badge, cn, Textarea } from "@/components/ui";
 import { tauriService } from "@/services/tauri";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useSettingsStore } from "@/stores/settingsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useItemsStore, useSettingsStore, useTabsStore } from "@/stores";
 import type { ItemType, Tag } from "@/types";
 import { getTagColorClass } from "@/utils/tagColors";
 

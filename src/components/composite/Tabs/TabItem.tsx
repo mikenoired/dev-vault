@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/components/ui";
-import { type Tab, useTabsStore } from "@/stores/tabsStore";
+import { type Tab, useTabsStore } from "@/stores";
 import type { ItemType } from "@/types";
 
 const getIcon = (type: ItemType | "new" | "documentation" | "docEntry" | "docGraph") => {

@@ -3,7 +3,7 @@ import { BookOpenIcon, Clipboard, ClockIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { cn } from "@/components/ui";
 import { Button } from "@/components/ui/Button";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore } from "@/stores";
 import calculateReadingTime from "@/utils/readTime";
 
 interface StatusBarProps {

@@ -2,8 +2,7 @@ import { SearchIcon } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useItemsStore, useTabsStore } from "@/stores";
 
 export const SearchBar = () => {
   const [query, setQuery] = useState("");

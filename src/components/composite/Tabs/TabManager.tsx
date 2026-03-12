@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { TabItem } from "@/components/composite/Tabs/TabItem";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useTabsStore } from "@/stores";
 
 export const TabManager = () => {
   const {

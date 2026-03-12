@@ -2,8 +2,7 @@ import { Workflow, X } from "lucide-react";
 import DocLogo from "@/components/composite/DocLogo";
 import { DocTreeView } from "@/components/composite/Documentation/DocTreeView";
 import { cn } from "@/components/ui";
-import { useDocsStore } from "@/stores/docsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import { useDocsStore, useTabsStore } from "@/stores";
 
 interface DocBrowserProps {
   onClearSelection?: () => void;

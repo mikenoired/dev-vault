@@ -11,10 +11,10 @@ import { materialDark } from "@fsegurai/codemirror-theme-material-dark";
 import { basicSetup, EditorView, minimalSetup } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { markdownLivePreview } from "@/components/composite/editor/markdownLivePreview";
 import { cn } from "@/components/ui";
 import { Button } from "@/components/ui/Button";
 import type { SupportedLanguages } from "@/types";
-import { markdownLivePreview } from "./editor/markdownLivePreview";
 
 interface CodeEditorProps {
   value: string;

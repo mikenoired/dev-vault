@@ -1,10 +1,9 @@
 import { Code2, Link2, Settings, StickyNote } from "lucide-react";
 import { useEffect } from "react";
-import { useItemsStore } from "@/stores/itemsStore";
-import { useTabsStore } from "@/stores/tabsStore";
+import BaseItems from "@/components/composite/Items/BaseItems";
+import DocItems from "@/components/composite/Items/DocItems";
+import { useItemsStore, useTabsStore } from "@/stores";
 import type { ItemType } from "@/types";
-import BaseItems from "./BaseItems";
-import DocItems from "./DocItems";
 
 const quickActions: Array<{ type: ItemType; label: string; icon: React.ElementType }> = [
   { type: "snippet", label: "Сниппет", icon: Code2 },
@@ -82,5 +81,9 @@ export const ItemsList = () => {
     );
   }
 
-  return <BaseItems />;
+  return (
+    <div className="flex-1 min-h-0 overflow-hidden">
+      <BaseItems />
+    </div>
+  );
 };

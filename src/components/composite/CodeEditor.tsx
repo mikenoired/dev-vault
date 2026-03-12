@@ -4,9 +4,9 @@ import { python } from "@codemirror/lang-python";
 import { rust } from "@codemirror/lang-rust";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
-import { EditorState } from "@codemirror/state";
-import type { Command } from "@codemirror/view";
-import { keymap } from "@codemirror/view";
+import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import type { Command, DecorationSet, ViewUpdate } from "@codemirror/view";
+import { Decoration, keymap, ViewPlugin } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup, EditorView, minimalSetup } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
@@ -20,6 +20,7 @@ interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   language?: SupportedLanguages;
+  meta?: string;
   markdownViewMode?: "source" | "live";
   noteMode?: boolean;
   readOnly?: boolean;
@@ -31,6 +32,8 @@ interface CodeEditorProps {
 const bashLang = StreamLanguage.define(shell);
 const markdownPairChars = new Set(["*", "_", "`"]);
 const markdownLinkPattern = /\[[^\]\n]+\]\([^)]+\)/g;
+const vitePressDirectivePattern = /\s*(?:\/\/|#|<!--)\s*\[!code\s+([^\]]+)\](?:\s*-->)?\s*$/;
+const vitePressHighlightMetaPattern = /\{([^}]+)\}/;
 const darkCodeHighlightStyle = HighlightStyle.define([
   { tag: [tags.keyword, tags.modifier], color: "#c792ea" },
   { tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: "#ff5370" },
@@ -117,6 +120,148 @@ function createCodeTheme(isDark: boolean) {
       },
     },
     { dark: isDark },
+  );
+}
+
+type CodeLineDirective = "add" | "remove" | "highlight" | "focus" | "warning" | "error";
+
+interface ParsedCodeBlock {
+  cleanValue: string;
+  highlightedLines: Set<number>;
+  directivesByLine: Map<number, CodeLineDirective>;
+}
+
+function parseHighlightedLineNumbers(meta: string): Set<number> {
+  const match = vitePressHighlightMetaPattern.exec(meta);
+  if (!match) {
+    return new Set();
+  }
+
+  return match[1]
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce((lines, part) => {
+      const [startRaw, endRaw] = part.split("-").map((value) => value.trim());
+      const start = Number.parseInt(startRaw, 10);
+      const end = endRaw ? Number.parseInt(endRaw, 10) : start;
+
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) {
+        return lines;
+      }
+
+      for (let lineNumber = start; lineNumber <= end; lineNumber += 1) {
+        lines.add(lineNumber);
+      }
+
+      return lines;
+    }, new Set<number>());
+}
+
+function parseDirectiveToken(token: string): CodeLineDirective | null {
+  const normalizedToken = token.trim().toLowerCase();
+
+  if (normalizedToken === "++") return "add";
+  if (normalizedToken === "--") return "remove";
+  if (normalizedToken === "highlight") return "highlight";
+  if (normalizedToken === "focus") return "focus";
+  if (normalizedToken === "warning") return "warning";
+  if (normalizedToken === "error") return "error";
+
+  return null;
+}
+
+function parseReadOnlyCodeBlock(value: string, meta: string): ParsedCodeBlock {
+  const highlightedLines = parseHighlightedLineNumbers(meta);
+  const directivesByLine = new Map<number, CodeLineDirective>();
+  const cleanLines = value.split("\n");
+
+  cleanLines.forEach((line, index) => {
+    const directiveMatch = line.match(vitePressDirectivePattern);
+    if (!directiveMatch) {
+      return;
+    }
+
+    const directive = parseDirectiveToken(directiveMatch[1] ?? "");
+    if (!directive) {
+      return;
+    }
+
+    const lineNumber = index + 1;
+    if (directive === "highlight") {
+      highlightedLines.add(lineNumber);
+    } else {
+      directivesByLine.set(lineNumber, directive);
+    }
+
+    cleanLines[index] = line.replace(vitePressDirectivePattern, "");
+  });
+
+  return {
+    cleanValue: cleanLines.join("\n"),
+    highlightedLines,
+    directivesByLine,
+  };
+}
+
+function createReadOnlyLineDecorations(parsedCodeBlock: ParsedCodeBlock) {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+
+      constructor(view: EditorView) {
+        this.decorations = this.buildDecorations(view);
+      }
+
+      update(update: ViewUpdate) {
+        if (!update.docChanged && !update.viewportChanged) {
+          return;
+        }
+
+        this.decorations = this.buildDecorations(update.view);
+      }
+
+      private buildDecorations(view: EditorView): DecorationSet {
+        const builder = new RangeSetBuilder<Decoration>();
+
+        for (const { from, to } of view.visibleRanges) {
+          let line = view.state.doc.lineAt(from);
+
+          while (line.from <= to) {
+            const lineNumber = line.number;
+            const classNames = [];
+
+            if (parsedCodeBlock.highlightedLines.has(lineNumber)) {
+              classNames.push("cm-vitepress-highlight");
+            }
+
+            const directive = parsedCodeBlock.directivesByLine.get(lineNumber);
+            if (directive) {
+              classNames.push(`cm-vitepress-${directive}`);
+            }
+
+            if (classNames.length > 0) {
+              builder.add(
+                line.from,
+                line.from,
+                Decoration.line({ attributes: { class: classNames.join(" ") } }),
+              );
+            }
+
+            if (line.to >= to) {
+              break;
+            }
+
+            line = view.state.doc.line(line.number + 1);
+          }
+        }
+
+        return builder.finish();
+      }
+    },
+    {
+      decorations: (value) => value.decorations,
+    },
   );
 }
 
@@ -334,6 +479,7 @@ export default function CodeEditor({
   value,
   onChange,
   language = "javascript",
+  meta = "",
   markdownViewMode = "source",
   noteMode = false,
   readOnly = false,
@@ -346,6 +492,8 @@ export default function CodeEditor({
   const [isCopied, setIsCopied] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(resolveDocumentTheme);
   const effectiveFontSize = noteMode ? 16 : fontSize;
+  const parsedReadOnlyBlock = readOnly ? parseReadOnlyCodeBlock(value, meta) : null;
+  const editorValue = parsedReadOnlyBlock?.cleanValue ?? value;
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -413,6 +561,46 @@ export default function CodeEditor({
       };
     }
 
+    if (readOnly && !noteMode) {
+      const isDarkTheme = resolvedTheme === "dark";
+      themeConfig[".cm-line"] = {
+        paddingLeft: "0.75rem",
+        paddingRight: "0.75rem",
+      };
+      themeConfig[".cm-line.cm-vitepress-highlight"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, var(--chart-4) 16%, transparent)"
+          : "color-mix(in oklab, var(--chart-4) 22%, white 78%)",
+      };
+      themeConfig[".cm-line.cm-vitepress-add"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, #22c55e 18%, transparent)"
+          : "color-mix(in oklab, #22c55e 18%, white 82%)",
+        borderLeft: "2px solid #22c55e",
+      };
+      themeConfig[".cm-line.cm-vitepress-remove"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, #ef4444 16%, transparent)"
+          : "color-mix(in oklab, #ef4444 16%, white 84%)",
+        borderLeft: "2px solid #ef4444",
+      };
+      themeConfig[".cm-line.cm-vitepress-focus"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, var(--accent) 20%, transparent)"
+          : "color-mix(in oklab, var(--accent) 20%, white 80%)",
+      };
+      themeConfig[".cm-line.cm-vitepress-warning"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, #f59e0b 18%, transparent)"
+          : "color-mix(in oklab, #f59e0b 18%, white 82%)",
+      };
+      themeConfig[".cm-line.cm-vitepress-error"] = {
+        backgroundColor: isDarkTheme
+          ? "color-mix(in oklab, #ef4444 12%, transparent)"
+          : "color-mix(in oklab, #ef4444 12%, white 88%)",
+      };
+    }
+
     const theme = EditorView.theme(themeConfig);
     const isDarkTheme = resolvedTheme === "dark";
 
@@ -429,6 +617,10 @@ export default function CodeEditor({
       extensions.push(
         syntaxHighlighting(isDarkTheme ? darkCodeHighlightStyle : lightCodeHighlightStyle),
       );
+    }
+
+    if (readOnly && parsedReadOnlyBlock && !noteMode) {
+      extensions.push(createReadOnlyLineDecorations(parsedReadOnlyBlock));
     }
 
     const normalizedLanguage = language?.toLowerCase();
@@ -464,7 +656,7 @@ export default function CodeEditor({
     }
 
     const state = EditorState.create({
-      doc: value,
+      doc: editorValue,
       extensions,
     });
 
@@ -481,26 +673,29 @@ export default function CodeEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allowFolding,
+    editorValue,
     effectiveFontSize,
     language,
     markdownViewMode,
+    meta,
     noteMode,
+    parsedReadOnlyBlock,
     readOnly,
     resolvedTheme,
   ]);
 
   useEffect(() => {
-    if (viewRef.current && value !== viewRef.current.state.doc.toString()) {
+    if (viewRef.current && editorValue !== viewRef.current.state.doc.toString()) {
       const transaction = viewRef.current.state.update({
         changes: {
           from: 0,
           to: viewRef.current.state.doc.length,
-          insert: value,
+          insert: editorValue,
         },
       });
       viewRef.current.dispatch(transaction);
     }
-  }, [value]);
+  }, [editorValue]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(value);

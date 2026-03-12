@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
+import { visit } from "unist-util-visit";
 import CodeEditor from "@/components/composite/CodeEditor";
 import { Checkbox, cn } from "@/components/ui";
 import type { SupportedLanguages } from "@/types";
@@ -18,6 +19,35 @@ interface MarkdownRenderProps {
   copyToClipboard?: boolean;
 }
 
+type CodeNode = {
+  lang?: string | null;
+  meta?: string | null;
+  data?: {
+    hProperties?: Record<string, unknown>;
+  };
+};
+
+const attachCodeMetaPlugin: Plugin = () => (tree) => {
+  visit(tree, "code", (node: unknown) => {
+    const codeNode = node as CodeNode;
+    if (!codeNode.meta) {
+      return;
+    }
+
+    if (!codeNode.data) {
+      codeNode.data = {};
+    }
+
+    const data = codeNode.data;
+    if (!data.hProperties) {
+      data.hProperties = {};
+    }
+
+    const hProperties = data.hProperties;
+    hProperties["data-meta"] = codeNode.meta;
+  });
+};
+
 export default function MarkdownRender({
   content,
   remarkPlugins = [],
@@ -26,7 +56,7 @@ export default function MarkdownRender({
   copyToClipboard,
   ...props
 }: MarkdownRenderProps & Readonly<Options>) {
-  const allRemarkPlugins = [remarkGfm, ...remarkPlugins];
+  const allRemarkPlugins = [remarkGfm, attachCodeMetaPlugin, ...remarkPlugins];
   const allRehypePlugins = [rehypeRaw, ...rehypePlugins];
   const isTaskList = (className?: string) => className?.includes("contains-task-list") ?? false;
   const isTaskListItem = (className?: string) => className?.includes("task-list-item") ?? false;
@@ -51,7 +81,7 @@ export default function MarkdownRender({
       </div>
     ),
 
-    code: ({ className, children, ...props }) => {
+    code: ({ className, children, node, ...props }) => {
       const isInline = !className || !/^language-/.test(className);
       if (isInline) {
         return (
@@ -64,13 +94,16 @@ export default function MarkdownRender({
           </code>
         );
       }
-      const match = /language-(\w+)/.exec(className ?? "");
+      const match = /language-([\w-]+)/.exec(className ?? "");
       const language = match?.[1] as SupportedLanguages;
+      const meta =
+        typeof node?.properties?.["data-meta"] === "string" ? node.properties["data-meta"] : "";
       return (
         <CodeEditor
           readOnly={true}
           value={String(children).replace(/\n$/, "")}
           language={language}
+          meta={meta}
           copyToClipboard={copyToClipboard}
           allowFolding={false}
         />

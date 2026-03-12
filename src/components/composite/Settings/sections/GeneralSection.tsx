@@ -1,10 +1,12 @@
+import { useShallow } from "zustand/react/shallow";
 import { Select } from "@/components/ui";
 import { useSettingsStore } from "@/stores";
 import type { Theme } from "@/types";
 
 export const GeneralSection = () => {
-  const config = useSettingsStore((state) => state.config);
-  const updateUiConfig = useSettingsStore((state) => state.updateUiConfig);
+  const [config, updateUiConfig] = useSettingsStore(
+    useShallow((state) => [state.config, state.updateUiConfig]),
+  );
 
   if (!config) return null;
 

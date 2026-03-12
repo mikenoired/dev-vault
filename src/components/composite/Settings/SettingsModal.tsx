@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   type SettingsSection,
   SettingsSidebar,
@@ -13,8 +14,9 @@ import { Modal } from "@/components/ui/Modal";
 import { useSettingsStore } from "@/stores";
 
 export const SettingsModal = () => {
-  const isOpen = useSettingsStore((state) => state.isSettingsOpen);
-  const closeSettings = useSettingsStore((state) => state.closeSettings);
+  const [isOpen, closeSettings] = useSettingsStore(
+    useShallow((state) => [state.isSettingsOpen, state.closeSettings]),
+  );
   const [activeSection, setActiveSection] = useState<SettingsSection>("general");
 
   const renderSection = () => {

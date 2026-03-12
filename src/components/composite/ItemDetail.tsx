@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useShallow } from "zustand/react/shallow";
 import CodeEditor from "@/components/composite/CodeEditor";
 import StatusBar from "@/components/composite/Documentation/StatusBar";
 import { Badge, cn, Textarea } from "@/components/ui";
@@ -51,23 +52,41 @@ const normalizeTag = (value: string) => value.trim();
 const tagSignature = (tags: string[]) => tags.map((tag) => tag.trim()).join("|");
 
 export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: ItemDetailProps) => {
-  const items = useItemsStore((state) => state.items);
-  const knownTags = useItemsStore((state) => state.tags);
-  const storeSelectedItem = useItemsStore((state) => state.selectedItem);
-  const selectItem = useItemsStore((state) => state.selectItem);
-  const { updateItem, createItem } = useItemsStore((state) => state);
+  const [items, knownTags, storeSelectedItem, selectItem, updateItem, createItem] = useItemsStore(
+    useShallow((state) => [
+      state.items,
+      state.tags,
+      state.selectedItem,
+      state.selectItem,
+      state.updateItem,
+      state.createItem,
+    ]),
+  );
 
-  const updateTabTitle = useTabsStore((state) => state.updateTabTitle);
-  const updateTabTitleById = useTabsStore((state) => state.updateTabTitleById);
-  const promoteDraftTab = useTabsStore((state) => state.promoteDraftTab);
-  const setTabDirty = useTabsStore((state) => state.setTabDirty);
-  const failAutosaveClose = useTabsStore((state) => state.failAutosaveClose);
-  const activeTabId = useTabsStore((state) => state.activeTabId);
+  const [
+    updateTabTitle,
+    updateTabTitleById,
+    promoteDraftTab,
+    setTabDirty,
+    failAutosaveClose,
+    activeTabId,
+  ] = useTabsStore(
+    useShallow((state) => [
+      state.updateTabTitle,
+      state.updateTabTitleById,
+      state.promoteDraftTab,
+      state.setTabDirty,
+      state.failAutosaveClose,
+      state.activeTabId,
+    ]),
+  );
 
-  const autosaveEnabled = useSettingsStore((state) => state.config?.ui.autosave_enabled ?? true);
-  const editorFontSize = useSettingsStore((state) => state.config?.ui.editor_font_size ?? 14);
-  const markdownLivePreviewEnabled = useSettingsStore(
-    (state) => state.config?.ui.markdown_live_preview ?? true,
+  const [autosaveEnabled, editorFontSize, markdownLivePreviewEnabled] = useSettingsStore(
+    useShallow((state) => [
+      state.config?.ui.autosave_enabled ?? true,
+      state.config?.ui.editor_font_size ?? 14,
+      state.config?.ui.markdown_live_preview ?? true,
+    ]),
   );
 
   const selectedItem = useMemo(() => {

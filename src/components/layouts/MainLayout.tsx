@@ -1,6 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
 import { DocGraphTab } from "@/components/composite/Documentation/DocGraphTab";
@@ -19,9 +20,14 @@ export const MainLayout = () => {
   const [isResizingState, setIsResizingState] = useState(false);
   const isResizing = useRef(false);
 
-  const searchQuery = useItemsStore((state) => state.searchQuery);
-  const filterByType = useItemsStore((state) => state.filterByType);
-  const setSelectedType = useItemsStore((state) => state.setSelectedType);
+  const [searchQuery, filterByType, setSelectedType, selectedType] = useItemsStore(
+    useShallow((state) => [
+      state.searchQuery,
+      state.filterByType,
+      state.setSelectedType,
+      state.selectedType,
+    ]),
+  );
 
   const { tabs, activeTabId, requestCloseTab, openNewTab, openDraftItemTab } = useTabsStore(
     (state) => state,
@@ -31,8 +37,9 @@ export const MainLayout = () => {
   );
   const { installedDocs, selectDoc } = useDocsStore();
 
-  const openSettings = useSettingsStore((state) => state.openSettings);
-  const theme = useSettingsStore((state) => state.config?.ui.theme);
+  const [openSettings, theme] = useSettingsStore(
+    useShallow((state) => [state.openSettings, state.config?.ui.theme]),
+  );
 
   useEffect(() => {
     if (!theme) return;
@@ -62,7 +69,6 @@ export const MainLayout = () => {
   const docGraphTabs = tabs.filter((tab) => tab.type === "docGraph" && tab.docId);
 
   const { selectedDoc } = useDocsStore();
-  const selectedType = useItemsStore((state) => state.selectedType);
 
   useEffect(() => {
     if (tabs.length === 0 && selectedType === null) {

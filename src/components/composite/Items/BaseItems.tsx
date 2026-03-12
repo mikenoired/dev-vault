@@ -1,5 +1,6 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { ItemCard } from "@/components/composite/ItemCard";
 import { cn } from "@/components/ui";
 import { useItemActions } from "@/contexts/ItemActionsContext";
@@ -7,15 +8,19 @@ import { useItemsStore, useTabsStore } from "@/stores";
 import type { ItemWithTags } from "@/types";
 
 export default function BaseItems() {
-  const items = useItemsStore((state) => state.items);
-  const hasMore = useItemsStore((state) => state.hasMore);
-  const isLoadingMore = useItemsStore((state) => state.isLoadingMore);
-  const loadNextPage = useItemsStore((state) => state.loadNextPage);
-  const searchItems = useItemsStore((state) => state.searchItems);
+  const [items, hasMore, isLoadingMore, loadNextPage, searchItems] = useItemsStore(
+    useShallow((state) => [
+      state.items,
+      state.hasMore,
+      state.isLoadingMore,
+      state.loadNextPage,
+      state.searchItems,
+    ]),
+  );
   const { requestDelete } = useItemActions();
-  const activeTabId = useTabsStore((state) => state.activeTabId);
-  const openItemTab = useTabsStore((state) => state.openItemTab);
-  const openDocEntryTab = useTabsStore((state) => state.openDocEntryTab);
+  const [activeTabId, openItemTab, openDocEntryTab] = useTabsStore(
+    useShallow((state) => [state.activeTabId, state.openItemTab, state.openDocEntryTab]),
+  );
   const isSearchMode = useItemsStore((state) => state.searchQuery.trim().length > 0);
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);

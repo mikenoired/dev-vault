@@ -1,5 +1,6 @@
 import { Code2, Link2, Settings, StickyNote } from "lucide-react";
 import { useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
 import BaseItems from "@/components/composite/Items/BaseItems";
 import DocItems from "@/components/composite/Items/DocItems";
 import { useItemsStore, useTabsStore } from "@/stores";
@@ -13,15 +14,19 @@ const quickActions: Array<{ type: ItemType; label: string; icon: React.ElementTy
 ];
 
 export const ItemsList = () => {
-  const isLoading = useItemsStore((state) => state.isLoading);
-  const items = useItemsStore((state) => state.items);
-  const searchQuery = useItemsStore((state) => state.searchQuery);
-  const selectedType = useItemsStore((state) => state.selectedType);
-  const loadItems = useItemsStore((state) => state.loadItems);
+  const [isLoading, items, searchQuery, selectedType, loadItems] = useItemsStore(
+    useShallow((state) => [
+      state.isLoading,
+      state.items,
+      state.searchQuery,
+      state.selectedType,
+      state.loadItems,
+    ]),
+  );
 
-  const tabs = useTabsStore((state) => state.tabs);
-  const activeTabId = useTabsStore((state) => state.activeTabId);
-  const openDraftItemTab = useTabsStore((state) => state.openDraftItemTab);
+  const [tabs, activeTabId, openDraftItemTab] = useTabsStore(
+    useShallow((state) => [state.tabs, state.activeTabId, state.openDraftItemTab]),
+  );
 
   useEffect(() => {
     loadItems();

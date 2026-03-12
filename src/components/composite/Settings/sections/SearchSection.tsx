@@ -1,9 +1,11 @@
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui";
 import { useSettingsStore } from "@/stores";
 
 export const SearchSection = () => {
-  const config = useSettingsStore((state) => state.config);
-  const updateSearchConfig = useSettingsStore((state) => state.updateSearchConfig);
+  const [config, updateSearchConfig] = useSettingsStore(
+    useShallow((state) => [state.config, state.updateSearchConfig]),
+  );
 
   if (!config) return null;
 

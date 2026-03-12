@@ -1,6 +1,7 @@
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Book, Code, Link as LinkIcon, type LucideIcon, Settings, StickyNote } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/components/ui";
 import { useDocsStore, useItemsStore } from "@/stores";
 import type { ItemType } from "@/types";
@@ -19,10 +20,14 @@ const typeConfig: Record<ItemType, TypeItem> = {
 };
 
 export const TypeFilter = () => {
-  const selectedType = useItemsStore((state) => state.selectedType);
-  const filterByType = useItemsStore((state) => state.filterByType);
-  const typeCounts = useItemsStore((state) => state.typeCounts);
-  const loadTypeCounts = useItemsStore((state) => state.loadTypeCounts);
+  const [selectedType, filterByType, typeCounts, loadTypeCounts] = useItemsStore(
+    useShallow((state) => [
+      state.selectedType,
+      state.filterByType,
+      state.typeCounts,
+      state.loadTypeCounts,
+    ]),
+  );
   const { installedDocs } = useDocsStore((state) => state);
 
   useEffect(() => {

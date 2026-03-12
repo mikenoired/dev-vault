@@ -1,5 +1,6 @@
 import { SearchIcon } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
 import { useItemsStore, useTabsStore } from "@/stores";
@@ -8,14 +9,19 @@ export const SearchBar = () => {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const items = useItemsStore((state) => state.items);
-  const searchItems = useItemsStore((state) => state.searchItems);
+  const [items, searchItems] = useItemsStore(
+    useShallow((state) => [state.items, state.searchItems]),
+  );
 
-  const openItemTab = useTabsStore((state) => state.openItemTab);
-  const openDocEntryTab = useTabsStore((state) => state.openDocEntryTab);
-  const pinTab = useTabsStore((state) => state.pinTab);
-  const tabs = useTabsStore((state) => state.tabs);
-  const activeTabId = useTabsStore((state) => state.activeTabId);
+  const [openItemTab, openDocEntryTab, pinTab, tabs, activeTabId] = useTabsStore(
+    useShallow((state) => [
+      state.openItemTab,
+      state.openDocEntryTab,
+      state.pinTab,
+      state.tabs,
+      state.activeTabId,
+    ]),
+  );
 
   const focusSearch = useCallback(() => {
     inputRef.current?.focus();

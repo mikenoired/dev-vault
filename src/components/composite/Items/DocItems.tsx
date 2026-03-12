@@ -1,5 +1,6 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import DocLogo from "@/components/composite/DocLogo";
 import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { ItemCard } from "@/components/composite/ItemCard";
@@ -9,9 +10,8 @@ import type { Documentation, ItemWithTags } from "@/types";
 
 export default function DocItems() {
   const { installedDocs, selectedDoc, selectDoc, isLoading: isDocsLoading } = useDocsStore();
-  const deleteDoc = useDocsStore((state) => state.deleteDoc);
-  const tabs = useTabsStore((state) => state.tabs);
-  const closeTab = useTabsStore((state) => state.closeTab);
+  const [deleteDoc] = useDocsStore(useShallow((state) => [state.deleteDoc]));
+  const [tabs, closeTab] = useTabsStore(useShallow((state) => [state.tabs, state.closeTab]));
   const [pendingDelete, setPendingDelete] = useState<Documentation | null>(null);
   const selectedDocId = selectedDoc?.id ?? null;
 

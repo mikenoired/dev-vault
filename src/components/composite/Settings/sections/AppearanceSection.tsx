@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui";
 import {
   MAX_FONT_SIZE,
@@ -10,8 +11,9 @@ import { useSettingsStore } from "@/stores";
 import type { UiConfig } from "@/types";
 
 export const AppearanceSection = () => {
-  const config = useSettingsStore((state) => state.config);
-  const updateUiConfig = useSettingsStore((state) => state.updateUiConfig);
+  const [config, updateUiConfig] = useSettingsStore(
+    useShallow((state) => [state.config, state.updateUiConfig]),
+  );
 
   const handleUpdate = (updater: (config: UiConfig) => UiConfig) => {
     if (!config) return;

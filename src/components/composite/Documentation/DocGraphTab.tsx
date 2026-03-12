@@ -1,5 +1,6 @@
 import { RefreshCcw, Workflow } from "lucide-react";
 import { memo, useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { DocGraphCanvas } from "@/components/composite/Documentation/doc-graph/DocGraphCanvas";
 import { useDocsStore, useTabsStore } from "@/stores";
 import type { DocumentationGraph } from "@/types";
@@ -9,11 +10,10 @@ interface DocGraphTabProps {
 }
 
 export const DocGraphTab = memo(({ docId }: DocGraphTabProps) => {
-  const installedDocs = useDocsStore((state) => state.installedDocs);
-  const docGraphs = useDocsStore((state) => state.docGraphs);
-  const loadDocGraph = useDocsStore((state) => state.loadDocGraph);
-  const error = useDocsStore((state) => state.error);
-  const openDocEntryTab = useTabsStore((state) => state.openDocEntryTab);
+  const [installedDocs, docGraphs, loadDocGraph, error] = useDocsStore(
+    useShallow((state) => [state.installedDocs, state.docGraphs, state.loadDocGraph, state.error]),
+  );
+  const [openDocEntryTab] = useTabsStore(useShallow((state) => [state.openDocEntryTab]));
   const [isLoading, setIsLoading] = useState(false);
 
   const graph: DocumentationGraph | undefined = docGraphs[docId];

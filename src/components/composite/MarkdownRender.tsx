@@ -44,7 +44,7 @@ export default function MarkdownRender({
 
     pre: ({ children }) => (
       <div
-        className="w-full max-w-full overflow-x-auto rounded-md border border-neutral-800"
+        className="w-full max-w-full overflow-x-auto rounded-md border border-border bg-card"
         style={{ whiteSpace: "pre", overflowX: "auto" }}
       >
         {children}
@@ -57,7 +57,7 @@ export default function MarkdownRender({
         return (
           <code
             {...props}
-            className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-300 w-full max-w-full overflow-x-auto"
+            className="w-full max-w-full overflow-x-auto rounded border border-border bg-secondary px-1 py-0.5 text-foreground"
             style={{ whiteSpace: "pre", overflowX: "auto" }}
           >
             {children}

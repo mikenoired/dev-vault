@@ -176,7 +176,7 @@ export const MainLayout = () => {
       <header data-tauri-drag-region className="h-10 flex items-center shrink-0 select-none">
         <div
           className={cn(
-            "h-full flex items-center border-r border-border pl-22 pr-2 overflow-hidden bg-accent",
+            "h-full flex items-center pl-22 pr-2 overflow-hidden bg-accent",
             !isResizingState ? "transition-all duration-300 ease-in-out" : "",
           )}
           style={{ width: isSidebarVisible ? sidebarWidth : 165 }}
@@ -185,7 +185,7 @@ export const MainLayout = () => {
           <button
             type="button"
             onClick={openSettings}
-            className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors ml-auto shrink-0"
+            className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors ml-auto shrink-0 cursor-pointer"
             title="Настройки"
           >
             <Settings size={18} />
@@ -193,7 +193,7 @@ export const MainLayout = () => {
           <button
             type="button"
             onClick={toggleSidebar}
-            className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0 cursor-pointer"
             title={isSidebarVisible ? "Скрыть сайдбар" : "Показать сайдбар"}
           >
             {isSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}

@@ -2,12 +2,12 @@ import { javascript } from "@codemirror/lang-javascript";
 import { markdown } from "@codemirror/lang-markdown";
 import { python } from "@codemirror/lang-python";
 import { rust } from "@codemirror/lang-rust";
-import { StreamLanguage } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState } from "@codemirror/state";
 import type { Command } from "@codemirror/view";
 import { keymap } from "@codemirror/view";
-import { materialDark } from "@fsegurai/codemirror-theme-material-dark";
+import { tags } from "@lezer/highlight";
 import { basicSetup, EditorView, minimalSetup } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,6 +31,103 @@ interface CodeEditorProps {
 const bashLang = StreamLanguage.define(shell);
 const markdownPairChars = new Set(["*", "_", "`"]);
 const markdownLinkPattern = /\[[^\]\n]+\]\([^)]+\)/g;
+const darkCodeHighlightStyle = HighlightStyle.define([
+  { tag: [tags.keyword, tags.modifier], color: "#c792ea" },
+  { tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: "#ff5370" },
+  { tag: [tags.number, tags.integer, tags.float], color: "#f78c6c" },
+  { tag: [tags.string, tags.special(tags.string)], color: "#c3e88d" },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], color: "#546e7a" },
+  { tag: [tags.function(tags.variableName), tags.labelName], color: "#82aaff" },
+  { tag: [tags.className, tags.typeName, tags.namespace], color: "#ffcb6b" },
+  { tag: [tags.operator, tags.punctuation, tags.separator], color: "#89ddff" },
+  { tag: [tags.propertyName, tags.attributeName], color: "#c792ea" },
+  { tag: [tags.link, tags.url], color: "#80cbc4", textDecoration: "underline" },
+  { tag: tags.heading, color: "#82aaff", fontWeight: "700" },
+  { tag: [tags.emphasis], fontStyle: "italic" },
+  { tag: [tags.strong], fontWeight: "700" },
+  { tag: [tags.monospace], color: "#ffcb6b" },
+]);
+const lightCodeHighlightStyle = HighlightStyle.define([
+  { tag: [tags.keyword, tags.modifier], color: "#7c3aed" },
+  { tag: [tags.atom, tags.bool, tags.special(tags.variableName)], color: "#be123c" },
+  { tag: [tags.number, tags.integer, tags.float], color: "#c2410c" },
+  { tag: [tags.string, tags.special(tags.string)], color: "#15803d" },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], color: "#64748b" },
+  { tag: [tags.function(tags.variableName), tags.labelName], color: "#1d4ed8" },
+  { tag: [tags.className, tags.typeName, tags.namespace], color: "#b45309" },
+  { tag: [tags.operator, tags.punctuation, tags.separator], color: "#0f766e" },
+  { tag: [tags.propertyName, tags.attributeName], color: "#7c3aed" },
+  { tag: [tags.link, tags.url], color: "#0f766e", textDecoration: "underline" },
+  { tag: tags.heading, color: "#1d4ed8", fontWeight: "700" },
+  { tag: [tags.emphasis], fontStyle: "italic" },
+  { tag: [tags.strong], fontWeight: "700" },
+  { tag: [tags.monospace], color: "#b45309" },
+]);
+
+function createCodeTheme(isDark: boolean) {
+  return EditorView.theme(
+    {
+      "&": {
+        color: "var(--foreground)",
+        backgroundColor: "var(--card)",
+      },
+      ".cm-content": {
+        caretColor: "var(--foreground)",
+      },
+      ".cm-cursor, .cm-dropCursor": {
+        borderLeftColor: "var(--foreground)",
+      },
+      ".cm-selectionBackground, ::selection": {
+        backgroundColor: isDark
+          ? "color-mix(in oklab, var(--accent) 72%, transparent)"
+          : "color-mix(in oklab, var(--accent) 88%, white 12%)",
+      },
+      ".cm-activeLine": {
+        backgroundColor: isDark
+          ? "color-mix(in oklab, var(--accent) 34%, transparent)"
+          : "color-mix(in oklab, var(--accent) 62%, white 38%)",
+      },
+      ".cm-activeLineGutter": {
+        backgroundColor: isDark
+          ? "color-mix(in oklab, var(--accent) 26%, transparent)"
+          : "color-mix(in oklab, var(--accent) 48%, white 52%)",
+      },
+      ".cm-gutters": {
+        color: "var(--muted-foreground)",
+        backgroundColor: "var(--card)",
+        borderRight: "1px solid var(--border)",
+      },
+      ".cm-scroller": {
+        backgroundColor: "var(--card)",
+      },
+      ".cm-panels": {
+        backgroundColor: "var(--popover)",
+        color: "var(--popover-foreground)",
+      },
+      ".cm-searchMatch, .cm-selectionMatch": {
+        backgroundColor: isDark
+          ? "color-mix(in oklab, var(--chart-4) 22%, transparent)"
+          : "color-mix(in oklab, var(--chart-4) 42%, white 58%)",
+        outline: "1px solid color-mix(in oklab, var(--chart-4) 42%, var(--border))",
+      },
+      ".cm-foldPlaceholder": {
+        backgroundColor: "var(--secondary)",
+        border: "1px solid var(--border)",
+        color: "var(--muted-foreground)",
+      },
+    },
+    { dark: isDark },
+  );
+}
+
+function resolveDocumentTheme(): "light" | "dark" {
+  if (typeof document === "undefined") {
+    return "dark";
+  }
+
+  return document.documentElement.classList.contains("light") ? "light" : "dark";
+}
+
 function isCursorInsideMarkdownLink(view: EditorView, cursorPos: number): boolean {
   const line = view.state.doc.lineAt(cursorPos);
   const cursorInLine = cursorPos - line.from;
@@ -247,7 +344,26 @@ export default function CodeEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(resolveDocumentTheme);
   const effectiveFontSize = noteMode ? 16 : fontSize;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const syncTheme = () => {
+      setResolvedTheme(resolveDocumentTheme());
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -298,15 +414,22 @@ export default function CodeEditor({
     }
 
     const theme = EditorView.theme(themeConfig);
+    const isDarkTheme = resolvedTheme === "dark";
 
     const extensions = [
       allowFolding ? basicSetup : minimalSetup,
       getLangExtension(language),
-      materialDark,
       theme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(readOnly),
     ];
+
+    if (!noteMode) {
+      extensions.push(createCodeTheme(isDarkTheme));
+      extensions.push(
+        syntaxHighlighting(isDarkTheme ? darkCodeHighlightStyle : lightCodeHighlightStyle),
+      );
+    }
 
     const normalizedLanguage = language?.toLowerCase();
     const isMarkdown = normalizedLanguage === "md" || normalizedLanguage === "markdown";
@@ -356,7 +479,15 @@ export default function CodeEditor({
       view.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowFolding, effectiveFontSize, language, markdownViewMode, noteMode, readOnly]);
+  }, [
+    allowFolding,
+    effectiveFontSize,
+    language,
+    markdownViewMode,
+    noteMode,
+    readOnly,
+    resolvedTheme,
+  ]);
 
   useEffect(() => {
     if (viewRef.current && value !== viewRef.current.state.doc.toString()) {

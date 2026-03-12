@@ -3,6 +3,7 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "re
 import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/components/ui";
 import { useHotkey } from "@/hooks/useHotkey";
+import { getShortcutHotkey } from "@/lib/shortcuts";
 import { useItemsStore, useTabsStore } from "@/stores";
 
 export const SearchBar = () => {
@@ -28,7 +29,7 @@ export const SearchBar = () => {
     inputRef.current?.select();
   }, []);
 
-  useHotkey({ key: "f", mod: true }, focusSearch);
+  useHotkey(getShortcutHotkey("focus-search"), focusSearch);
 
   useEffect(() => {
     const handleFocusSearch = () => focusSearch();
@@ -124,7 +125,7 @@ export const SearchBar = () => {
       value={query}
       onChange={(e) => setQuery(e.target.value)}
       onKeyDown={handleKeyDown}
-      className="text-base w-full rounded-md border-none focus:outline-0 focus-visible:ring-0 bg-accent focus:bg-transparent transition-colors"
+      className="text-base w-full rounded-md border-none focus:outline-0 focus-visible:ring-0 bg-accent focus:bg-foreground/15 transition-colors"
     />
   );
 };

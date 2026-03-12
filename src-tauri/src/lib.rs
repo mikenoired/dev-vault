@@ -2,9 +2,11 @@ mod commands;
 pub mod domain;
 pub mod mcp;
 pub mod models;
+mod shortcuts;
 
 use commands::AppState;
 use domain::{DocumentationManager, Storage};
+use shortcuts::accelerator_by_id;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{Emitter, Manager};
@@ -81,37 +83,58 @@ pub fn run() {
 
             tracing::info!("🍎 Creating menu...");
             // Create Menu
-            let settings_i =
-                MenuItem::with_id(app, "settings", "Настройки", true, Some("CmdOrCtrl+,"))?;
-            let search_i = MenuItem::with_id(app, "search", "Поиск", true, Some("CmdOrCtrl+F"))?;
-            let new_tab_i =
-                MenuItem::with_id(app, "new-tab", "Новая вкладка", true, Some("CmdOrCtrl+T"))?;
+            let settings_i = MenuItem::with_id(
+                app,
+                "settings",
+                "Настройки",
+                true,
+                accelerator_by_id("open-settings"),
+            )?;
+            let search_i = MenuItem::with_id(
+                app,
+                "search",
+                "Поиск",
+                true,
+                accelerator_by_id("focus-search"),
+            )?;
+            let new_tab_i = MenuItem::with_id(
+                app,
+                "new-tab",
+                "Новая вкладка",
+                true,
+                accelerator_by_id("new-tab"),
+            )?;
 
             let actions_menu =
                 Submenu::with_items(app, "Действия", true, &[&search_i, &new_tab_i])?;
 
-            let create_snippet_i =
-                MenuItem::with_id(app, "create-snippet", "Сниппет", true, Some("CmdOrCtrl+N"))?;
+            let create_snippet_i = MenuItem::with_id(
+                app,
+                "create-snippet",
+                "Сниппет",
+                true,
+                accelerator_by_id("create-snippet"),
+            )?;
             let create_note_i = MenuItem::with_id(
                 app,
                 "create-note",
                 "Заметка",
                 true,
-                Some("CmdOrCtrl+Shift+N"),
+                accelerator_by_id("create-note"),
             )?;
             let create_config_i = MenuItem::with_id(
                 app,
                 "create-config",
                 "Конфиг",
                 true,
-                Some("CmdOrCtrl+Shift+G"),
+                accelerator_by_id("create-config"),
             )?;
             let create_link_i = MenuItem::with_id(
                 app,
                 "create-link",
                 "Ссылка",
                 true,
-                Some("CmdOrCtrl+Shift+H"),
+                accelerator_by_id("create-link"),
             )?;
 
             let create_menu = Submenu::with_items(

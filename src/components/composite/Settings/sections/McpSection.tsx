@@ -62,7 +62,7 @@ export const McpSection = () => {
         </p>
       </div>
 
-      <Card>
+      <Card className="rounded-2xl border-none bg-background/55 shadow-none">
         <CardHeader>
           <CardTitle className="text-base">Конфигурация сервера</CardTitle>
         </CardHeader>
@@ -70,7 +70,7 @@ export const McpSection = () => {
           {serverConfig ? (
             <div className="space-y-3">
               {!serverConfig.commandExists ? (
-                <div className="rounded-md border border-red-500/40 bg-red-500/10 text-red-200 px-3 py-2 text-xs">
+                <div className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-200">
                   MCP-бинарь не найден. В dev-режиме запусти `bun run dev:mcp` или перезапусти
                   `tauri dev`.
                 </div>
@@ -85,9 +85,7 @@ export const McpSection = () => {
               </div>
               <div className="text-sm">
                 <div className="text-muted-foreground mb-2">Команда подключения</div>
-                <pre className="text-xs bg-muted/40 border border-border rounded-md p-3 overflow-x-auto">
-                  {snippet}
-                </pre>
+                <pre className="overflow-x-auto rounded-xl bg-muted/50 p-3 text-xs">{snippet}</pre>
               </div>
             </div>
           ) : (
@@ -96,7 +94,7 @@ export const McpSection = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl border-none bg-background/55 shadow-none">
         <CardHeader>
           <CardTitle className="text-base">Доступные агенты</CardTitle>
         </CardHeader>
@@ -109,7 +107,7 @@ export const McpSection = () => {
             {tools.map((tool) => (
               <div
                 key={tool.id}
-                className="flex items-center justify-between gap-4 border border-border rounded-md px-3 py-2"
+                className="flex items-center justify-between gap-4 rounded-xl bg-muted/45 px-3 py-2"
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">

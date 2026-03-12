@@ -504,11 +504,11 @@ impl Storage {
             "INSERT INTO tags (name, color_code)
              VALUES (?1, CAST((random() & 9223372036854775807) % ?2 AS INTEGER))",
         )
-            .bind(name)
-            .bind(TAG_COLOR_CODE_COUNT)
-            .execute(&self.pool)
-            .await
-            .context("Failed to create tag")?;
+        .bind(name)
+        .bind(TAG_COLOR_CODE_COUNT)
+        .execute(&self.pool)
+        .await
+        .context("Failed to create tag")?;
 
         Ok(result.last_insert_rowid())
     }
@@ -548,11 +548,11 @@ impl Storage {
         let rows = sqlx::query(
             "SELECT id, name, color_code FROM tags WHERE name LIKE ?1 ORDER BY name LIMIT ?2",
         )
-            .bind(pattern)
-            .bind(limit)
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to search tags")?;
+        .bind(pattern)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to search tags")?;
 
         Ok(rows
             .iter()

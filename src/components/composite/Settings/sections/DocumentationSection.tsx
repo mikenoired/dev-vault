@@ -61,14 +61,10 @@ export const DocumentationSection = () => {
         <p className="text-sm text-muted-foreground">Управление установленными документациями</p>
       </div>
 
-      {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-2xl bg-red-500/10 p-3 text-sm text-red-400">{error}</div>}
 
       {installProgress && (
-        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded">
+        <div className="rounded-2xl bg-blue-500/10 p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-foreground">Установка документации...</span>
             <span className="text-xs text-muted-foreground">
@@ -90,7 +86,7 @@ export const DocumentationSection = () => {
       )}
 
       {updateProgress && (
-        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded">
+        <div className="rounded-2xl bg-blue-500/10 p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-foreground">Обновление документации...</span>
             <span className="text-xs text-muted-foreground">
@@ -118,7 +114,10 @@ export const DocumentationSection = () => {
         ) : (
           <div className="space-y-2">
             {installedDocs.map((doc) => (
-              <Card key={doc.id} className="p-4">
+              <Card
+                key={doc.id}
+                className="rounded-2xl border-none bg-background/55 p-4 shadow-none"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -158,7 +157,10 @@ export const DocumentationSection = () => {
             {availableDocs
               .filter((doc) => !installedNames.has(doc.name))
               .map((doc) => (
-                <Card key={doc.name} className="group relative p-4 h-24">
+                <Card
+                  key={doc.name}
+                  className="group relative h-24 rounded-2xl border-none bg-background/55 p-4 shadow-none"
+                >
                   <div className="flex flex-col items-center gap-2">
                     <DocLogo sizeClass="size-8" name={doc.name} />
                     <div className="min-w-0 flex gap-1">
@@ -166,7 +168,7 @@ export const DocumentationSection = () => {
                       <span className="text-xs text-muted-foreground">v{doc.version}</span>
                     </div>
                   </div>
-                  <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/80 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-background/80 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       size="sm"
                       onClick={() => handleInstall(doc.name)}

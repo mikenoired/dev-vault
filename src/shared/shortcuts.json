@@ -1,0 +1,153 @@
+[
+  {
+    "id": "open-settings",
+    "category": "Основные",
+    "label": "Открыть настройки",
+    "description": "Открывает окно настроек приложения.",
+    "scope": "global",
+    "keys": ["Mod", ","],
+    "menuItemId": "settings",
+    "tauriAccelerator": "CmdOrCtrl+,"
+  },
+  {
+    "id": "focus-search",
+    "category": "Основные",
+    "label": "Фокус на поиск",
+    "description": "Переводит фокус в строку поиска и выделяет запрос.",
+    "scope": "global",
+    "keys": ["Mod", "Shift", "F"],
+    "frontend": {
+      "key": "f",
+      "mod": true,
+      "shift": true
+    },
+    "menuItemId": "search",
+    "tauriAccelerator": "CmdOrCtrl+Shift+F"
+  },
+  {
+    "id": "new-tab",
+    "category": "Основные",
+    "label": "Новая вкладка",
+    "description": "Открывает пустую вкладку.",
+    "scope": "global",
+    "keys": ["Mod", "T"],
+    "menuItemId": "new-tab",
+    "tauriAccelerator": "CmdOrCtrl+T"
+  },
+  {
+    "id": "close-tab",
+    "category": "Навигация",
+    "label": "Закрыть текущую вкладку",
+    "description": "Закрывает активную вкладку.",
+    "scope": "global",
+    "keys": ["Mod", "W"],
+    "frontend": {
+      "key": "w",
+      "mod": true
+    }
+  },
+  {
+    "id": "toggle-sidebar",
+    "category": "Навигация",
+    "label": "Показать или скрыть сайдбар",
+    "description": "Переключает видимость левой панели.",
+    "scope": "global",
+    "keys": ["Mod", "B"],
+    "frontend": {
+      "key": "b",
+      "mod": true
+    }
+  },
+  {
+    "id": "create-snippet",
+    "category": "Создание",
+    "label": "Создать сниппет",
+    "description": "Открывает черновик нового сниппета.",
+    "scope": "global",
+    "keys": ["Mod", "N"],
+    "menuItemId": "create-snippet",
+    "tauriAccelerator": "CmdOrCtrl+N"
+  },
+  {
+    "id": "create-note",
+    "category": "Создание",
+    "label": "Создать заметку",
+    "description": "Открывает черновик новой заметки.",
+    "scope": "global",
+    "keys": ["Mod", "Shift", "N"],
+    "menuItemId": "create-note",
+    "tauriAccelerator": "CmdOrCtrl+Shift+N"
+  },
+  {
+    "id": "create-config",
+    "category": "Создание",
+    "label": "Создать конфиг",
+    "description": "Открывает черновик нового конфига.",
+    "scope": "global",
+    "keys": ["Mod", "Shift", "G"],
+    "menuItemId": "create-config",
+    "tauriAccelerator": "CmdOrCtrl+Shift+G"
+  },
+  {
+    "id": "create-link",
+    "category": "Создание",
+    "label": "Создать ссылку",
+    "description": "Открывает черновик новой ссылки.",
+    "scope": "global",
+    "keys": ["Mod", "Shift", "H"],
+    "menuItemId": "create-link",
+    "tauriAccelerator": "CmdOrCtrl+Shift+H"
+  },
+  {
+    "id": "save-item",
+    "category": "Редактирование",
+    "label": "Сохранить изменения",
+    "description": "Сохраняет текущую запись, когда автосохранение выключено.",
+    "scope": "editor",
+    "keys": ["Mod", "S"],
+    "frontend": {
+      "key": "s",
+      "mod": true
+    }
+  },
+  {
+    "id": "search-open-selected",
+    "category": "Поиск",
+    "label": "Открыть выбранный результат",
+    "description": "Открывает текущий результат поиска.",
+    "scope": "search",
+    "keys": ["Enter"]
+  },
+  {
+    "id": "search-clear",
+    "category": "Поиск",
+    "label": "Очистить поиск",
+    "description": "Сбрасывает запрос и закрепляет активную вкладку.",
+    "scope": "search",
+    "keys": ["Escape"]
+  },
+  {
+    "id": "search-next",
+    "category": "Поиск",
+    "label": "Следующий результат",
+    "description": "Переходит к следующему результату поиска.",
+    "scope": "search",
+    "keys": ["ArrowDown"]
+  },
+  {
+    "id": "search-prev",
+    "category": "Поиск",
+    "label": "Предыдущий результат",
+    "description": "Переходит к предыдущему результату поиска.",
+    "scope": "search",
+    "keys": ["ArrowUp"]
+  },
+  {
+    "id": "close-dialog",
+    "category": "Окна",
+    "label": "Закрыть диалог",
+    "description": "Закрывает модальное окно.",
+    "scope": "dialog",
+    "keys": ["Escape"]
+  }
+]

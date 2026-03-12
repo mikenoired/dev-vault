@@ -22,9 +22,15 @@ impl TestDb {
     }
 
     pub async fn cleanup(&self) -> Result<()> {
-        sqlx::query("DELETE FROM item_tags").execute(&self.storage.pool).await?;
-        sqlx::query("DELETE FROM tags").execute(&self.storage.pool).await?;
-        sqlx::query("DELETE FROM items").execute(&self.storage.pool).await?;
+        sqlx::query("DELETE FROM item_tags")
+            .execute(&self.storage.pool)
+            .await?;
+        sqlx::query("DELETE FROM tags")
+            .execute(&self.storage.pool)
+            .await?;
+        sqlx::query("DELETE FROM items")
+            .execute(&self.storage.pool)
+            .await?;
         Ok(())
     }
 
@@ -88,7 +94,8 @@ pub fn read_max_search_ms() -> u128 {
 
 pub fn remove_db_file(path: PathBuf) -> Result<()> {
     if path.exists() {
-        std::fs::remove_file(&path).with_context(|| format!("Failed to remove db file: {:?}", path))?;
+        std::fs::remove_file(&path)
+            .with_context(|| format!("Failed to remove db file: {:?}", path))?;
     }
     Ok(())
 }

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-type HotkeyConfig = {
+export type HotkeyConfig = {
   key: string;
   ctrl?: boolean;
   meta?: boolean;
@@ -10,8 +10,10 @@ type HotkeyConfig = {
   preventDefault?: boolean;
 };
 
-export const useHotkey = (config: HotkeyConfig, handler: () => void) => {
+export const useHotkey = (config: HotkeyConfig, handler: () => void, enabled = true) => {
   useEffect(() => {
+    if (!enabled) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
 
@@ -38,5 +40,5 @@ export const useHotkey = (config: HotkeyConfig, handler: () => void) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [config, handler]);
+  }, [config, enabled, handler]);
 };

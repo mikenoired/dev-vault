@@ -13,6 +13,7 @@ import Sidebar from "@/components/layouts/Sidebar";
 import { cn } from "@/components/ui";
 import { ItemActionsProvider } from "@/contexts/ItemActionsContext";
 import { useHotkey } from "@/hooks/useHotkey";
+import { getShortcutHotkey } from "@/lib/shortcuts";
 import { useDocsStore, useItemsStore, useSettingsStore, useTabsStore, useUIStore } from "@/stores";
 import type { ItemType } from "@/types";
 
@@ -63,8 +64,8 @@ export const MainLayout = () => {
     }
   }, [activeTabId, requestCloseTab]);
 
-  useHotkey({ key: "w", mod: true }, closeCurrentTab);
-  useHotkey({ key: "b", mod: true }, toggleSidebar);
+  useHotkey(getShortcutHotkey("close-tab"), closeCurrentTab);
+  useHotkey(getShortcutHotkey("toggle-sidebar"), toggleSidebar);
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const docGraphTabs = tabs.filter((tab) => tab.type === "docGraph" && tab.docId);
 

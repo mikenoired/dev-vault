@@ -45,7 +45,10 @@ pub fn build_mcp_server_config(current_exe: Option<PathBuf>) -> Result<McpServer
     Ok(McpServerConfig {
         name: MCP_SERVER_NAME.to_string(),
         command,
-        args: vec!["--db-path".to_string(), db_path.to_string_lossy().to_string()],
+        args: vec![
+            "--db-path".to_string(),
+            db_path.to_string_lossy().to_string(),
+        ],
         command_exists,
     })
 }
@@ -77,7 +80,5 @@ fn command_available(command: &str) -> bool {
 }
 
 fn command_contains_path(command: &str) -> bool {
-    command.contains(std::path::MAIN_SEPARATOR)
-        || command.contains('/')
-        || command.contains("\\\\")
+    command.contains(std::path::MAIN_SEPARATOR) || command.contains('/') || command.contains("\\\\")
 }

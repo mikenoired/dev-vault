@@ -6,6 +6,8 @@ import {
   normalizeTag,
   tagSignature,
 } from "@/components/composite/item-detail/utils";
+import { useHotkey } from "@/hooks/useHotkey";
+import { getShortcutHotkey } from "@/lib/shortcuts";
 import { tauriService } from "@/services/tauri";
 import { useItemsStore, useSettingsStore, useTabsStore } from "@/stores";
 import type { ItemType, ItemWithTags, Tag } from "@/types";
@@ -463,21 +465,13 @@ export const useItemDetailForm = ({
     updateTabTitle,
   ]);
 
-  useEffect(() => {
-    if (autosaveEnabled) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        void saveChanges();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [autosaveEnabled, saveChanges]);
+  useHotkey(
+    getShortcutHotkey("save-item"),
+    () => {
+      void saveChanges();
+    },
+    !autosaveEnabled,
+  );
 
   useEffect(() => {
     const element = descriptionRef.current;

@@ -66,7 +66,7 @@ export const TypeFilter = () => {
                     aria-label={label}
                     onClick={() => filterByType(type)}
                     className={cn(
-                      "inline-flex size-8 items-center justify-center rounded-md border transition-colors",
+                      "inline-flex size-8 items-center justify-center rounded-md border transition-colors cursor-pointer",
                       isActive
                         ? "cursor-not-allowed border-border bg-card text-foreground"
                         : "border-transparent text-muted-foreground",

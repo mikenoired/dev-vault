@@ -89,7 +89,9 @@ fn detect_tool_status(tool: &ToolDefinition) -> AiToolStatus {
 fn ensure_valid_db_path() -> Result<(), String> {
     let db_path = default_db_path()?;
     if !db_path.exists() {
-        return Err("База данных не найдена. Запустите приложение Dev Vault хотя бы один раз.".to_string());
+        return Err(
+            "База данных не найдена. Запустите приложение Dev Vault хотя бы один раз.".to_string(),
+        );
     }
     Ok(())
 }
@@ -162,10 +164,7 @@ pub async fn list_ai_tools(_state: State<'_, AppState>) -> Result<Vec<AiToolStat
 }
 
 #[tauri::command]
-pub async fn connect_mcp_server(
-    _app: AppHandle,
-    tool_id: String,
-) -> Result<AiToolStatus, String> {
+pub async fn connect_mcp_server(_app: AppHandle, tool_id: String) -> Result<AiToolStatus, String> {
     ensure_valid_db_path()?;
 
     let tools = detect_tools();

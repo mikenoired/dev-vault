@@ -1,6 +1,8 @@
 use dev_vault_lib::domain::{DocumentationManager, SearchEngine, Storage};
 use dev_vault_lib::mcp::{default_db_path, MCP_SERVER_NAME};
-use dev_vault_lib::models::{DocEntry, DocTreeNode, Documentation, ItemType, ItemWithTags, SearchQuery};
+use dev_vault_lib::models::{
+    DocEntry, DocTreeNode, Documentation, ItemType, ItemWithTags, SearchQuery,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -278,7 +280,8 @@ fn tools_list() -> Vec<ToolDefinition> {
     vec![
         ToolDefinition {
             name: "devvault.search".to_string(),
-            description: "Поиск по Dev Vault (FTS + семантика), возвращает slim-результаты".to_string(),
+            description: "Поиск по Dev Vault (FTS + семантика), возвращает slim-результаты"
+                .to_string(),
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {
@@ -351,11 +354,10 @@ fn tools_list() -> Vec<ToolDefinition> {
     ]
 }
 
-async fn handle_tool_call(
-    db_path: &PathBuf,
-    params: ToolCallParams,
-) -> Result<Value, String> {
-    let storage = Storage::new(db_path.clone()).await.map_err(|e| e.to_string())?;
+async fn handle_tool_call(db_path: &PathBuf, params: ToolCallParams) -> Result<Value, String> {
+    let storage = Storage::new(db_path.clone())
+        .await
+        .map_err(|e| e.to_string())?;
     let doc_manager = DocumentationManager::new(storage.pool.clone());
 
     match params.name.as_str() {
@@ -363,8 +365,12 @@ async fn handle_tool_call(
             let args: SearchQuery = serde_json::from_value(args_or_empty(params.arguments))
                 .map_err(|e| e.to_string())?;
             let search_engine = SearchEngine::new(storage.pool.clone());
-            let result = search_engine.search(args).await.map_err(|e| e.to_string())?;
-            let items: Vec<SearchItemSlim> = result.items.into_iter().map(item_to_search_slim).collect();
+            let result = search_engine
+                .search(args)
+                .await
+                .map_err(|e| e.to_string())?;
+            let items: Vec<SearchItemSlim> =
+                result.items.into_iter().map(item_to_search_slim).collect();
             Ok(serde_json::json!({"total": result.total, "items": items}))
         }
         "devvault.items.list" => {
@@ -389,7 +395,10 @@ async fn handle_tool_call(
             Ok(serde_json::to_value(tags).map_err(|e| e.to_string())?)
         }
         "devvault.items.counts" => {
-            let counts = storage.list_item_type_counts().await.map_err(|e| e.to_string())?;
+            let counts = storage
+                .list_item_type_counts()
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(serde_json::to_value(counts).map_err(|e| e.to_string())?)
         }
         "devvault.docs.list_installed" => {
@@ -485,15 +494,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "tools/list" => ok_response(id, serde_json::json!({ "tools": tools_list() })),
             "tools/call" => {
                 let params = match request.params {
-                    Some(value) => serde_json::from_value::<ToolCallParams>(value)
-                        .map_err(|e| e.to_string()),
+                    Some(value) => {
+                        serde_json::from_value::<ToolCallParams>(value).map_err(|e| e.to_string())
+                    }
                     None => Err("Missing params".to_string()),
                 };
 
                 match params {
                     Ok(params) => match handle_tool_call(&db_path, params).await {
                         Ok(payload) => {
-                            let text = serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string());
+                            let text = serde_json::to_string(&payload)
+                                .unwrap_or_else(|_| "{}".to_string());
                             let result = ToolCallResult {
                                 content: vec![ToolContent::Text { text }],
                                 is_error: false,

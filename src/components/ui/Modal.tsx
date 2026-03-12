@@ -1,16 +1,34 @@
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/components/ui/utils";
 
-interface ModalProps {
+interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  overlayClassName?: string;
+  contentClassName?: string;
+  headerClassName?: string;
+  bodyClassName?: string;
+  titleClassName?: string;
 }
 
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+export const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  overlayClassName,
+  contentClassName,
+  headerClassName,
+  bodyClassName,
+  titleClassName,
+  ...props
+}: ModalProps) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -30,11 +48,28 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/80" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-lg shadow-xl">
-        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{title}</h2>
+    <div
+      className={cn("fixed inset-0 z-50 flex items-center justify-center p-4", className)}
+      {...props}
+    >
+      <div
+        className={cn("absolute inset-0 bg-black/30 backdrop-blur-xs", overlayClassName)}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className={cn(
+          "relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl",
+          contentClassName,
+        )}
+      >
+        <div
+          className={cn(
+            "sticky top-0 flex items-center justify-between border-b border-border bg-card px-6 py-4",
+            headerClassName,
+          )}
+        >
+          <h2 className={cn("text-xl font-semibold", titleClassName)}>{title}</h2>
           <Button
             variant="ghost"
             size="icon"
@@ -45,7 +80,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
             <X className="size-4" />
           </Button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className={cn("min-h-0 overflow-y-auto p-4", bodyClassName)}>{children}</div>
       </div>
     </div>
   );

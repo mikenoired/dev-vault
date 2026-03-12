@@ -28,6 +28,8 @@ export default function MarkdownRender({
 }: MarkdownRenderProps & Readonly<Options>) {
   const allRemarkPlugins = [remarkGfm, ...remarkPlugins];
   const allRehypePlugins = [rehypeRaw, ...rehypePlugins];
+  const isTaskList = (className?: string) => className?.includes("contains-task-list") ?? false;
+  const isTaskListItem = (className?: string) => className?.includes("task-list-item") ?? false;
 
   const allComponents: ExtendedComponents = {
     a: ({ ...props }) => (
@@ -89,12 +91,39 @@ export default function MarkdownRender({
         <Checkbox
           aria-label={checked ? "Снять задачу" : "Отметить задачу"}
           checked={checked === true}
-          className={cn("mr-2 translate-y-[2px] align-middle", className)}
+          className={cn("mr-2 inline-flex align-[-0.1em]", className)}
           disabled={disabled ?? true}
           tabIndex={-1}
         />
       );
     },
+    ul: ({ className, ...props }) => (
+      <ul
+        {...props}
+        className={cn(
+          isTaskList(className) ? "list-none space-y-1 pl-0" : "list-disc pl-6",
+          className,
+        )}
+      />
+    ),
+    ol: ({ className, ...props }) => (
+      <ol
+        {...props}
+        className={cn(
+          isTaskList(className) ? "list-none space-y-1 pl-0" : "list-decimal pl-6",
+          className,
+        )}
+      />
+    ),
+    li: ({ className, ...props }) => (
+      <li
+        {...props}
+        className={cn(
+          isTaskListItem(className) ? "list-none pl-0 text-foreground/80" : undefined,
+          className,
+        )}
+      />
+    ),
 
     table: ({ ...props }) => (
       <table

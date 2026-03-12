@@ -250,6 +250,13 @@
     text-decoration: line-through;
   }
 
+  .cm-editor .cm-md-task-checkbox-host {
+    display: inline-block;
+    line-height: 1;
+    margin-right: 0.45rem;
+    vertical-align: -0.1em;
+  }
+
   .cm-editor .cm-md-task-checkbox {
     cursor: pointer;
   }

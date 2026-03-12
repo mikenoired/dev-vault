@@ -95,7 +95,7 @@ class TaskCheckboxWidget extends WidgetType {
       createElement(Checkbox, {
         "aria-label": this.checked ? "Снять задачу" : "Отметить задачу",
         checked: this.checked,
-        className: "cm-md-task-checkbox mr-[0.45rem] translate-y-[2px] align-middle",
+        className: "cm-md-task-checkbox align-[-0.1em]",
         tabIndex: -1,
       }),
     );
@@ -297,6 +297,8 @@ function addTaskDecoration(decorations: PendingDecoration[], line: DocLine): Tex
   const match = taskPattern.exec(line.text);
   if (!match) return null;
 
+  const indentationLength = match[1].match(/^\s*/)?.[0].length ?? 0;
+  const taskMarkerFrom = line.from + indentationLength;
   const markerFrom = line.from + match[1].length;
   const markerTo = markerFrom + 3;
   const markerCharPos = markerFrom + 1;
@@ -304,7 +306,7 @@ function addTaskDecoration(decorations: PendingDecoration[], line: DocLine): Tex
 
   pushDecoration(
     decorations,
-    markerFrom,
+    taskMarkerFrom,
     markerTo,
     Decoration.replace({ widget: new TaskCheckboxWidget(checked, markerCharPos) }),
   );
@@ -314,7 +316,7 @@ function addTaskDecoration(decorations: PendingDecoration[], line: DocLine): Tex
     pushDecoration(decorations, taskTextFrom, line.to, taskDoneDecoration);
   }
 
-  return { from: markerFrom, to: markerTo };
+  return { from: taskMarkerFrom, to: markerTo };
 }
 
 function addHeadingDecoration(

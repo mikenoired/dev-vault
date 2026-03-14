@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode, Ref } from "react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/utils";
@@ -14,6 +14,7 @@ interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   headerClassName?: string;
   bodyClassName?: string;
   titleClassName?: string;
+  headerRef?: Ref<HTMLDivElement>;
 }
 
 export const Modal = ({
@@ -27,6 +28,7 @@ export const Modal = ({
   headerClassName,
   bodyClassName,
   titleClassName,
+  headerRef,
   ...props
 }: ModalProps) => {
   const handleEscape = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -66,6 +68,7 @@ export const Modal = ({
             "sticky top-0 flex items-center justify-between border-b border-border bg-primary-foreground px-6 py-4",
             headerClassName,
           )}
+          ref={headerRef}
         >
           <h2 className={cn("text-xl font-semibold", titleClassName)}>{title}</h2>
           <Button

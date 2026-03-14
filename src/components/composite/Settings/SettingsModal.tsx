@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
@@ -12,6 +13,7 @@ import {
   SearchSection,
   ShortcutsSection,
 } from "@/components/composite/Settings/sections";
+import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useSettingsStore } from "@/stores";
 
@@ -46,12 +48,21 @@ export const SettingsModal = () => {
       onClose={closeSettings}
       title="Настройки"
       contentClassName="max-w-5xl h-[min(86vh,760px)] rounded-2xl border-none shadow-2xl"
-      headerClassName="border-b-0 pl-5 pr-3 py-3"
+      headerClassName="hidden"
       bodyClassName="flex-1 p-0"
     >
-      <div className="flex h-full min-h-0 gap-3 p-3">
+      <div className="flex h-full min-h-0 gap-3 pl-3">
+        <Button
+          variant="ghost"
+          size="iconSmall"
+          onClick={closeSettings}
+          className="text-muted-foreground hover:text-foreground transition-colors absolute top-3 right-3"
+          aria-label="Закрыть"
+        >
+          <X className="size-4" />
+        </Button>
         <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-        <div className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-muted/35 px-6 py-5">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-muted/35 px-6 py-5">
           {renderSection()}
         </div>
       </div>

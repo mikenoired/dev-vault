@@ -1,5 +1,5 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ItemCard } from "@/components/composite/ItemCard";
 import { cn } from "@/components/ui";
@@ -17,6 +17,7 @@ export default function BaseItems() {
       state.searchItems,
     ]),
   );
+
   const { requestDelete } = useItemActions();
   const [activeTabId, openItemTab, openDocEntryTab] = useTabsStore(
     useShallow((state) => [state.activeTabId, state.openItemTab, state.openDocEntryTab]),
@@ -24,6 +25,13 @@ export default function BaseItems() {
   const isSearchMode = useItemsStore((state) => state.searchQuery.trim().length > 0);
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((left, right) =>
+        left.title.localeCompare(right.title, "ru", { sensitivity: "base" }),
+      ),
+    [items],
+  );
 
   useEffect(() => {
     const root = listRef.current;
@@ -66,7 +74,7 @@ export default function BaseItems() {
       ref={listRef}
       className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-md"
     >
-      {items.map((item, i) => (
+      {sortedItems.map((item, i) => (
         <ContextMenu.Root key={item.id}>
           <ContextMenu.Trigger asChild>
             <ItemCard
@@ -75,7 +83,10 @@ export default function BaseItems() {
               onClick={() => handleOpenItem(item, false)}
               onDoubleClick={() => handleOpenItem(item, true)}
               isSearchMode={isSearchMode}
-              className={cn(i === items.length - 1 && "rounded-b-md", i === 0 && "rounded-t-md")}
+              className={cn(
+                i === sortedItems.length - 1 && "rounded-b-md",
+                i === 0 && "rounded-t-md",
+              )}
             />
           </ContextMenu.Trigger>
           <ContextMenu.Portal>

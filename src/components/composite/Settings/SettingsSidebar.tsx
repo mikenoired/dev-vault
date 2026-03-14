@@ -18,15 +18,24 @@ interface SidebarItemProps {
   onClick: (id: SettingsSection) => void;
 }
 
+interface SidebarGroup {
+  title: string;
+  items: SidebarItem[];
+}
 type SidebarItem = Omit<SidebarItemProps, "onClick" | "isActive">;
 
-const sidebarItems: SidebarItem[] = [
-  { id: "general", label: "Общие", icon: <Settings size={16} /> },
-  { id: "appearance", label: "Внешний вид", icon: <Palette size={16} /> },
-  { id: "search", label: "Поиск", icon: <Search size={16} /> },
-  { id: "shortcuts", label: "Сочетания клавиш", icon: <Keyboard size={16} /> },
-  { id: "documentation", label: "Документация", icon: <Book size={16} /> },
-  { id: "mcp", label: "MCP", icon: <Plug size={16} /> },
+const sidebarGroups: SidebarGroup[] = [
+  {
+    title: "Настройки",
+    items: [
+      { id: "general", label: "Общие", icon: <Settings size={16} /> },
+      { id: "appearance", label: "Внешний вид", icon: <Palette size={16} /> },
+      { id: "search", label: "Поиск", icon: <Search size={16} /> },
+      { id: "shortcuts", label: "Сочетания клавиш", icon: <Keyboard size={16} /> },
+      { id: "documentation", label: "Документация", icon: <Book size={16} /> },
+      { id: "mcp", label: "MCP", icon: <Plug size={16} /> },
+    ],
+  },
 ];
 
 const SidebarItem = ({ id, label, icon, isActive, onClick }: SidebarItemProps) => (
@@ -52,16 +61,21 @@ interface SettingsSidebarProps {
 
 export const SettingsSidebar = ({ activeSection, onSectionChange }: SettingsSidebarProps) => {
   return (
-    <div className="w-52 shrink-0 rounded-2xl flex flex-col gap-1 bg-muted/35 p-2">
-      {sidebarItems.map((item) => (
-        <SidebarItem
-          key={item.id}
-          id={item.id}
-          label={item.label}
-          icon={item.icon}
-          isActive={activeSection === item.id}
-          onClick={onSectionChange}
-        />
+    <div className="w-52 shrink-0 flex flex-col gap-1 pt-4">
+      {sidebarGroups.map((group) => (
+        <div key={group.title} className="flex flex-col gap-1">
+          <span className="text-sm px-3 font-medium text-foreground/80">{group.title}</span>
+          {group.items.map((item) => (
+            <SidebarItem
+              key={item.id}
+              id={item.id}
+              label={item.label}
+              icon={item.icon}
+              isActive={activeSection === item.id}
+              onClick={onSectionChange}
+            />
+          ))}
+        </div>
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
-import { Checkbox, Input } from "@/components/ui";
+import { Checkbox, Input, Select } from "@/components/ui";
 import {
   MAX_FONT_SIZE,
   MAX_READING_SPEED_WPM,
@@ -8,12 +8,14 @@ import {
   MIN_READING_SPEED_WPM,
 } from "@/constants";
 import { useSettingsStore } from "@/stores";
-import type { UiConfig } from "@/types";
+import type { Theme, UiConfig } from "@/types";
 
 export const AppearanceSection = () => {
   const [config, updateUiConfig] = useSettingsStore(
     useShallow((state) => [state.config, state.updateUiConfig]),
   );
+
+  if (!config) return null;
 
   const handleUpdate = (updater: (config: UiConfig) => UiConfig) => {
     if (!config) return;
@@ -39,6 +41,16 @@ export const AppearanceSection = () => {
       <div>
         <h3 className="text-lg font-medium mb-4">Внешний вид</h3>
         <div className="grid gap-4">
+          <Select
+            label="Тема оформления"
+            value={config.ui.theme}
+            onChange={(e) => updateUiConfig({ theme: e.target.value as Theme })}
+            options={[
+              { value: "dark", label: "Темная" },
+              { value: "light", label: "Светлая" },
+              { value: "system", label: "Системная" },
+            ]}
+          />
           <Input
             label="Размер шрифта в редакторе (px)"
             type="number"

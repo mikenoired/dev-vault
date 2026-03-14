@@ -62,7 +62,7 @@ const TreeNode = ({ node, docId, level, expandedPaths, onToggleExpand }: TreeNod
             {isLoadingChildren ? "⋯" : isExpanded ? "▼" : "▶"}
           </span>
         ) : (
-          <span className="w-3 flex-shrink-0" />
+          <span className="w-3 shrink-0" />
         )}
         <span
           className={cn(
@@ -73,7 +73,7 @@ const TreeNode = ({ node, docId, level, expandedPaths, onToggleExpand }: TreeNod
           {node.title}
         </span>
         {node.entryType && (
-          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex-shrink-0">
+          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider shrink-0">
             {node.entryType}
           </span>
         )}

@@ -29,11 +29,9 @@ export const Modal = ({
   titleClassName,
   ...props
 }: ModalProps) => {
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+  const handleEscape = (e: KeyboardEvent) => e.key === "Escape" && onClose();
 
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden";
@@ -59,13 +57,13 @@ export const Modal = ({
       />
       <div
         className={cn(
-          "relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl",
+          "relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-primary-foreground shadow-xl",
           contentClassName,
         )}
       >
         <div
           className={cn(
-            "sticky top-0 flex items-center justify-between border-b border-border bg-card px-6 py-4",
+            "sticky top-0 flex items-center justify-between border-b border-border bg-primary-foreground px-6 py-4",
             headerClassName,
           )}
         >

@@ -2,7 +2,6 @@ import { listen } from "@tauri-apps/api/event";
 import { PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { DocBrowser } from "@/components/composite/Documentation/DocBrowser";
 import { DocEntryViewer } from "@/components/composite/Documentation/DocEntryViewer";
 import { DocGraphTab } from "@/components/composite/Documentation/DocGraphTab";
 import { ItemDetail } from "@/components/composite/ItemDetail";
@@ -218,8 +217,6 @@ export const MainLayout = () => {
             {activeTab ? (
               activeTab.type === "docGraph" ? null : activeTab.type === "new" ? (
                 <EmptyTabContent onCreateClick={handleCreateClick} />
-              ) : activeTab.type === "documentation" ? (
-                <DocBrowser />
               ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
                 <DocEntryViewer
                   docId={activeTab.docId}

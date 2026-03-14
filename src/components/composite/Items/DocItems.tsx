@@ -69,17 +69,8 @@ export default function DocItems() {
     );
   }
 
-  if (selectedDoc) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-hidden">
-          <DocBrowser onClearSelection={() => selectDoc(null)} />
-        </div>
-      </div>
-    );
-  }
+  if (selectedDoc) return <DocBrowser onClearSelection={() => selectDoc(null)} />;
 
-  // Если документация не выбрана, показываем список
   return (
     <>
       <div className="h-full overflow-y-auto rounded-md">

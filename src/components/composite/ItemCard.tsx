@@ -79,7 +79,12 @@ export const ItemCard = ({
             )}
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div
+            className={cn(
+              "mt-2 flex flex-wrap items-center gap-2",
+              !footer && !item.tags.length && "hidden",
+            )}
+          >
             {item.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {item.tags.slice(0, 3).map((tag) => (

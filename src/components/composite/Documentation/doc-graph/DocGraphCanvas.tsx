@@ -1,8 +1,7 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import { adaptDocumentationGraph } from "@/lib/graph/docGraphAdapter";
 import { createGraphTheme, GraphRenderer } from "@/lib/graph/GraphRenderer";
-import type { GraphHoverPayload, GraphNodeSnapshot } from "@/lib/graph/types";
-import type { DocumentationGraph } from "@/types";
+import type { DocumentationGraph, GraphHoverPayload, GraphNodeSnapshot } from "@/types";
 
 interface DocGraphCanvasProps {
   graph: DocumentationGraph;

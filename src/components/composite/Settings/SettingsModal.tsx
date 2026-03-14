@@ -45,8 +45,8 @@ export const SettingsModal = () => {
       isOpen={isOpen}
       onClose={closeSettings}
       title="Настройки"
-      contentClassName="max-w-5xl h-[min(86vh,760px)] rounded-2xl border-none bg-background/95 shadow-2xl backdrop-blur"
-      headerClassName="border-b-0 px-6 py-5"
+      contentClassName="max-w-5xl h-[min(86vh,760px)] rounded-2xl border-none shadow-2xl"
+      headerClassName="border-b-0 pl-5 pr-3 py-3"
       bodyClassName="flex-1 p-0"
     >
       <div className="flex h-full min-h-0 gap-3 p-3">

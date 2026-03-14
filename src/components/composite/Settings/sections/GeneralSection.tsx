@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { Checkbox } from "@/components/ui";
+import { Switch } from "@/components/ui";
 import { useSettingsStore } from "@/stores";
 
 export const GeneralSection = () => {
@@ -14,16 +14,12 @@ export const GeneralSection = () => {
       <div>
         <h3 className="text-lg font-medium mb-4">Основные настройки</h3>
         <div className="grid gap-4">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="autosave-enabled"
-              checked={config.ui.autosave_enabled}
-              onCheckedChange={(checked) => updateUiConfig({ autosave_enabled: checked === true })}
-            />
-            <label htmlFor="autosave-enabled" className="text-sm font-medium leading-none">
-              Автосохранение изменений
-            </label>
-          </div>
+          <Switch
+            label="Автосохранение изменений"
+            className="w-fit"
+            checked={config.ui.autosave_enabled}
+            onCheckedChange={(checked) => updateUiConfig({ autosave_enabled: checked })}
+          />
         </div>
       </div>
     </div>

@@ -6,5 +6,6 @@ export * from "./Input";
 export * from "./Kbd";
 export * from "./Modal";
 export * from "./Select";
+export * from "./Switch";
 export * from "./Textarea";
 export * from "./utils";

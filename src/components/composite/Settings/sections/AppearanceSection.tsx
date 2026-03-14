@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
-import { Checkbox, Input, Select } from "@/components/ui";
+import { Input, Select, Switch } from "@/components/ui";
 import {
   MAX_FONT_SIZE,
   MAX_READING_SPEED_WPM,
@@ -73,30 +73,22 @@ export const AppearanceSection = () => {
               }))
             }
           />
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="compact-mode"
-              checked={config?.ui.compact_mode ?? false}
-              onCheckedChange={(checked) =>
-                handleUpdate((prev) => ({ ...prev, compact_mode: checked === true }))
-              }
-            />
-            <label htmlFor="compact-mode" className="text-sm font-medium leading-none">
-              Компактный режим списков
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="markdown-live-preview"
-              checked={config?.ui.markdown_live_preview ?? true}
-              onCheckedChange={(checked) =>
-                handleUpdate((prev) => ({ ...prev, markdown_live_preview: checked === true }))
-              }
-            />
-            <label htmlFor="markdown-live-preview" className="text-sm font-medium leading-none">
-              Live Preview Markdown для заметок
-            </label>
-          </div>
+          <Switch
+            label="Компактный режим списков"
+            className="w-fit"
+            checked={config?.ui.compact_mode ?? false}
+            onCheckedChange={(checked) =>
+              handleUpdate((prev) => ({ ...prev, compact_mode: checked }))
+            }
+          />
+          <Switch
+            label="Live Preview Markdown для заметок"
+            className="w-fit"
+            checked={config?.ui.markdown_live_preview ?? true}
+            onCheckedChange={(checked) =>
+              handleUpdate((prev) => ({ ...prev, markdown_live_preview: checked }))
+            }
+          />
         </div>
       </div>
     </div>

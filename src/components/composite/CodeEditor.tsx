@@ -548,6 +548,7 @@ export default function CodeEditor({
         background: "transparent !important",
       };
       themeConfig[".cm-content"] = {
+        caretColor: "var(--foreground)",
         color: "var(--foreground)",
         fontFamily: noteFontFamily,
         padding: "0",
@@ -555,6 +556,9 @@ export default function CodeEditor({
       themeConfig[".cm-content, .cm-line"] = {
         background: "transparent !important",
         fontFamily: noteFontFamily,
+      };
+      themeConfig[".cm-cursor, .cm-dropCursor"] = {
+        borderLeftColor: "var(--foreground)",
       };
       themeConfig[".cm-content span"] = {
         color: "inherit !important",

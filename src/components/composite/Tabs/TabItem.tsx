@@ -85,10 +85,10 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
           className={cn(
             !isActive && "group-hover:bg-primary-foreground/50 transition-colors",
             "rounded-[5px] h-full",
-            "flex items-center justify-center pl-2 pr-1.5 gap-4",
+            "flex items-center pl-2 pr-1.5 gap-4",
           )}
         >
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className="shrink-0 opacity-70">
               {tab.type === "new"
                 ? getIcon("new")
@@ -100,11 +100,11 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
             </span>
             <span
               className={cn(
-                "flex-1 truncate text-xs font-medium flex items-center gap-1",
+                "flex min-w-0 flex-1 items-center gap-1 text-xs font-medium",
                 !tab.isPinned ? "italic" : "",
               )}
             >
-              {tab.title}
+              <span className="truncate">{tab.title}</span>
               {tab.isDirty && <span className="size-1.5 rounded-full bg-primary/80" />}
               {isAutosaveClosePending && (
                 <LoaderCircle className="size-3 text-muted-foreground animate-spin" />

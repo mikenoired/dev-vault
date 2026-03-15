@@ -235,16 +235,12 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   },
 
   requestCloseTab: (tabId) => {
-    const { tabs, pendingAutosaveCloseTabIds } = get();
+    const { tabs } = get();
     const tab = tabs.find((t) => t.id === tabId);
     if (tab?.isDirty) {
       const autosaveEnabled = useSettingsStore.getState().config?.ui.autosave_enabled ?? true;
-      if (autosaveEnabled && tab.type === "item") {
-        if (!pendingAutosaveCloseTabIds.includes(tabId)) {
-          set({
-            pendingAutosaveCloseTabIds: [...pendingAutosaveCloseTabIds, tabId],
-          });
-        }
+      if (autosaveEnabled) {
+        get().closeTab(tabId);
         return;
       }
       set({ pendingCloseTabId: tabId });

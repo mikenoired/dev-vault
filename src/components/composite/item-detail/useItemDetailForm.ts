@@ -28,6 +28,20 @@ interface LastSavedState {
   type: ItemType;
 }
 
+interface FormSnapshot {
+  title: string;
+  description: string;
+  content: string;
+  tags: string[];
+  type: ItemType;
+}
+
+interface PersistState {
+  currentItemId: number | null;
+  inFlight: boolean;
+  needsAnotherPass: boolean;
+}
+
 const buildLastSavedState = (
   item: Pick<ItemWithTags, "title" | "description" | "content" | "tags" | "type">,
 ): LastSavedState => ({
@@ -45,6 +59,33 @@ const buildDraftState = (type: ItemType): LastSavedState => ({
   tags: "",
   type,
 });
+
+const buildSnapshotState = (snapshot: FormSnapshot): LastSavedState => ({
+  title: snapshot.title,
+  description: snapshot.description,
+  content: snapshot.content,
+  tags: tagSignature(snapshot.tags),
+  type: snapshot.type,
+});
+
+const hasPersistableDraftContent = (snapshot: FormSnapshot) =>
+  snapshot.title.length > 0 ||
+  snapshot.description.trim().length > 0 ||
+  snapshot.content.trim().length > 0 ||
+  snapshot.tags.length > 0;
+
+const getDraftFallbackTitle = (type: ItemType) =>
+  `Новый ${itemTypeOptions.find((option) => option.value === type)?.label ?? "элемент"}`;
+
+const isSameState = (left: LastSavedState, right: LastSavedState) =>
+  left.title === right.title &&
+  left.description === right.description &&
+  left.content === right.content &&
+  left.tags === right.tags &&
+  left.type === right.type;
+
+const buildHydrationKey = (item: Pick<ItemWithTags, "id" | "content">) =>
+  `${item.id}:${item.content === "" ? "partial" : "full"}`;
 
 export interface ItemDetailForm {
   addTags: (tags: string[]) => void;
@@ -126,12 +167,37 @@ export const useItemDetailForm = ({
   const titleBeforeEditRef = useRef("");
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
   const lastSavedRef = useRef<LastSavedState>(buildDraftState(draftType ?? "snippet"));
-  const isCreatingRef = useRef(false);
-  const hasPendingDraftChangesRef = useRef(false);
+  const hydratedItemKeyRef = useRef<string | null>(null);
+  const latestFormSnapshotRef = useRef<FormSnapshot>({
+    title: "",
+    description: "",
+    content: "",
+    tags: [],
+    type: draftType ?? "snippet",
+  });
+  const persistStateRef = useRef<PersistState>({
+    currentItemId: selectedItem?.id ?? itemId ?? null,
+    inFlight: false,
+    needsAnotherPass: false,
+  });
 
   const isDraft = !itemId && !!draftType;
   const isDocumentation = selectedItem?.type === "documentation";
   const resolvedTabId = draftTabId ?? (itemId ? `item-${itemId}` : activeTabId);
+
+  useEffect(() => {
+    latestFormSnapshotRef.current = {
+      title: editTitle.trim(),
+      description: editDescription,
+      content: editContent,
+      tags: tagList,
+      type: currentType,
+    };
+  }, [currentType, editContent, editDescription, editTitle, tagList]);
+
+  useEffect(() => {
+    persistStateRef.current.currentItemId = selectedItem?.id ?? itemId ?? null;
+  }, [itemId, selectedItem?.id]);
 
   const addTags = useCallback((nextTags: string[]) => {
     setTagList((prev) => {
@@ -254,6 +320,11 @@ export const useItemDetailForm = ({
 
   useEffect(() => {
     if (selectedItem) {
+      const itemKey = buildHydrationKey(selectedItem);
+      if (hydratedItemKeyRef.current === itemKey) {
+        return;
+      }
+
       setEditTitle(selectedItem.title);
       setEditDescription(selectedItem.description || "");
       setEditContent(selectedItem.content);
@@ -262,6 +333,7 @@ export const useItemDetailForm = ({
       setTitleError("");
       setIsDirty(false);
       lastSavedRef.current = buildLastSavedState(selectedItem);
+      hydratedItemKeyRef.current = itemKey;
       resetTagUiState();
       return;
     }
@@ -275,6 +347,7 @@ export const useItemDetailForm = ({
       setTitleError("");
       setIsDirty(false);
       lastSavedRef.current = buildDraftState(draftType);
+      hydratedItemKeyRef.current = null;
       resetTagUiState();
     }
   }, [draftType, itemId, resetTagUiState, selectedItem]);
@@ -287,82 +360,123 @@ export const useItemDetailForm = ({
       return;
     }
 
-    const fallbackLabel = itemTypeOptions.find((option) => option.value === currentType)?.label;
-    updateTabTitleById(draftTabId, `Новый ${fallbackLabel ?? "элемент"}`);
+    updateTabTitleById(draftTabId, getDraftFallbackTitle(currentType));
   }, [currentType, draftTabId, editTitle, isDraft, updateTabTitleById]);
 
-  useEffect(() => {
-    if (!isDraft || !isCreatingRef.current) return;
-    hasPendingDraftChangesRef.current = true;
-  }, [currentType, editContent, editDescription, editTitle, isDraft, tagList]);
-
-  useEffect(() => {
-    if (!autosaveEnabled) return;
-    if (!selectedItem || isDocumentation) return;
-
-    const trimmedTitle = editTitle.trim();
-    if (!trimmedTitle || titleError) return;
-
-    const lastSaved = lastSavedRef.current;
-    if (
-      lastSaved.title === trimmedTitle &&
-      lastSaved.description === editDescription &&
-      lastSaved.content === editContent &&
-      lastSaved.tags === tagSignature(tagList) &&
-      lastSaved.type === currentType
-    ) {
+  const flushAutosave = useCallback(async () => {
+    const persistState = persistStateRef.current;
+    if (persistState.inFlight) {
+      persistState.needsAnotherPass = true;
       return;
     }
 
-    const handler = window.setTimeout(async () => {
-      const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
-      const shouldUpdateType = currentType !== lastSavedRef.current.type;
-      const updated = await updateItem(selectedItem.id, {
-        type: shouldUpdateType ? currentType : undefined,
-        title: trimmedTitle,
-        description: editDescription,
-        content: editContent,
-        tagNames,
-      })
-        .then(() => true)
-        .catch((error) => {
-          console.error("Failed to update item:", error);
-          if (resolvedTabId) {
-            failAutosaveClose(resolvedTabId);
+    persistState.inFlight = true;
+
+    try {
+      while (true) {
+        persistState.needsAnotherPass = false;
+        const snapshot = latestFormSnapshotRef.current;
+        const nextState = buildSnapshotState(snapshot);
+        const currentItemId = persistState.currentItemId;
+
+        if (!currentItemId && !hasPersistableDraftContent(snapshot)) {
+          break;
+        }
+
+        if (currentItemId && snapshot.title.length === 0) {
+          break;
+        }
+
+        if (currentItemId && isSameState(lastSavedRef.current, nextState)) {
+          if (!persistState.needsAnotherPass) {
+            break;
           }
-          return false;
-        });
+          continue;
+        }
 
-      if (!updated) return;
+        const tagNames = snapshot.tags.map((tag) => normalizeTag(tag)).filter(Boolean);
 
-      updateTabTitle(selectedItem.id, trimmedTitle);
-      lastSavedRef.current = {
-        title: trimmedTitle,
-        description: editDescription,
-        content: editContent,
-        tags: tagSignature(tagList),
-        type: currentType,
-      };
-      setIsDirty(false);
-    }, 500);
+        if (!currentItemId) {
+          const createdTitle = snapshot.title || getDraftFallbackTitle(snapshot.type);
+          const created = await createItem({
+            type: snapshot.type,
+            title: createdTitle,
+            description: snapshot.description || undefined,
+            content: snapshot.content,
+            tagNames,
+          });
 
-    return () => {
-      window.clearTimeout(handler);
-    };
+          persistState.currentItemId = created.id;
+          lastSavedRef.current = { ...nextState, title: createdTitle };
+          hydratedItemKeyRef.current = buildHydrationKey(created);
+
+          if (draftTabId) {
+            promoteDraftTab(draftTabId, created.id, snapshot.type, createdTitle);
+          }
+
+          if (snapshot.title !== createdTitle) {
+            persistState.needsAnotherPass = true;
+          }
+        } else {
+          const shouldUpdateType = snapshot.type !== lastSavedRef.current.type;
+          await updateItem(currentItemId, {
+            type: shouldUpdateType ? snapshot.type : undefined,
+            title: snapshot.title,
+            description: snapshot.description,
+            content: snapshot.content,
+            tagNames,
+          });
+          updateTabTitle(currentItemId, snapshot.title);
+          lastSavedRef.current = nextState;
+        }
+
+        setTitleError("");
+        setIsDirty(false);
+
+        if (!persistState.needsAnotherPass) {
+          const latestState = buildSnapshotState(latestFormSnapshotRef.current);
+          if (isSameState(lastSavedRef.current, latestState)) {
+            break;
+          }
+          persistState.needsAnotherPass = true;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to autosave item:", error);
+      if (resolvedTabId) {
+        failAutosaveClose(resolvedTabId);
+      }
+    } finally {
+      persistState.inFlight = false;
+    }
+  }, [
+    createItem,
+    draftTabId,
+    failAutosaveClose,
+    promoteDraftTab,
+    resolvedTabId,
+    updateItem,
+    updateTabTitle,
+  ]);
+
+  useEffect(() => {
+    if (!autosaveEnabled || isDocumentation) return;
+
+    const snapshot = latestFormSnapshotRef.current;
+    const currentItemId = persistStateRef.current.currentItemId;
+    if (!currentItemId && !hasPersistableDraftContent(snapshot)) return;
+    if (currentItemId && snapshot.title.length === 0) return;
+
+    void flushAutosave();
   }, [
     autosaveEnabled,
     currentType,
     editContent,
     editDescription,
     editTitle,
-    failAutosaveClose,
+    flushAutosave,
     isDocumentation,
-    resolvedTabId,
-    selectedItem,
     tagList,
-    titleError,
-    updateItem,
-    updateTabTitle,
   ]);
 
   const hasChanges = useCallback(() => {
@@ -378,13 +492,21 @@ export const useItemDetailForm = ({
   }, [currentType, editContent, editDescription, editTitle, tagList]);
 
   useEffect(() => {
+    if (autosaveEnabled) {
+      setIsDirty(false);
+      return;
+    }
     setIsDirty(hasChanges());
-  }, [hasChanges]);
+  }, [autosaveEnabled, hasChanges]);
 
   useEffect(() => {
     if (!resolvedTabId) return;
+    if (autosaveEnabled) {
+      setTabDirty(resolvedTabId, false);
+      return;
+    }
     setTabDirty(resolvedTabId, isDirty);
-  }, [isDirty, resolvedTabId, setTabDirty]);
+  }, [autosaveEnabled, isDirty, resolvedTabId, setTabDirty]);
 
   const saveChanges = useCallback(async () => {
     const trimmedTitle = editTitle.trim();
@@ -404,9 +526,10 @@ export const useItemDetailForm = ({
           content: editContent,
           tagNames,
         });
+        persistStateRef.current.currentItemId = created.id;
+        hydratedItemKeyRef.current = buildHydrationKey(created);
         if (draftTabId) {
           promoteDraftTab(draftTabId, created.id, currentType, trimmedTitle);
-          setTabDirty(draftTabId, false);
         }
         lastSavedRef.current = {
           title: trimmedTitle,
@@ -459,7 +582,6 @@ export const useItemDetailForm = ({
     itemId,
     promoteDraftTab,
     selectedItem,
-    setTabDirty,
     tagList,
     updateItem,
     updateTabTitle,
@@ -511,82 +633,32 @@ export const useItemDetailForm = ({
     };
   }, [tagInput, tagList]);
 
-  const handleTitleChange = useCallback(
-    (value: string) => {
-      setEditTitle(value);
-      const trimmed = value.trim();
+  const handleTitleChange = useCallback((value: string) => {
+    setEditTitle(value);
+    if (!persistStateRef.current.currentItemId) {
+      setTitleError("");
+      return;
+    }
 
-      if (selectedItem) {
-        if (!trimmed) {
-          setTitleError("Заголовок не может быть пустым.");
-        } else {
-          setTitleError("");
-        }
-      }
+    if (!value.trim()) {
+      setTitleError("Заголовок не может быть пустым.");
+      return;
+    }
 
-      if (autosaveEnabled && !selectedItem && isDraft && trimmed && !isCreatingRef.current) {
-        isCreatingRef.current = true;
-        const tagNames = tagList.map((tag) => normalizeTag(tag)).filter(Boolean);
-        createItem({
-          type: currentType,
-          title: trimmed,
-          description: editDescription || undefined,
-          content: editContent,
-          tagNames,
-        })
-          .then(async (created) => {
-            if (hasPendingDraftChangesRef.current) {
-              hasPendingDraftChangesRef.current = false;
-              await updateItem(created.id, {
-                type: currentType,
-                title: editTitle.trim() || created.title,
-                description: editDescription,
-                content: editContent,
-                tagNames: tagList.map((tag) => normalizeTag(tag)).filter(Boolean),
-              }).catch((error) => {
-                console.error("Failed to sync draft changes:", error);
-              });
-            }
-            if (draftTabId) {
-              const finalTitle = editTitle.trim() || trimmed;
-              promoteDraftTab(draftTabId, created.id, currentType, finalTitle);
-            }
-          })
-          .catch((error) => {
-            console.error("Failed to create item:", error);
-          })
-          .finally(() => {
-            isCreatingRef.current = false;
-          });
-      }
-    },
-    [
-      autosaveEnabled,
-      createItem,
-      currentType,
-      draftTabId,
-      editContent,
-      editDescription,
-      editTitle,
-      isDraft,
-      promoteDraftTab,
-      selectedItem,
-      tagList,
-      updateItem,
-    ],
-  );
+    setTitleError("");
+  }, []);
 
   const handleTitleFocus = useCallback(() => {
     titleBeforeEditRef.current = editTitle;
   }, [editTitle]);
 
   const handleTitleBlur = useCallback(() => {
-    if (!selectedItem) return;
+    if (!persistStateRef.current.currentItemId) return;
     if (!editTitle.trim()) {
       setEditTitle(titleBeforeEditRef.current);
       setTitleError("");
     }
-  }, [editTitle, selectedItem]);
+  }, [editTitle]);
 
   useEffect(() => {
     setMarkdownViewMode(markdownLivePreviewEnabled ? "live" : "source");

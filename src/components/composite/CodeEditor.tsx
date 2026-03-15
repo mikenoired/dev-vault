@@ -673,7 +673,6 @@ export default function CodeEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     allowFolding,
-    editorValue,
     effectiveFontSize,
     language,
     markdownViewMode,

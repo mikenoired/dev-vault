@@ -32,6 +32,7 @@ interface CodeEditorProps {
 const bashLang = StreamLanguage.define(shell);
 const markdownPairChars = new Set(["*", "_", "`"]);
 const markdownLinkPattern = /\[[^\]\n]+\]\([^)]+\)/g;
+const pastedUrlPattern = /https?:\/\/[^\s<]+[^\s<.,!?;:)"'\]]/g;
 const vitePressDirectivePattern = /\s*(?:\/\/|#|<!--)\s*\[!code\s+([^\]]+)\](?:\s*-->)?\s*$/;
 const vitePressHighlightMetaPattern = /\{([^}]+)\}/;
 const darkCodeHighlightStyle = HighlightStyle.define([
@@ -294,6 +295,56 @@ function selectionContainsLink(selection: string): boolean {
   if (!selection) return false;
   markdownLinkPattern.lastIndex = 0;
   return markdownLinkPattern.test(selection);
+}
+
+function formatUrlsInPlainText(text: string): string {
+  pastedUrlPattern.lastIndex = 0;
+  return text.replace(pastedUrlPattern, (url: string) => `[${url}](${url})`);
+}
+
+function formatPastedMarkdownLinks(text: string): string {
+  if (!text.includes("http://") && !text.includes("https://")) {
+    return text;
+  }
+
+  markdownLinkPattern.lastIndex = 0;
+  const matches = Array.from(text.matchAll(markdownLinkPattern));
+  if (matches.length === 0) {
+    return formatUrlsInPlainText(text);
+  }
+
+  let result = "";
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    const matchIndex = match.index ?? 0;
+    result += formatUrlsInPlainText(text.slice(lastIndex, matchIndex));
+    result += match[0];
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  result += formatUrlsInPlainText(text.slice(lastIndex));
+  return result;
+}
+
+function handleNoteMarkdownPaste(view: EditorView, event: ClipboardEvent): boolean {
+  const text = event.clipboardData?.getData("text/plain");
+  if (!text) {
+    return false;
+  }
+
+  const formattedText = formatPastedMarkdownLinks(text);
+  if (formattedText === text) {
+    return false;
+  }
+
+  event.preventDefault();
+  const selection = view.state.selection.main;
+  view.dispatch({
+    changes: { from: selection.from, to: selection.to, insert: formattedText },
+    selection: { anchor: selection.from + formattedText.length },
+  });
+  return true;
 }
 
 function applyWrap(view: EditorView, left: string, right = left): boolean {
@@ -638,6 +689,11 @@ export default function CodeEditor({
         EditorView.inputHandler.of((view, from, to, text, insert) =>
           noteMarkdownInputHandler(view, from, to, text, insert),
         ),
+      );
+      extensions.push(
+        EditorView.domEventHandlers({
+          paste: (event, view) => handleNoteMarkdownPaste(view, event),
+        }),
       );
       extensions.push(
         keymap.of([

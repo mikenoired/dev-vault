@@ -73,6 +73,16 @@ const emphasisStarPattern = /(^|[^*])\*([^*\n]+)\*(?!\*)/g;
 const emphasisUnderscorePattern = /(^|[^_])_([^_\n]+)_(?!_)/g;
 const bareUrlPattern = /https?:\/\/[^\s<>()]+/g;
 
+function createLinkDecoration(url: string) {
+  return Decoration.mark({
+    class: "cm-md-link",
+    attributes: {
+      "data-md-link": url,
+      title: url,
+    },
+  });
+}
+
 class TaskCheckboxWidget extends WidgetType {
   constructor(
     readonly checked: boolean,
@@ -143,7 +153,7 @@ function shouldHideMarkersForRange(
   to: number,
 ): boolean {
   if (!isActiveLine) return true;
-  return cursorPos < from || cursorPos > to;
+  return cursorPos < from || cursorPos >= to;
 }
 
 function forEachRegexMatch(
@@ -405,6 +415,8 @@ function addLinkDecorations(
     const labelFrom = from + 1;
     const labelTo = labelFrom + label.length;
 
+    pushDecoration(decorations, from, to, createLinkDecoration(match[2] ?? ""));
+
     if (shouldHideMarkers) {
       addHiddenMarker(decorations, from, from + 1);
       addHiddenMarker(decorations, labelTo, to);
@@ -661,6 +673,18 @@ const markdownLivePreviewPlugin = ViewPlugin.fromClass(
 
         event.preventDefault();
         return toggleTaskByMarkerPosition(view, markerCharPos);
+      },
+      click(event) {
+        const target = event.target as HTMLElement | null;
+        const linkElement = target?.closest("[data-md-link]") as HTMLElement | null;
+        const link = linkElement?.dataset.mdLink;
+        if (!link) return false;
+
+        event.preventDefault();
+        void open(link).catch((error) => {
+          console.error("Failed to open markdown link:", error);
+        });
+        return true;
       },
     },
   },

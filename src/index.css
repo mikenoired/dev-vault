@@ -222,10 +222,17 @@
     opacity: 0;
   }
 
+  .cm-editor .cm-md-link {
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .cm-editor .cm-md-link:hover {
+    color: color-mix(in oklab, var(--chart-2) 82%, var(--foreground) 18%);
+  }
+
   .cm-editor .cm-md-link-text {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    color: var(--color-orange-500) !important;
   }
 
   .cm-editor .cm-md-inline-code {

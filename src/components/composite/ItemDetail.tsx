@@ -66,30 +66,43 @@ export const ItemDetail = ({ itemId, draftType, draftTabId, onInteraction }: Ite
       {isNoteEditor ? null : headerContent}
 
       <div className={cn(isNoteEditor ? "flex-1 min-h-0 overflow-y-auto" : "flex-1 min-h-0")}>
-        {isNoteEditor ? headerContent : null}
-        <div
-          className={cn(
-            isNoteEditor ? "mx-auto min-h-full w-full max-w-[70ch] px-6 py-4" : "h-full w-full",
-          )}
-        >
-          <CodeEditor
-            value={form.editContent}
-            onChange={form.setEditContent}
-            language={getLanguage(activeType)}
-            markdownViewMode={resolvedMarkdownViewMode}
-            noteMode={isNoteEditor}
-            fontSize={editorFontSize}
-          />
-        </div>
+        {isNoteEditor ? (
+          <div className="mx-auto min-h-full w-full max-w-[74ch] px-6 py-5 sm:px-8 sm:py-6">
+            {headerContent}
+            <div className="pt-3">
+              <CodeEditor
+                value={form.editContent}
+                onChange={form.setEditContent}
+                language={getLanguage(activeType)}
+                markdownViewMode={resolvedMarkdownViewMode}
+                noteMode={isNoteEditor}
+                fontSize={editorFontSize}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="h-full w-full">
+            <CodeEditor
+              value={form.editContent}
+              onChange={form.setEditContent}
+              language={getLanguage(activeType)}
+              markdownViewMode={resolvedMarkdownViewMode}
+              noteMode={isNoteEditor}
+              fontSize={editorFontSize}
+            />
+          </div>
+        )}
       </div>
 
       {isNoteEditor && (
-        <div className="z-10 w-full shrink-0">
-          <StatusBar
-            content={form.editContent}
-            markdownViewMode={resolvedMarkdownViewMode}
-            onMarkdownViewModeChange={form.handleMarkdownModeChange}
-          />
+        <div className="z-10 w-full shrink-0 border-t border-border/40">
+          <div className="mx-auto w-full max-w-[74ch] px-6 pb-3 pt-2 sm:px-8">
+            <StatusBar
+              content={form.editContent}
+              markdownViewMode={resolvedMarkdownViewMode}
+              onMarkdownViewModeChange={form.handleMarkdownModeChange}
+            />
+          </div>
         </div>
       )}
     </div>

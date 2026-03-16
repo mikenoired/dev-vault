@@ -50,13 +50,11 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
   return (
     <div
       className={cn(
-        isNoteEditor
-          ? "mx-auto flex w-full max-w-[70ch] flex-col gap-2 px-6 pt-6"
-          : "flex w-full flex-col gap-2 p-6",
+        isNoteEditor ? "flex w-full flex-col gap-3 pb-4 pt-1" : "flex w-full flex-col gap-2 p-6",
         !isNoteEditor && "border-b border-border/40",
       )}
     >
-      <div className="relative pb-2">
+      <div className="relative pb-1">
         <div className="flex items-center gap-3">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild disabled={isNoteEditor}>
@@ -64,7 +62,7 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
                 type="button"
                 aria-label="Тип элемента"
                 className={cn(
-                  "flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors",
+                  "flex size-10 items-center justify-center rounded-lg bg-accent/35 text-foreground transition-colors",
                   !isNoteEditor && "hover:bg-accent/60 cursor-pointer",
                 )}
               >
@@ -108,7 +106,11 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
               onFocus={handleTitleFocus}
               onBlur={handleTitleBlur}
               placeholder="Введите заголовок..."
-              className="border-none font-bold text-2xl w-full focus:outline-0"
+              className={cn(
+                "w-full border-none bg-transparent font-bold text-2xl focus:outline-0",
+                isNoteEditor &&
+                  "text-[2.15rem] leading-[1.08] tracking-[-0.03em] text-foreground placeholder:text-muted-foreground/45",
+              )}
             />
           </div>
         </div>
@@ -117,7 +119,7 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
         </span>
       </div>
 
-      <div className="relative pb-2">
+      <div className="relative pb-1">
         <div
           className={cn(
             "pointer-events-none absolute inset-y-0 pr-2",
@@ -143,12 +145,12 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
           rows={1}
           className={cn(
             "relative min-h-6 border-none bg-transparent pr-0 py-0 font-mono italic text-muted-foreground/70 leading-6 focus-visible:ring-0 resize-none focus:outline-0 placeholder:text-muted-foreground/50",
-            isNoteEditor ? "pl-0" : "pl-6",
+            isNoteEditor ? "pl-0 text-[0.95rem] leading-6" : "pl-6",
           )}
         />
       </div>
 
-      <div className="flex flex-col gap-1 pb-2">
+      <div className="flex flex-col gap-1.5">
         {tagList.length > 0 && (
           <div className="flex items-center gap-2 overflow-x-auto">
             {tagList.map((tag) => (
@@ -177,7 +179,10 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
             onKeyDown={handleTagInputKeyDown}
             onBlur={handleTagInputBlur}
             placeholder="Введите теги через пробел"
-            className="w-full border-none bg-transparent px-0 text-sm text-foreground focus:outline-none"
+            className={cn(
+              "w-full border-none bg-transparent px-0 text-sm text-foreground focus:outline-none",
+              isNoteEditor && "h-8 text-sm text-foreground/90 placeholder:text-muted-foreground/55",
+            )}
           />
 
           {isTagDropdownOpen && (

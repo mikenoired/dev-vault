@@ -703,36 +703,48 @@ export default function CodeEditor({
         overflowX: "auto",
         overflowY: "visible !important",
         fontFamily: noteFontFamily,
+        lineHeight: "1.7",
       };
       themeConfig[".cm-activeLine, .cm-activeLineGutter"] = {
         background: "transparent !important",
       };
       themeConfig[".cm-content"] = {
         caretColor: "var(--foreground)",
-        color: "var(--foreground)",
+        color: "color-mix(in oklab, var(--foreground) 90%, var(--muted-foreground) 10%)",
         fontFamily: noteFontFamily,
         padding: "0",
+        lineHeight: "1.7",
+        letterSpacing: "0.002em",
       };
       themeConfig[".cm-content, .cm-line"] = {
         background: "transparent !important",
         fontFamily: noteFontFamily,
       };
+      themeConfig[".cm-line"] = {
+        padding: "0.08rem 0",
+        minHeight: "1.7em",
+      };
       themeConfig[".cm-cursor, .cm-dropCursor"] = {
         borderLeftColor: "var(--foreground)",
+        borderLeftWidth: "2px",
       };
       themeConfig[".cm-line.cm-md-list-item"] = {
         paddingLeft: "0",
       };
       themeConfig[".cm-md-list-bullet"] = {
         display: "inline-block",
-        minWidth: "1.25rem",
-        color: "var(--foreground)",
-        opacity: "0.72",
+        minWidth: "1.3rem",
+        color: "color-mix(in oklab, var(--muted-foreground) 72%, var(--foreground) 28%)",
+        opacity: "0.9",
       };
       themeConfig[".cm-md-list-number"] = {
         display: "inline-block",
-        minWidth: "1.5rem",
-        color: "var(--muted-foreground) !important",
+        minWidth: "1.6rem",
+        color: "color-mix(in oklab, var(--muted-foreground) 84%, var(--foreground) 16%) !important",
+        fontVariantNumeric: "tabular-nums",
+      };
+      themeConfig[".cm-selectionBackground, .cm-focused .cm-selectionBackground, ::selection"] = {
+        backgroundColor: "color-mix(in oklab, var(--accent) 62%, transparent)",
       };
     }
 
@@ -787,6 +799,14 @@ export default function CodeEditor({
       EditorView.lineWrapping,
       EditorState.readOnly.of(readOnly),
     ];
+
+    if (noteMode) {
+      extensions.push(
+        EditorView.editorAttributes.of({
+          class: "cm-note-editor",
+        }),
+      );
+    }
 
     if (!noteMode) {
       extensions.push(createCodeTheme(isDarkTheme));
@@ -889,7 +909,7 @@ export default function CodeEditor({
   }, [value]);
 
   return (
-    <div ref={editorRef} className={cn("w-full relative group", noteMode ? "h-auto" : "h-full")}>
+    <div ref={editorRef} className={cn("relative w-full group", noteMode ? "h-auto" : "h-full")}>
       {copyToClipboard && (
         <Button
           className={cn(

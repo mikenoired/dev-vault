@@ -31,21 +31,21 @@ export default function StatusBar({
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <div className="w-full p-2">
-        <div className="bg-accent rounded-md flex items-center justify-between h-8">
-          <div className="flex items-center gap-2 px-1">
+      <div className="w-full">
+        <div className="flex min-h-10 items-center justify-between gap-3 px-1 py-1">
+          <div className="flex items-center gap-1">
             <Tooltip.Root>
               <Tooltip.Trigger
                 onClick={(event) => event.preventDefault()}
                 onPointerDown={(event) => event.preventDefault()}
               >
                 <Button
-                  className="hover:bg-foreground/10"
+                  className="rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                   size="iconSmall"
                   variant="ghost"
                   onClick={handleCopy}
                 >
-                  <Clipboard className="w-4 h-4 text-neutral-400" />
+                  <Clipboard className="h-4 w-4" />
                 </Button>
               </Tooltip.Trigger>
               <Tooltip.Portal>
@@ -62,25 +62,25 @@ export default function StatusBar({
               </Tooltip.Portal>
             </Tooltip.Root>
           </div>
-          <div className="flex items-center gap-4 pr-2">
-            <span className="flex items-center gap-1 text-sm text-neutral-500">
-              <ClockIcon className="w-4 h-4 text-neutral-400" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="flex items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground sm:text-sm">
+              <ClockIcon className="h-4 w-4" />
               {minutes} мин.
             </span>
-            <span className="flex items-center gap-1 text-sm text-neutral-500">
-              <BookOpenIcon className="w-4 h-4 text-neutral-400" />
+            <span className="hidden items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground sm:flex sm:text-sm">
+              <BookOpenIcon className="h-4 w-4" />
               {words} слов
             </span>
             {onMarkdownViewModeChange && markdownViewMode && (
-              <div className="flex items-center">
+              <div className="flex items-center rounded-md border border-border/50 bg-accent/20 p-0.5">
                 <button
                   type="button"
                   onClick={() => onMarkdownViewModeChange("source")}
                   className={cn(
-                    "cursor-pointer transition-colors",
+                    "cursor-pointer rounded-[6px] px-2.5 py-1 text-xs font-medium transition-colors",
                     markdownViewMode === "source"
-                      ? "rounded px-2.5 py-1 text-xs font-medium bg-accent text-foreground"
-                      : "rounded px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10",
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   Source
@@ -89,10 +89,10 @@ export default function StatusBar({
                   type="button"
                   onClick={() => onMarkdownViewModeChange("live")}
                   className={cn(
-                    "cursor-pointer transition-colors",
+                    "cursor-pointer rounded-[6px] px-2.5 py-1 text-xs font-medium transition-colors",
                     markdownViewMode === "live"
-                      ? "rounded px-2.5 py-1 text-xs font-medium bg-accent text-foreground"
-                      : "rounded px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/10",
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   Live

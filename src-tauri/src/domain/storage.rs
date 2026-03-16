@@ -427,6 +427,7 @@ impl Storage {
         limit: Option<i64>,
         offset: Option<i64>,
         item_type: Option<ItemType>,
+        tag_ids: Option<Vec<i64>>,
     ) -> Result<Vec<ItemWithTags>> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
@@ -435,9 +436,27 @@ impl Storage {
             "SELECT id, type, title, description, content, created_at, updated_at, metadata
              FROM items",
         );
+        let mut has_clause = false;
 
         if item_type.is_some() {
             sql.push_str(" WHERE type = ?");
+            has_clause = true;
+        }
+
+        if let Some(ref tag_ids) = tag_ids {
+            if !tag_ids.is_empty() {
+                sql.push_str(if has_clause { " AND " } else { " WHERE " });
+                sql.push_str("EXISTS (SELECT 1 FROM item_tags it WHERE it.item_id = items.id AND it.tag_id IN (");
+
+                for index in 0..tag_ids.len() {
+                    if index > 0 {
+                        sql.push_str(", ");
+                    }
+                    sql.push('?');
+                }
+
+                sql.push_str("))");
+            }
         }
 
         sql.push_str(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
@@ -446,6 +465,12 @@ impl Storage {
 
         if let Some(item_type) = item_type {
             query = query.bind(Self::item_type_to_str(item_type));
+        }
+
+        if let Some(tag_ids) = tag_ids {
+            for tag_id in tag_ids {
+                query = query.bind(tag_id);
+            }
         }
 
         let rows = query
@@ -514,24 +539,37 @@ impl Storage {
     }
 
     pub async fn get_tag_by_name(&self, name: &str) -> Result<Option<Tag>> {
-        let row = sqlx::query("SELECT id, name, color_code FROM tags WHERE name = ?1")
-            .bind(name)
-            .fetch_optional(&self.pool)
-            .await
-            .context("Failed to get tag by name")?;
+        let row = sqlx::query(
+            "SELECT t.id, t.name, t.color_code, COUNT(it.item_id) as usage_count
+             FROM tags t
+             LEFT JOIN item_tags it ON t.id = it.tag_id
+             WHERE t.name = ?1
+             GROUP BY t.id, t.name, t.color_code",
+        )
+        .bind(name)
+        .fetch_optional(&self.pool)
+        .await
+        .context("Failed to get tag by name")?;
 
         Ok(row.map(|r| Tag {
             id: r.get("id"),
             name: r.get("name"),
             color_code: r.get("color_code"),
+            usage_count: r.get("usage_count"),
         }))
     }
 
     pub async fn list_tags(&self) -> Result<Vec<Tag>> {
-        let rows = sqlx::query("SELECT id, name, color_code FROM tags ORDER BY name")
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to list tags")?;
+        let rows = sqlx::query(
+            "SELECT t.id, t.name, t.color_code, COUNT(it.item_id) as usage_count
+             FROM tags t
+             LEFT JOIN item_tags it ON t.id = it.tag_id
+             GROUP BY t.id, t.name, t.color_code
+             ORDER BY usage_count DESC, t.name ASC",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to list tags")?;
 
         Ok(rows
             .iter()
@@ -539,6 +577,7 @@ impl Storage {
                 id: r.get("id"),
                 name: r.get("name"),
                 color_code: r.get("color_code"),
+                usage_count: r.get("usage_count"),
             })
             .collect())
     }
@@ -546,7 +585,13 @@ impl Storage {
     pub async fn search_tags(&self, query: &str, limit: i64) -> Result<Vec<Tag>> {
         let pattern = format!("{}%", query);
         let rows = sqlx::query(
-            "SELECT id, name, color_code FROM tags WHERE name LIKE ?1 ORDER BY name LIMIT ?2",
+            "SELECT t.id, t.name, t.color_code, COUNT(it.item_id) as usage_count
+             FROM tags t
+             LEFT JOIN item_tags it ON t.id = it.tag_id
+             WHERE t.name LIKE ?1
+             GROUP BY t.id, t.name, t.color_code
+             ORDER BY usage_count DESC, t.name ASC
+             LIMIT ?2",
         )
         .bind(pattern)
         .bind(limit)
@@ -560,15 +605,21 @@ impl Storage {
                 id: r.get("id"),
                 name: r.get("name"),
                 color_code: r.get("color_code"),
+                usage_count: r.get("usage_count"),
             })
             .collect())
     }
 
     async fn get_item_tags(&self, item_id: i64) -> Result<Vec<Tag>> {
         let rows = sqlx::query(
-            "SELECT t.id, t.name, t.color_code
+            "SELECT t.id, t.name, t.color_code, stats.usage_count
              FROM tags t
              INNER JOIN item_tags it ON t.id = it.tag_id
+             INNER JOIN (
+                 SELECT tag_id, COUNT(*) as usage_count
+                 FROM item_tags
+                 GROUP BY tag_id
+             ) stats ON stats.tag_id = t.id
              WHERE it.item_id = ?1
              ORDER BY t.name",
         )
@@ -583,6 +634,7 @@ impl Storage {
                 id: r.get("id"),
                 name: r.get("name"),
                 color_code: r.get("color_code"),
+                usage_count: r.get("usage_count"),
             })
             .collect())
     }

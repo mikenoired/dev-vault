@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { tauriService } from "@/services/tauri";
-import type { ItemType, ItemWithTags, Tag } from "@/types";
+import type { ItemsViewMode, ItemType, ItemWithTags, Tag } from "@/types";
 
 interface ItemsState {
   items: ItemWithTags[];
@@ -8,6 +8,8 @@ interface ItemsState {
   selectedItem: ItemWithTags | null;
   searchQuery: string;
   selectedType: ItemType | null;
+  viewMode: ItemsViewMode;
+  selectedTagIds: number[];
   isLoading: boolean;
   isLoadingMore: boolean;
   offset: number;
@@ -22,6 +24,10 @@ interface ItemsState {
   searchItems: (query: string) => Promise<void>;
   filterByType: (type: ItemType | null) => Promise<void>;
   setSelectedType: (type: ItemType | null) => void;
+  setViewMode: (mode: ItemsViewMode) => Promise<void>;
+  addStructureTag: (tagId: number) => Promise<void>;
+  removeStructureTag: (tagId: number) => Promise<void>;
+  clearStructureTags: () => Promise<void>;
   selectItem: (item: ItemWithTags | null) => void;
   deleteItem: (id: number) => Promise<void>;
   updateItem: (
@@ -53,12 +59,48 @@ const emptyTypeCounts: Record<ItemType, number> = {
   documentation: 0,
 };
 
+const getActiveTagIds = (
+  state: Pick<ItemsState, "viewMode" | "selectedTagIds" | "selectedType" | "searchQuery">,
+): number[] | undefined => {
+  const hasSelectedTags = state.selectedTagIds.length > 0;
+  const isSearchMode = state.searchQuery.trim().length > 0;
+  const supportsTagFiltering = isSearchMode || state.selectedType !== "documentation";
+
+  if (state.viewMode !== "structure" || !hasSelectedTags || !supportsTagFiltering) {
+    return undefined;
+  }
+
+  return state.selectedTagIds;
+};
+
+const fetchItemsPage = async (
+  state: Pick<ItemsState, "searchQuery" | "selectedType" | "viewMode" | "selectedTagIds">,
+  offset: number,
+) => {
+  const limit = PAGE_SIZE + 1;
+  const trimmedQuery = state.searchQuery.trim();
+  const tagIds = getActiveTagIds(state);
+
+  if (trimmedQuery) {
+    return tauriService.search({
+      query: trimmedQuery,
+      limit,
+      offset,
+      tagIds,
+    });
+  }
+
+  return tauriService.listItems(limit, offset, state.selectedType ?? undefined, tagIds);
+};
+
 export const useItemsStore = create<ItemsState>((set, get) => ({
   items: [],
   tags: [],
   selectedItem: null,
   searchQuery: "",
   selectedType: null,
+  viewMode: "list",
+  selectedTagIds: [],
   isLoading: false,
   isLoadingMore: false,
   offset: 0,
@@ -75,37 +117,28 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       offset: 0,
       hasMore: true,
     });
-    const { selectedType } = get();
-    const searchQuery = get().searchQuery.trim();
-    try {
-      const limit = PAGE_SIZE + 1;
-      const result = searchQuery
-        ? await tauriService.search({ query: searchQuery, limit, offset: 0 })
-        : await tauriService.listItems(limit, 0, selectedType ?? undefined);
 
+    try {
+      const state = get();
+      const result = await fetchItemsPage(state, 0);
       const fetchedItems = Array.isArray(result) ? result : result.items;
       const hasMore = fetchedItems.length > PAGE_SIZE;
       const items = hasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
 
       set({ items, hasMore, offset: items.length, isLoading: false });
-      get().loadTypeCounts();
+      void get().loadTypeCounts();
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
   },
 
   loadNextPage: async () => {
-    const { isLoadingMore, isLoading, hasMore, offset, selectedType, items } = get();
-    const searchQuery = get().searchQuery.trim();
+    const { isLoadingMore, isLoading, hasMore, offset, items } = get();
     if (isLoadingMore || isLoading || !hasMore) return;
 
     set({ isLoadingMore: true, error: null });
     try {
-      const limit = PAGE_SIZE + 1;
-      const result = searchQuery
-        ? await tauriService.search({ query: searchQuery, limit, offset })
-        : await tauriService.listItems(limit, offset, selectedType ?? undefined);
-
+      const result = await fetchItemsPage(get(), offset);
       const fetchedItems = Array.isArray(result) ? result : result.items;
       const nextHasMore = fetchedItems.length > PAGE_SIZE;
       const nextItems = nextHasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
@@ -144,28 +177,56 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
   },
 
   searchItems: async (query: string) => {
-    const trimmed = query.trim();
     set({ searchQuery: query, selectedType: null });
-    if (!trimmed) {
-      await get().loadItems();
-      return;
-    }
-
     await get().loadItems();
   },
 
   filterByType: async (type: ItemType | null) => {
     const { selectedType, searchQuery } = get();
-    const trimmedQuery = searchQuery.trim();
-    if (type === selectedType && trimmedQuery === "") {
+    if (type === selectedType && searchQuery.trim().length === 0) {
       return;
     }
-    set({ selectedType: type, searchQuery: searchQuery });
+
+    set({ selectedType: type });
     await get().loadItems({ keepItems: true });
   },
 
   setSelectedType: (type: ItemType | null) => {
     set({ selectedType: type });
+  },
+
+  setViewMode: async (mode: ItemsViewMode) => {
+    if (get().viewMode === mode) {
+      return;
+    }
+
+    set({ viewMode: mode });
+    await get().loadItems({ keepItems: true });
+  },
+
+  addStructureTag: async (tagId: number) => {
+    const { selectedTagIds } = get();
+    if (selectedTagIds.includes(tagId)) {
+      return;
+    }
+
+    set({ selectedTagIds: [...selectedTagIds, tagId] });
+    await get().loadItems({ keepItems: true });
+  },
+
+  removeStructureTag: async (tagId: number) => {
+    const nextTagIds = get().selectedTagIds.filter((id) => id !== tagId);
+    set({ selectedTagIds: nextTagIds });
+    await get().loadItems({ keepItems: true });
+  },
+
+  clearStructureTags: async () => {
+    if (get().selectedTagIds.length === 0) {
+      return;
+    }
+
+    set({ selectedTagIds: [] });
+    await get().loadItems({ keepItems: true });
   },
 
   selectItem: (item) => {
@@ -176,10 +237,9 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     try {
       await tauriService.deleteItem(id);
       set((state) => ({
-        items: state.items.filter((item) => item.id !== id),
         selectedItem: state.selectedItem?.id === id ? null : state.selectedItem,
       }));
-      get().loadTypeCounts();
+      await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
     } catch (error) {
       set({ error: String(error) });
     }
@@ -197,9 +257,6 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
         }
       }
 
-      const { items, searchQuery, selectedType } = get();
-      const previous = items.find((i) => i.id === id);
-
       await tauriService.updateItem({
         id,
         type: data.type,
@@ -211,22 +268,10 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
 
       const updated = await tauriService.getItem(id);
       if (updated) {
-        const trimmedQuery = searchQuery.trim();
-        if (!trimmedQuery) {
-          const shouldInclude = !selectedType || selectedType === updated.type;
-          let nextItems = items.filter((item) => item.id !== id);
-          if (shouldInclude) {
-            nextItems = [updated, ...nextItems];
-          }
-          set({ items: nextItems, selectedItem: updated });
-        } else {
-          set({ selectedItem: updated });
-        }
+        set({ selectedItem: updated });
       }
 
-      if (data.type && previous?.type !== data.type) {
-        get().loadTypeCounts();
-      }
+      await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
     } catch (error) {
       set({ error: String(error) });
       throw error;
@@ -255,25 +300,13 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       });
 
       const created = await tauriService.getItem(itemId);
-      if (created) {
-        const { items, searchQuery, selectedType } = get();
-        const trimmedQuery = searchQuery.trim();
-        if (!trimmedQuery) {
-          const shouldInclude = !selectedType || selectedType === created.type;
-          if (shouldInclude) {
-            set({ items: [created, ...items], selectedItem: created });
-          } else {
-            set({ selectedItem: created });
-          }
-        } else {
-          set({ selectedItem: created });
-        }
-      }
-
-      await get().loadTypeCounts();
       if (!created) {
         throw new Error("Failed to load created item.");
       }
+
+      set({ selectedItem: created });
+      await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
+
       return created;
     } catch (error) {
       set({ error: String(error) });

@@ -63,10 +63,11 @@ pub async fn list_items(
     limit: Option<i64>,
     offset: Option<i64>,
     item_type: Option<ItemType>,
+    tag_ids: Option<Vec<i64>>,
 ) -> Result<Vec<ItemWithTags>, String> {
     let storage = state.storage.lock().await;
     storage
-        .list_items(limit, offset, item_type)
+        .list_items(limit, offset, item_type, tag_ids)
         .await
         .map_err(|e| e.to_string())
 }

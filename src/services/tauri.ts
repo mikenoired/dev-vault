@@ -31,8 +31,18 @@ export const tauriService = {
     return invoke<boolean>("delete_item", { id });
   },
 
-  async listItems(limit?: number, offset?: number, type?: ItemType): Promise<ItemWithTags[]> {
-    return invoke<ItemWithTags[]>("list_items", { limit, offset, item_type: type });
+  async listItems(
+    limit?: number,
+    offset?: number,
+    type?: ItemType,
+    tagIds?: number[],
+  ): Promise<ItemWithTags[]> {
+    return invoke<ItemWithTags[]>("list_items", {
+      limit,
+      offset,
+      item_type: type,
+      tag_ids: tagIds,
+    });
   },
 
   async createTag(name: string): Promise<number> {

@@ -2,6 +2,7 @@ export * from "./graph";
 export * from "./language";
 
 export type ItemType = "snippet" | "config" | "note" | "link" | "documentation";
+export type ItemsViewMode = "list" | "structure";
 export type Theme = "dark" | "light" | "system";
 
 export interface Item {
@@ -19,6 +20,7 @@ export interface Tag {
   id: number;
   name: string;
   colorCode: number;
+  usageCount: number;
 }
 
 export interface Documentation {

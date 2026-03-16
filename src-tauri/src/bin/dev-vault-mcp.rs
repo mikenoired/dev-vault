@@ -140,6 +140,8 @@ struct ListItemsArgs {
     offset: Option<i64>,
     #[serde(rename = "type")]
     item_type: Option<ItemType>,
+    #[serde(rename = "tagIds")]
+    tag_ids: Option<Vec<i64>>,
 }
 
 #[derive(Deserialize)]
@@ -302,7 +304,8 @@ fn tools_list() -> Vec<ToolDefinition> {
                 "properties": {
                     "limit": {"type": "number"},
                     "offset": {"type": "number"},
-                    "type": {"type": "string", "enum": ["snippet", "config", "note", "link", "documentation"]}
+                    "type": {"type": "string", "enum": ["snippet", "config", "note", "link", "documentation"]},
+                    "tagIds": {"type": "array", "items": {"type": "number"}}
                 }
             }),
         },
@@ -377,7 +380,7 @@ async fn handle_tool_call(db_path: &PathBuf, params: ToolCallParams) -> Result<V
             let args: ListItemsArgs = serde_json::from_value(args_or_empty(params.arguments))
                 .map_err(|e| e.to_string())?;
             let items = storage
-                .list_items(args.limit, args.offset, args.item_type)
+                .list_items(args.limit, args.offset, args.item_type, args.tag_ids)
                 .await
                 .map_err(|e| e.to_string())?;
             let items: Vec<ItemSlim> = items.into_iter().map(item_to_slim).collect();

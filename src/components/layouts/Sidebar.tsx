@@ -1,6 +1,8 @@
 import { type Dispatch, type RefObject, type SetStateAction, useCallback } from "react";
 import { ItemsList } from "@/components/composite/Items";
+import { ItemsViewModeSwitch } from "@/components/composite/ItemsViewModeSwitch";
 import { SearchBar } from "@/components/composite/SearchBar";
+import { StructureTagFilter } from "@/components/composite/StructureTagFilter";
 import { TypeFilter } from "@/components/composite/TypeFilter";
 import { cn } from "@/components/ui";
 import { useUIStore } from "@/stores";
@@ -51,7 +53,9 @@ export default function Sidebar({
           style={{ width: sidebarWidth, minWidth: isSidebarVisible ? undefined : sidebarWidth }}
         >
           <SearchBar />
+          <ItemsViewModeSwitch />
           {showTypeFilter && <TypeFilter />}
+          <StructureTagFilter />
           <ItemsList />
         </div>
 

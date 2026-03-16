@@ -268,6 +268,7 @@ impl SearchEngine {
                 id: -doc_id,
                 name: doc_name,
                 color_code: 11,
+                usage_count: 1,
             }];
 
             map.insert(entry_id, (item, tags));
@@ -319,6 +320,7 @@ impl SearchEngine {
                 id: row.get("id"),
                 name: row.get("name"),
                 color_code: row.get("color_code"),
+                usage_count: 0,
             };
             map.entry(item_id).or_default().push(tag);
         }

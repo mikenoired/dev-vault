@@ -9,6 +9,7 @@ interface ItemCardProps extends HTMLAttributes<HTMLDivElement> {
   onClick: () => void;
   onDoubleClick?: () => void;
   isSearchMode?: boolean;
+  hideTags?: boolean;
   leadingVisual?: ReactNode;
   footer?: ReactNode;
 }
@@ -19,6 +20,7 @@ export const ItemCard = ({
   onClick,
   onDoubleClick,
   isSearchMode = false,
+  hideTags = false,
   leadingVisual,
   footer,
   className,
@@ -82,10 +84,10 @@ export const ItemCard = ({
           <div
             className={cn(
               "mt-2 flex flex-wrap items-center gap-2",
-              !footer && !item.tags.length && "hidden",
+              !footer && (hideTags || !item.tags.length) && "hidden",
             )}
           >
-            {item.tags.length > 0 && (
+            {!hideTags && item.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {item.tags.slice(0, 3).map((tag) => (
                   <Badge

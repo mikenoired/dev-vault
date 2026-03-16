@@ -88,7 +88,7 @@ export const TabItem = ({ tab, isActive, onRequestClose }: TabItemProps) => {
             "flex items-center pl-2 pr-1.5 gap-4",
           )}
         >
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 pl-0.5">
             <span className="shrink-0 opacity-70">
               {tab.type === "new"
                 ? getIcon("new")

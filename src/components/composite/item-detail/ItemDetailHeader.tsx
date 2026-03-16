@@ -64,7 +64,7 @@ export const ItemDetailHeader = ({ form, isNoteEditor, tagColorByName }: ItemDet
                 type="button"
                 aria-label="Тип элемента"
                 className={cn(
-                  "mt-1 flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors",
+                  "flex size-10 items-center justify-center rounded-lg bg-accent/40 text-foreground transition-colors",
                   !isNoteEditor && "hover:bg-accent/60 cursor-pointer",
                 )}
               >

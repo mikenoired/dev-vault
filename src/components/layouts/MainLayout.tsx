@@ -66,7 +66,11 @@ export const MainLayout = () => {
   useHotkey(getShortcutHotkey("close-tab"), closeCurrentTab);
   useHotkey(getShortcutHotkey("toggle-sidebar"), toggleSidebar);
   const activeTab = tabs.find((t) => t.id === activeTabId);
-  const docGraphTabs = tabs.filter((tab) => tab.type === "docGraph" && tab.docId);
+  const docGraphTabs = tabs.flatMap((tab) =>
+    tab.type === "docGraph" && typeof tab.docId === "number"
+      ? [{ id: tab.id, docId: tab.docId }]
+      : [],
+  );
 
   const { selectedDoc } = useDocsStore();
 
@@ -216,21 +220,24 @@ export const MainLayout = () => {
           <main className="relative flex-1 overflow-hidden">
             {activeTab ? (
               activeTab.type === "docGraph" ? null : activeTab.type === "new" ? (
-                <EmptyTabContent onCreateClick={handleCreateClick} />
+                <EmptyTabContent key={activeTab.id} onCreateClick={handleCreateClick} />
               ) : activeTab.type === "docEntry" && activeTab.docId && activeTab.docPath ? (
                 <DocEntryViewer
+                  key={activeTab.id}
                   docId={activeTab.docId}
                   docPath={activeTab.docPath}
                   onInteraction={() => handleTabInteraction(activeTab.id)}
                 />
               ) : activeTab.type === "draft" ? (
                 <ItemDetail
+                  key={activeTab.id}
                   draftType={activeTab.itemType}
                   draftTabId={activeTab.id}
                   onInteraction={() => handleTabInteraction(activeTab.id)}
                 />
               ) : (
                 <ItemDetail
+                  key={activeTab.id}
                   itemId={activeTab.itemId}
                   onInteraction={() => handleTabInteraction(activeTab.id)}
                 />
@@ -248,7 +255,7 @@ export const MainLayout = () => {
                   activeTabId === tab.id ? "block" : "hidden pointer-events-none",
                 )}
               >
-                <DocGraphTab docId={tab.docId!} />
+                <DocGraphTab docId={tab.docId} />
               </div>
             ))}
           </main>

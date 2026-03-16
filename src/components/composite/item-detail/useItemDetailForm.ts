@@ -84,8 +84,17 @@ const isSameState = (left: LastSavedState, right: LastSavedState) =>
   left.tags === right.tags &&
   left.type === right.type;
 
-const buildHydrationKey = (item: Pick<ItemWithTags, "id" | "content">) =>
-  `${item.id}:${item.content === "" ? "partial" : "full"}`;
+const buildHydrationKey = (
+  item: Pick<ItemWithTags, "id" | "title" | "description" | "content" | "tags" | "type">,
+) =>
+  [
+    item.id,
+    item.type,
+    item.title,
+    item.description || "",
+    item.content,
+    tagSignature(item.tags.map((tag) => tag.name)),
+  ].join("::");
 
 export interface ItemDetailForm {
   addTags: (tags: string[]) => void;

@@ -1,46 +1,35 @@
 import { useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { tauriService } from "@/services/tauri";
 import { useItemsStore, useTabsStore } from "@/stores";
 
 export const useItemDetailSelection = (itemId?: number) => {
-  const [items, knownTags, storeSelectedItem, selectItem] = useItemsStore(
-    useShallow((state) => [state.items, state.tags, state.selectedItem, state.selectItem]),
+  const [items, itemDetails, knownTags, hydrateItemDetails] = useItemsStore(
+    useShallow((state) => [state.items, state.itemDetails, state.tags, state.hydrateItemDetails]),
   );
   const activeTabId = useTabsStore((state) => state.activeTabId);
 
+  const listItem = useMemo(() => {
+    if (!itemId) return null;
+    return items.find((item) => item.id === itemId) ?? null;
+  }, [itemId, items]);
+
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
-    const fromList = items.find((item) => item.id === itemId);
-    if (fromList && fromList.content !== "") return fromList;
-    if (storeSelectedItem?.id === itemId) return storeSelectedItem;
-    return fromList ?? null;
-  }, [items, itemId, storeSelectedItem]);
+    const detailedItem = itemDetails[itemId];
+    if (detailedItem) return detailedItem;
+    if (listItem?.content !== "") return listItem;
+    return listItem ?? null;
+  }, [itemDetails, itemId, listItem]);
 
   useEffect(() => {
     if (!selectedItem) return;
     if (selectedItem.type === "documentation") return;
     if (selectedItem.content !== "") return;
 
-    let cancelled = false;
-
-    const hydrateItem = async () => {
-      try {
-        const fullItem = await tauriService.getItem(selectedItem.id);
-        if (!cancelled && fullItem) {
-          selectItem(fullItem);
-        }
-      } catch (error) {
-        console.error("Failed to load full item:", error);
-      }
-    };
-
-    void hydrateItem();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedItem, selectItem]);
+    void hydrateItemDetails(selectedItem.id).catch((error) => {
+      console.error("Failed to load full item:", error);
+    });
+  }, [hydrateItemDetails, selectedItem]);
 
   const tagColorByName = useMemo(() => {
     const map = new Map<string, number>();

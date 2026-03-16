@@ -4,8 +4,8 @@ import type { ItemsViewMode, ItemType, ItemWithTags, Tag } from "@/types";
 
 interface ItemsState {
   items: ItemWithTags[];
+  itemDetails: Record<number, ItemWithTags>;
   tags: Tag[];
-  selectedItem: ItemWithTags | null;
   searchQuery: string;
   selectedType: ItemType | null;
   viewMode: ItemsViewMode;
@@ -28,7 +28,7 @@ interface ItemsState {
   addStructureTag: (tagId: number) => Promise<void>;
   removeStructureTag: (tagId: number) => Promise<void>;
   clearStructureTags: () => Promise<void>;
-  selectItem: (item: ItemWithTags | null) => void;
+  hydrateItemDetails: (id: number) => Promise<ItemWithTags | null>;
   deleteItem: (id: number) => Promise<void>;
   updateItem: (
     id: number,
@@ -93,10 +93,27 @@ const fetchItemsPage = async (
   return tauriService.listItems(limit, offset, state.selectedType ?? undefined, tagIds);
 };
 
+const mergeDetailedItems = (
+  currentDetails: Record<number, ItemWithTags>,
+  items: ItemWithTags[],
+): Record<number, ItemWithTags> => {
+  const detailedItems = items.filter((item) => item.content !== "");
+  if (detailedItems.length === 0) {
+    return currentDetails;
+  }
+
+  const nextDetails = { ...currentDetails };
+  for (const item of detailedItems) {
+    nextDetails[item.id] = item;
+  }
+
+  return nextDetails;
+};
+
 export const useItemsStore = create<ItemsState>((set, get) => ({
   items: [],
+  itemDetails: {},
   tags: [],
-  selectedItem: null,
   searchQuery: "",
   selectedType: null,
   viewMode: "list",
@@ -125,7 +142,13 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       const hasMore = fetchedItems.length > PAGE_SIZE;
       const items = hasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
 
-      set({ items, hasMore, offset: items.length, isLoading: false });
+      set((state) => ({
+        items,
+        itemDetails: mergeDetailedItems(state.itemDetails, items),
+        hasMore,
+        offset: items.length,
+        isLoading: false,
+      }));
       void get().loadTypeCounts();
     } catch (error) {
       set({ error: String(error), isLoading: false });
@@ -143,11 +166,15 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
       const nextHasMore = fetchedItems.length > PAGE_SIZE;
       const nextItems = nextHasMore ? fetchedItems.slice(0, PAGE_SIZE) : fetchedItems;
 
-      set({
-        items: [...items, ...nextItems],
-        hasMore: nextHasMore,
-        offset: offset + nextItems.length,
-        isLoadingMore: false,
+      set((state) => {
+        const mergedItems = [...items, ...nextItems];
+        return {
+          items: mergedItems,
+          itemDetails: mergeDetailedItems(state.itemDetails, mergedItems),
+          hasMore: nextHasMore,
+          offset: offset + nextItems.length,
+          isLoadingMore: false,
+        };
       });
     } catch (error) {
       set({ error: String(error), isLoadingMore: false });
@@ -229,15 +256,34 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     await get().loadItems({ keepItems: true });
   },
 
-  selectItem: (item) => {
-    set({ selectedItem: item });
+  hydrateItemDetails: async (id) => {
+    const cached = get().itemDetails[id];
+    if (cached) {
+      return cached;
+    }
+
+    const loaded = await tauriService.getItem(id);
+    if (!loaded) {
+      return null;
+    }
+
+    set((state) => ({
+      itemDetails: {
+        ...state.itemDetails,
+        [id]: loaded,
+      },
+    }));
+
+    return loaded;
   },
 
   deleteItem: async (id: number) => {
     try {
       await tauriService.deleteItem(id);
       set((state) => ({
-        selectedItem: state.selectedItem?.id === id ? null : state.selectedItem,
+        itemDetails: Object.fromEntries(
+          Object.entries(state.itemDetails).filter(([key]) => Number(key) !== id),
+        ),
       }));
       await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
     } catch (error) {
@@ -268,7 +314,12 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
 
       const updated = await tauriService.getItem(id);
       if (updated) {
-        set({ selectedItem: updated });
+        set((state) => ({
+          itemDetails: {
+            ...state.itemDetails,
+            [id]: updated,
+          },
+        }));
       }
 
       await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
@@ -304,7 +355,12 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
         throw new Error("Failed to load created item.");
       }
 
-      set({ selectedItem: created });
+      set((state) => ({
+        itemDetails: {
+          ...state.itemDetails,
+          [created.id]: created,
+        },
+      }));
       await Promise.all([get().loadItems({ keepItems: true }), get().loadTags()]);
 
       return created;

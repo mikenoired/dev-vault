@@ -134,7 +134,9 @@ export default function MarkdownRender({
       <ul
         {...props}
         className={cn(
-          isTaskList(className) ? "list-none space-y-1 pl-0" : "list-disc pl-6",
+          isTaskList(className)
+            ? "list-none space-y-1 pl-0"
+            : "list-disc space-y-1 pl-6 text-foreground/85 marker:text-foreground/55",
           className,
         )}
       />
@@ -143,7 +145,9 @@ export default function MarkdownRender({
       <ol
         {...props}
         className={cn(
-          isTaskList(className) ? "list-none space-y-1 pl-0" : "list-decimal pl-6",
+          isTaskList(className)
+            ? "list-none space-y-1 pl-0"
+            : "list-decimal space-y-1 pl-6 text-foreground/85 marker:text-muted-foreground",
           className,
         )}
       />
@@ -152,7 +156,9 @@ export default function MarkdownRender({
       <li
         {...props}
         className={cn(
-          isTaskListItem(className) ? "list-none pl-0 text-foreground/80" : undefined,
+          isTaskListItem(className)
+            ? "list-none pl-0 text-foreground/80"
+            : "pl-1 text-foreground/85",
           className,
         )}
       />

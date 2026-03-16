@@ -61,6 +61,8 @@ const taskCheckboxRoots = new WeakMap<HTMLElement, Root>();
 const headingPattern = /^(\s{0,3})(#{1,6})(\s+)/;
 const blockquotePattern = /^(\s*>+\s*)/;
 const taskPattern = /^(\s*[-*+]\s+)\[( |x|X)\](\s+)/;
+const unorderedListPattern = /^(\s*)([-*+])(\s+)/;
+const orderedListPattern = /^(\s*)(\d+\.)(\s+)/;
 const fencePattern = /^\s*(`{3,})(.*)$/;
 const dividerPattern = /^\s{0,3}(?:-\s*){3,}$/;
 const markdownLinkPattern = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
@@ -119,6 +121,36 @@ class TaskCheckboxWidget extends WidgetType {
 
   ignoreEvent() {
     return false;
+  }
+}
+
+class ListBulletWidget extends WidgetType {
+  eq() {
+    return true;
+  }
+
+  toDOM() {
+    const bullet = document.createElement("span");
+    bullet.className = "cm-md-list-bullet";
+    bullet.textContent = "•";
+    return bullet;
+  }
+}
+
+class OrderedListMarkerWidget extends WidgetType {
+  constructor(readonly label: string) {
+    super();
+  }
+
+  eq(other: OrderedListMarkerWidget) {
+    return other.label === this.label;
+  }
+
+  toDOM() {
+    const marker = document.createElement("span");
+    marker.className = "cm-md-list-number";
+    marker.textContent = this.label;
+    return marker;
   }
 }
 
@@ -327,6 +359,46 @@ function addTaskDecoration(decorations: PendingDecoration[], line: DocLine): Tex
   }
 
   return { from: taskMarkerFrom, to: markerTo };
+}
+
+function addListDecoration(decorations: PendingDecoration[], line: DocLine): TextRange | null {
+  const unorderedMatch = unorderedListPattern.exec(line.text);
+  if (unorderedMatch) {
+    const markerFrom = line.from + (unorderedMatch[1]?.length ?? 0);
+    const markerTo =
+      markerFrom + (unorderedMatch[2]?.length ?? 0) + (unorderedMatch[3]?.length ?? 0);
+
+    pushDecoration(
+      decorations,
+      markerFrom,
+      markerTo,
+      Decoration.replace({ widget: new ListBulletWidget() }),
+    );
+    pushDecoration(
+      decorations,
+      line.from,
+      line.from,
+      Decoration.line({ class: "cm-md-list-item" }),
+    );
+    return { from: markerFrom, to: markerTo };
+  }
+
+  const orderedMatch = orderedListPattern.exec(line.text);
+  if (!orderedMatch) {
+    return null;
+  }
+
+  const markerFrom = line.from + (orderedMatch[1]?.length ?? 0);
+  const markerTo = markerFrom + (orderedMatch[2]?.length ?? 0) + (orderedMatch[3]?.length ?? 0);
+
+  pushDecoration(
+    decorations,
+    markerFrom,
+    markerTo,
+    Decoration.replace({ widget: new OrderedListMarkerWidget(orderedMatch[2] ?? "") }),
+  );
+  pushDecoration(decorations, line.from, line.from, Decoration.line({ class: "cm-md-list-item" }));
+  return { from: markerFrom, to: markerTo };
 }
 
 function addHeadingDecoration(
@@ -583,6 +655,11 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       const taskRange = addTaskDecoration(decorations, line);
       if (taskRange) {
         addProtectedRange(protectedRanges, taskRange.from, taskRange.to);
+      } else {
+        const listRange = addListDecoration(decorations, line);
+        if (listRange) {
+          addProtectedRange(protectedRanges, listRange.from, listRange.to);
+        }
       }
     }
 

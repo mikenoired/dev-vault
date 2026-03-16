@@ -5,7 +5,7 @@ import { python } from "@codemirror/lang-python";
 import { rust } from "@codemirror/lang-rust";
 import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
-import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import { EditorState, Prec, RangeSetBuilder } from "@codemirror/state";
 import type { Command, DecorationSet, ViewUpdate } from "@codemirror/view";
 import {
   Decoration,
@@ -406,6 +406,102 @@ function applyWrap(view: EditorView, left: string, right = left): boolean {
 
 const toggleBold: Command = (view) => applyWrap(view, "**");
 const toggleItalic: Command = (view) => applyWrap(view, "*");
+
+interface MarkdownListContinuation {
+  from: number;
+  to: number;
+  insert: string;
+  cursorOffset: number;
+}
+
+function getMarkdownListContinuation(view: EditorView): MarkdownListContinuation | null {
+  const selection = view.state.selection.main;
+  if (!selection.empty) {
+    return null;
+  }
+
+  const line = view.state.doc.lineAt(selection.from);
+  const beforeCursor = line.text.slice(0, selection.from - line.from);
+  const afterCursor = line.text.slice(selection.from - line.from);
+
+  const unorderedMatch = beforeCursor.match(/^(\s*)-\s(.*)$/);
+  if (unorderedMatch) {
+    const indent = unorderedMatch[1] ?? "";
+    const contentBeforeCursor = unorderedMatch[2] ?? "";
+    const contentAfterCursor = afterCursor;
+    const hasContent = `${contentBeforeCursor}${contentAfterCursor}`.trim().length > 0;
+
+    if (!hasContent) {
+      return {
+        from: line.from,
+        to: line.to,
+        insert: "",
+        cursorOffset: 0,
+      };
+    }
+
+    const insert = `\n${indent}- `;
+    return {
+      from: selection.from,
+      to: selection.to,
+      insert,
+      cursorOffset: insert.length,
+    };
+  }
+
+  const orderedMatch = beforeCursor.match(/^(\s*)(\d+)\.\s(.*)$/);
+  if (!orderedMatch) {
+    return null;
+  }
+
+  const indent = orderedMatch[1] ?? "";
+  const currentNumber = Number.parseInt(orderedMatch[2] ?? "", 10);
+  const contentBeforeCursor = orderedMatch[3] ?? "";
+  const contentAfterCursor = afterCursor;
+  const hasContent = `${contentBeforeCursor}${contentAfterCursor}`.trim().length > 0;
+
+  if (!Number.isInteger(currentNumber)) {
+    return null;
+  }
+
+  if (!hasContent) {
+    return {
+      from: line.from,
+      to: line.to,
+      insert: "",
+      cursorOffset: 0,
+    };
+  }
+
+  const nextNumber = currentNumber + 1;
+  const insert = `\n${indent}${nextNumber}. `;
+  return {
+    from: selection.from,
+    to: selection.to,
+    insert,
+    cursorOffset: insert.length,
+  };
+}
+
+const continueMarkdownList: Command = (view) => {
+  const continuation = getMarkdownListContinuation(view);
+  if (!continuation) {
+    return false;
+  }
+
+  view.dispatch({
+    changes: {
+      from: continuation.from,
+      to: continuation.to,
+      insert: continuation.insert,
+    },
+    selection: {
+      anchor: continuation.from + continuation.cursorOffset,
+    },
+  });
+  return true;
+};
+
 const wrapLink: Command = (view) => {
   const selection = view.state.selection.main;
   const selected = view.state.sliceDoc(selection.from, selection.to);
@@ -624,8 +720,19 @@ export default function CodeEditor({
       themeConfig[".cm-cursor, .cm-dropCursor"] = {
         borderLeftColor: "var(--foreground)",
       };
-      themeConfig[".cm-content span"] = {
-        color: "inherit !important",
+      themeConfig[".cm-line.cm-md-list-item"] = {
+        paddingLeft: "0",
+      };
+      themeConfig[".cm-md-list-bullet"] = {
+        display: "inline-block",
+        minWidth: "1.25rem",
+        color: "var(--foreground)",
+        opacity: "0.72",
+      };
+      themeConfig[".cm-md-list-number"] = {
+        display: "inline-block",
+        minWidth: "1.5rem",
+        color: "var(--muted-foreground) !important",
       };
     }
 
@@ -710,12 +817,15 @@ export default function CodeEditor({
         }),
       );
       extensions.push(
-        keymap.of([
-          { key: "Mod-b", run: toggleBold },
-          { key: "Mod-i", run: toggleItalic },
-          { key: "Mod-k", run: wrapLink },
-          { key: "Backspace", run: pairAwareBackspace },
-        ]),
+        Prec.high(
+          keymap.of([
+            { key: "Enter", run: continueMarkdownList },
+            { key: "Mod-b", run: toggleBold },
+            { key: "Mod-i", run: toggleItalic },
+            { key: "Mod-k", run: wrapLink },
+            { key: "Backspace", run: pairAwareBackspace },
+          ]),
+        ),
       );
     }
 

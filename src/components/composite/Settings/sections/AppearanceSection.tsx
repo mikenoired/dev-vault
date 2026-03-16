@@ -75,7 +75,7 @@ export const AppearanceSection = () => {
           />
           <Switch
             label="Компактный режим списков"
-            className="w-fit"
+            className="w-fit px-0"
             checked={config?.ui.compact_mode ?? false}
             onCheckedChange={(checked) =>
               handleUpdate((prev) => ({ ...prev, compact_mode: checked }))
@@ -83,7 +83,7 @@ export const AppearanceSection = () => {
           />
           <Switch
             label="Live Preview Markdown для заметок"
-            className="w-fit"
+            className="w-fit px-0"
             checked={config?.ui.markdown_live_preview ?? true}
             onCheckedChange={(checked) =>
               handleUpdate((prev) => ({ ...prev, markdown_live_preview: checked }))

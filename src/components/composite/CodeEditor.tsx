@@ -1,3 +1,4 @@
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { javascript } from "@codemirror/lang-javascript";
 import { markdown } from "@codemirror/lang-markdown";
 import { python } from "@codemirror/lang-python";
@@ -6,7 +7,13 @@ import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/
 import { shell } from "@codemirror/legacy-modes/mode/shell";
 import { EditorState, RangeSetBuilder } from "@codemirror/state";
 import type { Command, DecorationSet, ViewUpdate } from "@codemirror/view";
-import { Decoration, keymap, ViewPlugin } from "@codemirror/view";
+import {
+  Decoration,
+  drawSelection,
+  highlightSpecialChars,
+  keymap,
+  ViewPlugin,
+} from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { basicSetup, EditorView, minimalSetup } from "codemirror";
 import { CheckIcon, CopyIcon } from "lucide-react";
@@ -67,6 +74,12 @@ const lightCodeHighlightStyle = HighlightStyle.define([
   { tag: [tags.strong], fontWeight: "700" },
   { tag: [tags.monospace], color: "#b45309" },
 ]);
+const noteEditorSetup = [
+  highlightSpecialChars(),
+  history(),
+  drawSelection(),
+  keymap.of([...defaultKeymap, ...historyKeymap]),
+];
 
 function createCodeTheme(isDark: boolean) {
   return EditorView.theme(
@@ -659,8 +672,9 @@ export default function CodeEditor({
     const theme = EditorView.theme(themeConfig);
     const isDarkTheme = resolvedTheme === "dark";
 
+    const editorSetup = noteMode ? noteEditorSetup : allowFolding ? basicSetup : minimalSetup;
     const extensions = [
-      allowFolding ? basicSetup : minimalSetup,
+      editorSetup,
       getLangExtension(language),
       theme,
       EditorView.lineWrapping,

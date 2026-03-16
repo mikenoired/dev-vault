@@ -64,7 +64,7 @@ export const SettingsSidebar = ({ activeSection, onSectionChange }: SettingsSide
     <div className="w-52 shrink-0 flex flex-col gap-1 pt-4">
       {sidebarGroups.map((group) => (
         <div key={group.title} className="flex flex-col gap-1">
-          <span className="text-sm px-3 font-medium text-foreground/80">{group.title}</span>
+          <span className="text-sm px-3 font-medium text-foreground/80 pb-2">{group.title}</span>
           {group.items.map((item) => (
             <SidebarItem
               key={item.id}

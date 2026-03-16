@@ -47,7 +47,7 @@ export const TypeFilter = () => {
   const activeType = selectedType ?? "snippet";
 
   return (
-    <Tooltip.Provider delayDuration={200}>
+    <Tooltip.Provider delayDuration={0}>
       <div className="flex w-full items-center gap-1 rounded-md bg-accent p-1">
         {(Object.keys(typeConfig) as ItemType[]).map((type) => {
           const { icon: Icon, label } = typeConfig[type];

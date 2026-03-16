@@ -153,7 +153,7 @@ function shouldHideMarkersForRange(
   to: number,
 ): boolean {
   if (!isActiveLine) return true;
-  return cursorPos < from || cursorPos >= to;
+  return cursorPos + 1 < from || cursorPos - 1 >= to;
 }
 
 function forEachRegexMatch(

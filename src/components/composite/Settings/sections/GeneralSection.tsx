@@ -11,16 +11,14 @@ export const GeneralSection = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-4">Основные настройки</h3>
-        <div className="grid gap-4">
-          <Switch
-            label="Автосохранение изменений"
-            className="w-fit"
-            checked={config.ui.autosave_enabled}
-            onCheckedChange={(checked) => updateUiConfig({ autosave_enabled: checked })}
-          />
-        </div>
+      <h3 className="text-lg font-medium mb-4">Основные настройки</h3>
+      <div className="grid gap-4">
+        <Switch
+          label="Автосохранение изменений"
+          className="w-fit px-0"
+          checked={config.ui.autosave_enabled}
+          onCheckedChange={(checked) => updateUiConfig({ autosave_enabled: checked })}
+        />
       </div>
     </div>
   );

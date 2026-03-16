@@ -160,7 +160,7 @@ export const useItemsStore = create<ItemsState>((set, get) => ({
     if (type === selectedType && trimmedQuery === "") {
       return;
     }
-    set({ selectedType: type, searchQuery: "" });
+    set({ selectedType: type, searchQuery: searchQuery });
     await get().loadItems({ keepItems: true });
   },
 
